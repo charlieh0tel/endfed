@@ -393,6 +393,21 @@ shipped 2-D table rather than restoring:
   never used.  Every error figure now in `MODEL.md` is in-sample and
   optimistic by construction.
 
+**Decided, not yet built.**  The page must not ask the model outside the
+domain it was fitted over.  `coefficients2d.json` now carries that domain
+beside the table -- the h/lambda floor, the counterpoise floor and ceiling
+-- so the definition travels with the numbers instead of being restated in
+the page.  What is missing is the page acting on it: `interpCoeff`/
+`interpCoeff2` hold the table flat outside its nodes and answer anyway.
+Measured over the page's own controls, 3 percent of (height, frequency)
+combinations fall below the h/lambda floor and 2 percent above the top
+node; a 5 m wire on 160 m is h/lambda 0.032 against a floor of 0.05, and
+the page reports an SWR for it with no more hedging than usual.
+
+Wanted: the page reads the domain from the generated block, a test holds
+its constants to it, and a length whose band puts it outside says so --
+the way an unbuildable sloper does -- rather than quietly extrapolating.
+
 **Decided, not yet built.**  The NEC exports sweep one 201-point linear
 span, so a selected 60 m or 30 m can receive no sample at all: one `FR`
 card per selected band instead.
