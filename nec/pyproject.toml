@@ -17,3 +17,8 @@ dev = ["ruff>=0.14,<0.15"]
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
+# ASCII only: non-ASCII identifiers, and ambiguous characters in strings,
+# docstrings and comments.
+extend-select = ["PLC2401", "RUF001", "RUF002", "RUF003"]
