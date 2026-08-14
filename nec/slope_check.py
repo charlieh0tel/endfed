@@ -35,8 +35,8 @@ def run(deck, work):
         [NEC4, str(src), str(out)], capture_output=True, check=True, cwd=work
     )
     t = out.read_text()
-    for i, l in enumerate(t.splitlines()):
-        if "(WATTS)" in l:
+    for i, line in enumerate(t.splitlines()):
+        if "(WATTS)" in line:
             for r in t.splitlines()[i + 1 :]:
                 v = SCI.findall(r)
                 if len(v) >= 6:
@@ -96,7 +96,4 @@ for freq in (7.15e6, 14.175e6):
                 if np.isfinite(zs.real):
                     ra.append(abs(zs) / abs(za))
                     rm.append(abs(zs) / abs(zm))
-            f = lambda v: (
-                f"med x{np.exp(np.median(np.abs(np.log(v)))):.2f} worst x{np.exp(np.abs(np.log(v)).max()):.2f}"
-            )
-            print(f"{freq / 1e6:7.3f} {apex:7.1f} {f(ra):>22} {f(rm):>24}")
+            print(f"{freq / 1e6:7.3f} {apex:7.1f} {spread(ra):>22} {spread(rm):>24}")
