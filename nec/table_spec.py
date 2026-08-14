@@ -57,5 +57,20 @@ VF_A = 1.0
 #: fixed in metres cannot span this one at a short wavelength.
 Z_NODES = np.array([1e-4, 1e-3, 8e-3, 6e-2])
 
+#: The counterpoise heights the model is defined over, in metres: no lower
+#: than the page offers, no higher than half the wire.  A geometry outside
+#: this is one the model has no answer for, so nothing sweeps or fits it.
+MIN_COUNTERPOISE_Z_M = 0.01
+MAX_COUNTERPOISE_Z_M = 15.0
+COUNTERPOISE_CEILING_FRACTION = 0.5
+
 #: Fitted-parameter index of each tabulated name, into fit.PARAM_NAMES.
 SOURCE_INDEX = (0, 2, 3, 4, 5)
+
+
+def counterpoise_range_m(height_m):
+    """Lowest and highest counterpoise the model is defined for at a height."""
+    return (
+        MIN_COUNTERPOISE_Z_M,
+        min(COUNTERPOISE_CEILING_FRACTION * height_m, MAX_COUNTERPOISE_Z_M),
+    )
