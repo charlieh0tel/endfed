@@ -51,7 +51,7 @@ The page used to ship a single line, open at the far end:
     beta = 2*pi/lambda * velocityFactor
 
 What it ships now is two such lines in series at the feedpoint, the
-antenna and the return path, which is the form finding 7 licenses:
+antenna and the return path, which is the form Finding 7 licenses:
 
     Zin = Za(l) + Zr(h + ret)
     Za  = ka * Z0(l)       * coth((alpha_a + j*beta_a) * l)
@@ -155,16 +155,13 @@ soil they have already entered.  That is bounded work on a geometry the
 user has described, and it checks the installation rather than the
 envelope, which is exactly where this model is weakest.  Worth doing.
 
-The obstacle there is licensing, and it is the reverse of the case in
-`nec/README.md`.  Those scripts are fine because they import
-PyNEC and never ship it.  A wasm nec2c inside `docs/` would be
-*distributing* GPL object code from an MIT repo, which obliges a
-corresponding source offer under GPL and plausibly makes the page a
-combined work covered by GPLv3 rather than MIT.  Loading it from a
-separate file does not clearly escape that; it is the classic unsettled
-boundary.  Decide the license before building: either the NEC-enabled
-page is explicitly GPLv3 with its own notice, or the engine has to be
-permissively licensed.
+Licensing does not obstruct that, because it was settled first: the repo
+and the page are GPL-3.0-or-later, so a wasm nec2c inside `docs/` is GPL
+object code distributed from a GPL repo, and the page combining with it
+is a combined work that is already GPL.  What remains is the ordinary
+obligation rather than a question of principle -- a corresponding source
+offer for the wasm build, and a check that the exact GPL version nec2c
+carries is one GPLv3 can combine with.
 
 So NEC is a calibration and validation instrument.  **What reaches the
 page is constants and caveat text, never code.**
@@ -172,11 +169,11 @@ page is constants and caveat text, never code.**
 The modeler itself lives in `nec/`.  An earlier draft of
 this note had it staying outside the repo on license grounds, which
 confused two separate things.  PyNEC is GPL-3.0-only and is a declared
-PyPI dependency, not vendored; MIT is GPL-compatible, so MIT scripts
-that import it are fine to distribute, and nothing here copies PyNEC or
-nec2c source.  Separately, and still true, a program's numeric output is
-not covered by the producing program's license, so the fitted constants
-carry no obligation into the page.
+PyPI dependency, not vendored; the repo is GPL-3.0-or-later, which
+combines with it, and nothing here copies PyNEC or nec2c source.
+Separately, and still true, a program's numeric output is not covered by
+the producing program's license, so the fitted constants carry no
+obligation of their own into the page.
 
 Keeping it in the repo is the point rather than a concession.  The
 page's claim to be defensible rests on constants with stated assumptions

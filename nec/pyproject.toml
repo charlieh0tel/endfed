@@ -2,6 +2,7 @@
 name = "random-wire-nec"
 version = "0.1.0"
 description = "Offline NEC modeling behind the random-wire.html impedance model."
+license = "GPL-3.0-or-later"
 requires-python = ">=3.11"
 dependencies = [
     "pynec>=2.3.4",

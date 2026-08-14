@@ -12,8 +12,12 @@ One page and the measurements behind it.
   pushing to `master` is a deployment.
 - `docs/tools/` is dev-time only: nothing there is served.
 - `nec/` is the instrument: NEC sweeps, the fits, and the coefficient
-  tables the page ships. Python, `uv`-managed. PyNEC is GPL, which is
-  why this repo is GPL.
+  tables the page ships. Python, `uv`-managed.
+
+The whole repo is GPL-3.0-or-later, `LICENSE` at the root and a notice
+in the page header. Nothing here is MIT; if a file says otherwise it is
+stale. The page is GPL by choice, settled before the nec2c-wasm path it
+anticipates, not because PyNEC is a dependency of `nec/`.
 
 Companion notes, not served. `docs/MODEL.md` is the modeling approach
 -- what the impedance model claims, the parameter split, and what NEC

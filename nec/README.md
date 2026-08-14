@@ -13,15 +13,14 @@ cannot be checked.  This is the source for them.
 
 ## License
 
-These scripts are MIT, like the rest of the repo.  They import PyNEC,
-which is GPL-3.0-only, but PyNEC is a declared dependency fetched from
-PyPI, not vendored here.  MIT is GPL-compatible, so combining the two on
-your own machine is fine; what would not be fine is copying PyNEC or
-nec2c source into this repo, which is why nothing does.
+These scripts are GPL-3.0-or-later, like the rest of the repo.  They
+import PyNEC, which is GPL-3.0-only; PyNEC is a declared dependency
+fetched from PyPI, not vendored here, and copying PyNEC or nec2c source
+into this repo would be a different matter, which is why nothing does.
 
 The numeric output is a separate matter again: a program's output is not
-covered by the program's license, so the fitted constants carry no GPL
-obligation into the MIT page.
+covered by the program's license, so the fitted constants carry no
+obligation of their own into the page.
 
 ## The Sommerfeld comparison
 

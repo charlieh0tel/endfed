@@ -230,14 +230,14 @@ Remaining:
 
       - `nec2c-deck` builds decks and parses output, no solver and no
         dependencies.  It is our own code with no nec2c in it, so it can
-        be relicensed at will; MIT would let the page use it freely.
+        be relicensed at will, and the page can use it either way.
       - `nec2c-wasm` is nec2c 1.3.1 compiled, so it carries Kyriazis's
         GPL and cannot be relicensed by us.  Serving it from `docs/` is
         distribution, and it makes the page a combined work.
 
-      **Decided and done**: `docs/random-wire.html` is now
-      GPL-3.0-or-later, with the notice in its header and the exception
-      recorded in `LICENSE`.  The rest of the repository stays MIT.  The
+      **Decided and done**: the whole repository is GPL-3.0-or-later,
+      `LICENSE` at the root and the notice in the page header, so no
+      part of this is a licensing question any more.  The
       wasm loads from a CDN on click, as React and Babel already do, so
       the classical mode never fetches it.  `nec2c-wasm/inline` is the
       entry point to use, 361 KB in one file, which avoids serving a
