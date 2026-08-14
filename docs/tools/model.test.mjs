@@ -1173,3 +1173,16 @@ test('a sloper is never offered a wire shorter than its own rise', () => {
       `${s.lenM} m does not reach a 29.7 m rise`);
   }
 });
+
+test('the deck runs the counterpoise on the bearing each geometry was fitted at',
+  () => {
+    const base = { counterpoiseM: 7.62, counterpoiseZM: 0.05,
+      soil: m.DEFAULT_SOIL };
+    const flat = { ...base, geometry: 'flatTop', heightM: 9.144, balunM: 0.61 };
+    const sloper = { ...base, geometry: 'sloper', heightM: 20, balunM: 0.61 };
+    const runOf = (site) => m.deckWires(21.336, site, m.WIRE_RADIUS_M, 10)
+      .find(w => w.tag === 3);
+    assert.equal(runOf(flat).x2, 7.62, 'a flat top lays it along the antenna');
+    assert.equal(runOf(sloper).x2, -7.62,
+      'a sloper heads it away, as nec/nec_model.py sloper_deck does');
+  });

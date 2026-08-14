@@ -1288,6 +1288,16 @@
     const DEFAULT_GEOMETRY = 'flatTop';
 
     /**
+     * Which way the return run leaves the feedpoint, by geometry.  A flat
+     * top's counterpoise is laid out along the antenna; a sloper's coax heads
+     * away, back to the station.  These are the bearings the coefficients were
+     * fitted at -- nec/nec_model.py, RETURN_DIRECTION and sloper_deck -- so a
+     * deck built the other way is not the antenna the page just scored.
+     * nec/geometry_check.py prices the choice at 1.20x on 80 m.
+     */
+    const RETURN_DIRECTION = Object.freeze({ flatTop: 1, sloper: -1 });
+
+    /**
      * The installation the impedance model is asked about: how the wire is
      * hung, how high, how much counterpoise there is and how high that sits.
      *
@@ -2125,7 +2135,8 @@
      * The wires of the installation, as the model was fitted at: the antenna
      * horizontal at the wire height, fed at the end; a vertical drop from the
      * feedpoint to just above ground; and the rest of the return conductor
-     * running horizontally at that height, out along the antenna.
+     * running horizontally at that height, on the bearing its geometry was
+     * fitted at (RETURN_DIRECTION).
      *
      * `site.returnM` is the whole return conductor, so the horizontal run is
      * what is left of it after the drop.  A wire of no length is left out
@@ -2167,7 +2178,8 @@
         wires.push({
           tag: 3, segments: deckSegments(runM, wavelengthM),
           x1: 0, y1: 0, z1: runZM,
-          x2: runM, y2: 0, z2: runZM, radius: radiusM,
+          x2: RETURN_DIRECTION[site.geometry] * runM, y2: 0, z2: runZM,
+          radius: radiusM,
         });
       }
       return wires;
