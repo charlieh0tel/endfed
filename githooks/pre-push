@@ -1,6 +1,7 @@
 #!/bin/sh
 # Check the docs/ pages before a push, since pushing master deploys them.
-# The type check proves they compile; the tests prove the model computes.
+# The type check proves they compile; the tests prove the model computes;
+# the browser tests prove the page works.
 # Enable with: git config core.hooksPath githooks
 
 set -e
@@ -14,3 +15,6 @@ fi
 
 npm --prefix "$repo_root/docs/tools" run --silent check
 npm --prefix "$repo_root/docs/tools" test --silent
+# Pushing master deploys, and the browser tests are the only ones that see
+# the page as a browser does.
+npm --prefix "$repo_root/docs/tools" run --silent test:browser

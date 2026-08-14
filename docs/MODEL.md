@@ -48,14 +48,20 @@ The page used to ship a single line, open at the far end:
     Zin  = Z0 * coth(gamma * l)
     gamma = alpha + j*beta
     Z0   = 60 * (ln(2l/a) - 1)      # Schelkunoff, thin wire
-    beta = 2*pi/lambda * velocityFactor
+    beta = 2*pi / (lambda * velocityFactor)
 
 What it ships now is two such lines in series at the feedpoint, the
 antenna and the return path, which is the form Finding 7 licenses:
 
-    Zin = Za(l) + Zr(h + ret)
-    Za  = ka * Z0(l)       * coth((alpha_a + j*beta_a) * l)
-    Zr  = kr * Z0(h + ret) * coth((alpha_r + j*beta_r) * (h + ret))
+    Zin = Za(l) + Zr(ret)
+    Za  = ka * Z0(l)   * coth((alpha_a + j*beta_a) * l)
+    Zr  = kr * Z0(ret) * coth((alpha_r + j*beta_r) * ret)
+    ret = max(feed - cpz, 0) + cp
+
+`ret` is the whole return conductor: the drop from the feedpoint to the
+counterpoise, plus the counterpoise itself.  `feed` is the wire height on
+a flat top and the balun height on a sloper, which is what makes the two
+geometries one formula.
 
 `ka` and `kr` scale each line's Schelkunoff `Z0`, which is an average
 over an isolated wire in free space and reads high once ground is
@@ -411,6 +417,12 @@ for anything resting on it.
 
 The bound the caveat text should carry.  Taken over 96 groups, each
 fitted across 159 lengths and 7 return lengths.
+
+This section measures the 1-D `sweep.npz` fit.  What ships is the 2-D
+NEC-4.2 table, whose own error block reads median x1.25, p90 x1.33 and
+worst x1.62 for a flat top, and x1.15 / x1.21 / x1.27 for a sloper.  The
+page quotes the flat top's first two figures, and a test holds it to
+`coefficients2d.json` so a refit cannot leave the claim behind.
 
 Three sets of figures, and only the last says anything about what a user
 will see.

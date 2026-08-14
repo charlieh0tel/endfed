@@ -101,7 +101,8 @@ design decisions in the model note and task state in the TODO.
   tables are fitted from them, so a silent resolver change is a silent
   change to the shipped page.
 - Run `ruff format` and `ruff check` after changes and before commits.
-- Run tests with `pytest`.
+- There is no pytest suite. `nec/validate.py` is the regression
+  check and prints numbers a human reads; CI runs `ruff` only.
 
 ## TypeScript Rules
 
@@ -132,10 +133,14 @@ linter finds that.
 `tools/extract.mjs` pulls the `<script type="text/babel">` body into a
 gitignored `.check/` directory, padded so a diagnostic's line number
 matches the HTML. `tsc` then checks it with `checkJs` and `strict`.
+`docs/tools/extract.test.mjs` holds both extractors to that: the padding,
+the purity guard, and that importing either one does not run it.
 
 The check must pass before committing and before pushing. A `pre-push`
 hook is in `githooks/`; enable it with
-`git config core.hooksPath githooks`. CI runs the same commands.
+`git config core.hooksPath githooks`. It runs the check, the tests and
+the browser tests, since pushing master deploys. CI runs the same, plus
+`ruff` over `nec/`.
 
 ## Tests
 
