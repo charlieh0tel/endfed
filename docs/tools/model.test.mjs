@@ -1158,3 +1158,18 @@ test('the counterpoise ceiling follows the geometry it hangs from', () => {
   assert.equal(m.counterpoiseCeilingM(tall), m.COUNTERPOISE_Z_RANGE_M.max,
     'and never past the range the table was fitted over');
 });
+
+test('a sloper is never offered a wire shorter than its own rise', () => {
+  // Apex well up, balun at a stake: the rise is 29.7 m, and a quarter wave on
+  // 20 m is a much shorter wire, so the short limit alone lets unbuildable
+  // lengths through.
+  const site = { geometry: 'sloper', balunM: 0.3, heightM: 30,
+    counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
+    counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: m.DEFAULT_SOIL };
+  const out = m.solveImpedance('us', [20, 15, 10], 'full', site,
+    m.WIRE_RADIUS_M, 9, 60, 'm');
+  for (const s of out.suggestions) {
+    assert.equal(m.riseShortfallM(site, s.lenM), null,
+      `${s.lenM} m does not reach a 29.7 m rise`);
+  }
+});

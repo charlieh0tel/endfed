@@ -2018,6 +2018,9 @@
         if (point.lenM < shortLimit) continue;
         const lenM = roundToUnit(point.lenM, units);
         if (lenM < shortLimit) continue;
+        // A sloper shorter than its own rise cannot be built, whatever it
+        // scores: the model was asked about a wire that does not reach.
+        if (riseShortfallM(site, lenM) !== null) continue;
         const scored = scoreLength(lenM, bands, segment, site, radiusM, ununRatio);
         if (!scored) continue;
         const existing = byLength.get(lenM);
