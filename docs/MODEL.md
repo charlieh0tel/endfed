@@ -437,7 +437,8 @@ little: x1.25 median, x1.32 at the 90th, x1.38 worst.
 Both are *in-sample* -- fitted on `sweep.npz`, measured on `sweep.npz` --
 so both are optimistic by construction.
 
-**Out of band.**  `out_of_band.py` solves fresh NEC cases at five
+**Out of band.**  `out_of_band.py`, since retired with the 1-D fit,
+solved fresh NEC cases at five
 frequencies the sweep never used, across three sites.  That is the
 holdout, and it is in the axis that matters: the sweep has four
 frequencies and the page evaluates nine bands.
@@ -495,8 +496,9 @@ non-physical points survive into the fit, 23 percent of one group at
 **The bound survives conductor gauge.**  The main sweep ran entirely at
 #14, so `a/lambda` was the one planned axis never executed and the
 coefficients had seen a single diameter.  `gauge_sweep.py` and
-`gauge_check.py` close that: 22896 further solves over #12, #14, #18 and
-#22, a factor of 3.2 in diameter.
+`gauge_check.py` closed that: 22896 further solves over #12, #14, #18 and
+#22, a factor of 3.2 in diameter.  The sweep is still here; the checking
+script retired with the 1-D fit it used.
 
 Agreement, which is the question the page cares about -- the shipped
 #14 table used unchanged against each gauge:
@@ -1332,9 +1334,9 @@ again through 0.2-0.5, so no monotonic story fits.
 
 ### And what it actually moves: nothing that ships
 
-`nec4_sweep.py` solves the same grid with NEC-4.2 and
-`coefficients.py --sweep nec4_sweep.npz` fits the same form to it.  The
-two fits, measured the same way:
+`nec4_sweep.py` solves the same grid with NEC-4.2 and the 1-D fitter,
+since retired, fitted the same form to it.  The two fits, measured the
+same way:
 
 | | nec2++ (shipped) | NEC-4.2 |
 |---|---|---|

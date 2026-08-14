@@ -49,9 +49,26 @@ perfect ground should read near 36+j21 and a free-space half-wave dipole
 near 73+j42, both overshooting slightly for a thin wire.  If those move,
 distrust everything else.
 
-`sweep.npz` is generated, not committed; `sweep.py` rebuilds it.
+`sweep.npz` is generated, not committed; `sweep.py` rebuilds it.  Note
+that it is a NEC-2 grid: what the page ships is fitted to the NEC-4.2
+sweeps instead, for the reason the Sommerfeld comparison below gives.
 
 ## Files
+
+What ships comes from one chain, and only this chain:
+
+    nec4_return_height_sweep.py |  ->  fit.py  ->  table2d.py
+    nec4_sloper_sweep.py        |        ->  coefficients2d.py  ->  the page
+
+- `table_spec.py` -- what is tabulated, over what nodes, within what
+  bounds.  The specification the other three are built to.
+- `fit.py` -- fits one group of NEC solves to the two-line form.
+- `table2d.py` -- collapses the per-group fits onto the table's axes.
+- `coefficients2d.py` -- refines the table jointly, writes
+  `coefficients2d.json`, and patches the page.  `--write-page` is the
+  only thing that may touch the generated block.
+
+The rest are instruments:
 
 - `nec_model.py` -- the geometry: antenna wire at height h, vertical
   drop at the feedpoint, horizontal return run standing for the coax

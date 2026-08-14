@@ -30,7 +30,7 @@ from pathlib import Path
 import numpy as np
 from scipy.optimize import least_squares
 
-from coefficients import MIN_H_OVER_LAMBDA, NODES, REFINE_BOUNDS, TABLE_PARAMS, VF_A
+from table_spec import MIN_H_OVER_LAMBDA, NODES, REFINE_BOUNDS, TABLE_PARAMS, VF_A
 from fit import fit_group, model_zin
 from nec_model import BALUN_HEIGHT_M, C
 from table2d import RETURN_ONLY, build, look_up

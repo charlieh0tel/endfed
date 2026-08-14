@@ -35,7 +35,7 @@ import itertools
 
 import numpy as np
 
-from coefficients import MIN_H_OVER_LAMBDA, NODES, SOURCE_INDEX, TABLE_PARAMS, VF_A
+from table_spec import MIN_H_OVER_LAMBDA, NODES, SOURCE_INDEX, TABLE_PARAMS, VF_A
 from fit import fit_group, model_zin
 from nec_model import C
 
