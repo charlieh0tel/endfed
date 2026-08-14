@@ -51,5 +51,11 @@ REFINE_BOUNDS = (
 #: The antenna line's velocity factor, constant rather than tabulated.
 VF_A = 1.0
 
+#: Nodes in counterpoise height over wavelength, the table's second axis.
+#: Log spaced over what a real installation reaches, held flat outside them
+#: as h/lambda is.  Both axes divide by the same wavelength, so a counterpoise
+#: fixed in metres cannot span this one at a short wavelength.
+Z_NODES = np.array([1e-4, 1e-3, 8e-3, 6e-2])
+
 #: Fitted-parameter index of each tabulated name, into fit.PARAM_NAMES.
 SOURCE_INDEX = (0, 2, 3, 4, 5)
