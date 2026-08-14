@@ -1038,6 +1038,15 @@
     const MODEL_FIT_RANGE_HZ = Object.freeze({ min: 1.8e6, max: 30e6 });
 
     /**
+     * The modeling note, which the page points at whenever it says
+     * something the reader might reasonably want the workings for.  On
+     * GitHub rather than beside the page: the note is a companion document
+     * and is not served with the site.
+     */
+    const MODEL_NOTE_URL =
+      'https://github.com/charlieh0tel/endfed/blob/master/docs/MODEL.md';
+
+    /**
      * How far off |Z| is, quoted in the caveat text.  Two figures, not one,
      * because a single number misleads whichever way it is rounded: the
      * tabulated model reads 1.25x median and 1.33x at the ninetieth
@@ -1048,17 +1057,8 @@
      * The figures hold above about 0.05 wavelengths of height and degrade
      * below it; see docs/MODEL.md.
      */
-    /**
-     * The modeling note, which the page points at whenever it says
-     * something the reader might reasonably want the workings for.  On
-     * GitHub rather than beside the page: the note is a companion document
-     * and is not served with the site.
-     */
-    const MODEL_NOTE_URL =
-      'https://github.com/charlieh0tel/endfed/blob/master/docs/MODEL.md';
-
     const MODEL_TYPICAL_FACTOR = 1.25;
-    const MODEL_BOUND_FACTOR = 1.35;
+    const MODEL_BOUND_FACTOR = 1.33;
 
     /** Keeps a perfectly reflecting load from producing an infinite SWR. */
     const MAX_GAMMA = 0.999999;
@@ -3227,7 +3227,7 @@
                     {' '}{MODEL_FIT_RANGE_HZ.min / 1e6}&ndash;
                     {MODEL_FIT_RANGE_HZ.max / 1e6} MHz, #14 AWG. |Z| within
                     {' '}{MODEL_TYPICAL_FACTOR}x typically and
-                    {' '}{MODEL_BOUND_FACTOR}x nine times in ten &mdash; an
+                    {' '}{MODEL_BOUND_FACTOR}x for nine groups in ten &mdash; an
                     envelope, not a prediction, and worse for a low wire.
                   </div>
                 )}

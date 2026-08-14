@@ -45,6 +45,7 @@ const EXPORTS = [
   'HEIGHT_RANGE_M', 'COUNTERPOISE_RANGE_M',
   'COUNTERPOISE_Z_RANGE_M',
   'BALUN_RANGE_M', 'MODEL_FIT_RANGE_HZ',
+  'MODEL_TYPICAL_FACTOR', 'MODEL_BOUND_FACTOR',
   // length math
   'halfWaveM', 'bandsIn', 'bandEdgesHz', 'resonanceInterval', 'avoidIntervals',
   'tooShortM', 'solve', 'judgeLength',

@@ -1245,3 +1245,18 @@ test('a length the model cannot describe is declined, not scored as NaN', () => 
   assert.ok(m.scoreLength(21.336, bands, 'full', sane, m.WIRE_RADIUS_M, 9),
     'and an ordinary antenna still scores');
 });
+
+test('the quoted accuracy is the accuracy the shipped table measures', async () => {
+  // The caveat text is a claim about coefficients2d.json's own error block.
+  // Nothing else compares them, so a refit could move the error and leave the
+  // page quoting the old one.
+  const { readFile } = await import('node:fs/promises');
+  const url = new URL('../../nec/coefficients2d.json', import.meta.url);
+  const { flat_top: flatTop, sloper } = JSON.parse(await readFile(url, 'utf8'));
+
+  close(m.MODEL_TYPICAL_FACTOR, flatTop.error.median, 5e-3, 'typical is the median');
+  close(m.MODEL_BOUND_FACTOR, flatTop.error.p90, 5e-3, 'the bound is the p90');
+  assert.ok(flatTop.error.median >= sloper.error.median
+    && flatTop.error.p90 >= sloper.error.p90,
+    'the flat top is the weaker of the two, which is why it is quoted');
+});
