@@ -1186,3 +1186,31 @@ test('the deck runs the counterpoise on the bearing each geometry was fitted at'
     assert.equal(runOf(sloper).x2, -7.62,
       'a sloper heads it away, as nec/nec_model.py sloper_deck does');
   });
+
+test('a recommended length is rounded to its unit own grid', () => {
+  close(m.toDisplay(m.roundToUnit(m.fromDisplay(42.4, 'ft'), 'ft'), 'ft'), 42,
+    1e-9, 'feet round to whole feet');
+  close(m.toDisplay(m.roundToUnit(m.fromDisplay(42.4, 'ftin'), 'ftin'), 'ft'), 42,
+    1e-9, 'feet and inches shares the foot grid');
+  close(m.roundToUnit(24.24, 'm'), 24, 1e-9, 'meters round to half meters');
+  close(m.roundToUnit(17.63, 'm'), 17.5, 1e-9, 'and not to whole meters');
+});
+
+test('the display unit does not change which antenna is recommended', () => {
+  const site = { geometry: 'flatTop', heightM: m.DEFAULT_HEIGHT_M,
+    balunM: m.DEFAULT_BALUN_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
+    counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: m.DEFAULT_SOIL };
+  const picks = (units) => m.solveImpedance('us', [40, 20, 15, 10], 'full', site,
+    m.WIRE_RADIUS_M, 9, 60, units).suggestions.map(s => s.lenM);
+  const feet = picks('ft');
+  const meters = picks('m');
+  assert.equal(feet.length, meters.length, 'the same number of lengths');
+  // The two grids are 1 ft and 0.5 m, so two readings of one minimum can sit
+  // half of each apart and no further.
+  const toleranceM = 0.5 / 2 + m.fromDisplay(1, 'ft') / 2;
+  for (const lenM of meters) {
+    const nearest = Math.min(...feet.map(f => Math.abs(f - lenM)));
+    assert.ok(nearest <= toleranceM,
+      `${lenM.toFixed(2)} m is ${nearest.toFixed(2)} m from any imperial pick`);
+  }
+});

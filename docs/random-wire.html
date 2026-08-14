@@ -1130,10 +1130,11 @@
     const EMPTY_MAP_LEN_M = 30;
 
     /**
-     * Roundings tried for a recommended length, coarsest first, in whatever
-     * unit the user is reading.  Roundness is a property of the number on
-     * screen, not of the meter it is stored in: someone cutting wire to a tape
-     * marked in feet wants a round number of feet.
+     * Roundings tried inside a usable span, coarsest first, in whatever unit
+     * the user is reading.  Roundness is a property of the number on screen,
+     * not of the meter it is stored in: someone cutting wire to a tape marked
+     * in feet wants a round number of feet.  A span narrower than the coarsest
+     * step is what makes the ladder necessary; see pickInSpan.
      */
     const PICK_STEPS = Object.freeze([1, 0.5, 0.1, 0.01]);
 
@@ -1215,17 +1216,18 @@
      *   abbrev:    suffix on the length input, which is always decimal
      *   axisLabel: unit of the map's tick numbers, which are always decimal
      *   perMeter:  scale from meters, for the input, slider and map ticks
+     *   roundStep: grid a recommended length is rounded to, in this unit
      *   format:    renders a length in meters as text
      * Feet and inches shares its scale with feet, differing only in format,
      * so the input and the map stay decimal while readouts carry inches.
      */
     const UNITS = Object.freeze({
       ft: { label: 'feet', abbrev: 'ft', axisLabel: 'feet', perMeter: FT_PER_M,
-            format: decimalLength('ft', FT_PER_M) },
+            roundStep: 1, format: decimalLength('ft', FT_PER_M) },
       ftin: { label: 'ft + in', abbrev: 'ft', axisLabel: 'feet', perMeter: FT_PER_M,
-              format: feetAndInches },
+              roundStep: 1, format: feetAndInches },
       m: { label: 'meters', abbrev: 'm', axisLabel: 'meters', perMeter: 1,
-           format: decimalLength('m', 1) },
+           roundStep: 0.5, format: decimalLength('m', 1) },
     });
 
     const SEGMENTS = Object.freeze({
@@ -1537,23 +1539,25 @@
     };
 
     /**
-     * Round a length to the roundest number that is still within half a step
-     * of it, in the unit the user is reading.  Unlike pickInSpan there is no
-     * span to stay inside, so the constraint is closeness instead.
+     * Round a length to its unit's grid: whole feet, or half meters.
+     *
+     * Unlike pickInSpan there is no span to stay inside, so there is nothing
+     * for a ladder of roundings to choose between -- one grid per unit is the
+     * whole of it.  The grids are deliberately of a size: 1 ft and 0.5 m cost
+     * at most 0.02 SWR against the unrounded minimum, so the reader's choice
+     * of unit does not change which antenna the page recommends.  A whole
+     * meter would be 3.28x coarser than a whole foot, which is what used to
+     * hand the two readers different wires.
      *
      * @param {Meters} lenM
      * @param {UnitKey} units
      * @returns {Meters}
      */
     const roundToUnit = (lenM, units) => {
+      const step = UNITS[units].roundStep;
       const display = toDisplay(lenM, units);
-      for (const step of PICK_STEPS) {
-        const rounded = Math.round(display / step) * step;
-        if (Math.abs(rounded - display) <= step / 2) {
-          return fromDisplay(Number(rounded.toFixed(2)), units);
-        }
-      }
-      return lenM;
+      return fromDisplay(Number((Math.round(display / step) * step).toFixed(2)),
+                         units);
     };
 
     /**
