@@ -194,6 +194,59 @@ def refine(table, data, geometry, max_nfev=600):
     return refined, runs
 
 
+def support(data, geometry, n_soils):
+    """How many groups sit nearest each node, which is what constrains it."""
+    counts = np.zeros((n_soils, len(NODES), len(Z_NODES)), dtype=int)
+    for si in range(n_soils):
+        for h_lam, z_lam, *_ in slices(data, si, geometry):
+            hi = int(np.argmin(np.abs(np.log10(NODES) - np.log10(h_lam))))
+            zi = int(np.argmin(np.abs(np.log10(Z_NODES) - np.log10(max(z_lam, 1e-12)))))
+            counts[si, hi, zi] += 1
+    return counts
+
+
+def fill_unsupported(table, counts):
+    """Give unconstrained nodes their nearest measured neighbour's values.
+
+    A node with no group nearest it is not fitted: nothing in the residual
+    pulls it, so the refinement leaves it wherever the bounds allow.  Such a
+    node is unreachable geometry -- z/lambda of 1e-4 at a high h/lambda is a
+    counterpoise under two millimetres, and on a sloper it can mean one above
+    the apex it hangs from -- so it is held at the nearest measured node, the
+    same extrapolation the table makes outside its range.
+    """
+    filled = table.copy()
+    filled_cells = []
+    for si in range(table.shape[0]):
+        measured = [
+            (hi, zi)
+            for hi in range(len(NODES))
+            for zi in range(len(Z_NODES))
+            if counts[si, hi, zi] > 0
+        ]
+        if not measured:
+            raise RuntimeError(f"soil {si} has no measured node at all")
+        for hi in range(len(NODES)):
+            for zi in range(len(Z_NODES)):
+                if counts[si, hi, zi] > 0:
+                    continue
+                near = min(
+                    measured,
+                    key=lambda c: (np.log10(NODES[c[0]]) - np.log10(NODES[hi])) ** 2
+                    + (np.log10(Z_NODES[c[1]]) - np.log10(Z_NODES[zi])) ** 2,
+                )
+                filled[si, hi, zi] = table[si, near[0], near[1]]
+                filled_cells.append(
+                    {
+                        "soil": si,
+                        "h_node": hi,
+                        "z_node": zi,
+                        "from": {"h_node": near[0], "z_node": near[1]},
+                    }
+                )
+    return filled, filled_cells
+
+
 def measure(data, table, geometry):
     """Tabulated error over every group, as coefficients.py measures it."""
     factors = []
@@ -351,8 +404,16 @@ if __name__ == "__main__":
     table = build(groups, len(data["soil_names"]), "z_lam", Z_NODES, TWO_D)
     report("unrefined", measure(data, table, geometry))
     table, runs = refine(table, data, geometry, args.max_nfev)
+    report("refined", measure(data, table, geometry))
+
+    counts = support(data, geometry, len(data["soil_names"]))
+    table, filled = fill_unsupported(table, counts)
     factors = measure(data, table, geometry)
-    report("refined", factors)
+    report("filled", factors)
+    print(
+        f"\n{int((counts == 0).sum())} of {counts.size} nodes have no group "
+        f"nearest them and take a measured neighbour's values"
+    )
     for run in runs:
         print(
             f"  soil {run['soil']}: status {run['status']}, "
@@ -377,6 +438,15 @@ if __name__ == "__main__":
                         "median": float(np.median(factors)),
                         "p90": float(np.percentile(factors, 90)),
                         "worst": float(factors.max()),
+                    },
+                    # What produced these numbers, so a shipped table can be
+                    # told from a converged, fully measured one by reading.
+                    "provenance": {
+                        "sweeps": sorted(Path(s).name for s in args.sweep),
+                        "groups": len(groups),
+                        "refinement": runs,
+                        "support": counts.tolist(),
+                        "filled": filled,
                     },
                 },
             }
