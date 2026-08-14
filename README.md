@@ -1,6 +1,6 @@
 # endfed
 
-An end-fed random wire length calculator, and the NEC work behind it.
+The End-Fed Wire Antenna Length Calculator, and the NEC work behind it.
 
 **The tool:** https://charlieh0tel.github.io/endfed/random-wire.html
 
