@@ -26,13 +26,15 @@ import numpy as np
 #: poor ground, while at 0.05 there are none.  Fitting where the page claims
 #: accuracy and extrapolating flat below it is the same statement made once
 #: instead of twice.
-MIN_H_OVER_LAMBDA = 0.05
+MIN_H_OVER_LAMBDA = 0.006
 
-#: Nodes in h/lambda.  Spaced logarithmically over the range a real
-#: installation reaches, from the exclusion floor to 25 m on 10 m.  Below
-#: the first node the table is held flat, which is honest extrapolation
-#: rather than a fit to points NEC could not solve.
-NODES = np.array([0.05, 0.09, 0.16, 0.28, 0.5, 0.9, 1.6, 2.5])
+#: Nodes in h/lambda.  Spaced logarithmically across everything the page's
+#: controls can ask for: 1 m of height at 1.8 MHz is 0.006, and 30 m at
+#: 30 MHz is 3.0.  Nothing a user can dial in falls outside them, so the
+#: flat hold beyond the ends is a guard rather than a working part.
+NODES = np.array(
+    [0.006, 0.0125, 0.025, 0.05, 0.09, 0.16, 0.28, 0.5, 0.9, 1.6, 2.5, 3.0]
+)
 
 #: Tabulated per soil per node.  vf_a is constant, see the module docstring.
 TABLE_PARAMS = ("alpha_a_lam", "ka", "alpha_r_lam", "vf_r", "kr")
@@ -52,10 +54,11 @@ REFINE_BOUNDS = (
 VF_A = 1.0
 
 #: Nodes in counterpoise height over wavelength, the table's second axis.
-#: Log spaced over what a real installation reaches, held flat outside them
-#: as h/lambda is.  Both axes divide by the same wavelength, so a counterpoise
-#: fixed in metres cannot span this one at a short wavelength.
-Z_NODES = np.array([1e-4, 1e-3, 8e-3, 6e-2])
+#: Log spaced across what the page's controls reach: 1 cm at 1.8 MHz is
+#: 0.00006, and the ceiling of half a 30 m wire at 30 MHz is 1.5.  Both axes
+#: divide by the same wavelength, so a counterpoise fixed in metres cannot
+#: span this one at a short wavelength.
+Z_NODES = np.array([6e-5, 1e-4, 1e-3, 8e-3, 6e-2, 0.2, 0.6, 1.5])
 
 #: The counterpoise heights the model is defined over, in metres: no lower
 #: than the page offers, no higher than half the wire.  A geometry outside
