@@ -10,5 +10,10 @@ dependencies = [
     "scipy>=1.14",
 ]
 
+[dependency-groups]
+# Pinned like everything else here: a ruff that reformats on its own schedule
+# would fail CI on a commit that changed nothing.
+dev = ["ruff>=0.14,<0.15"]
+
 [tool.ruff]
 line-length = 88
