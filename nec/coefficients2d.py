@@ -143,9 +143,15 @@ def fit_groups(data, geometry):
 
 
 def refine(table, data, geometry, max_nfev=600):
-    """Fit the tabulated surface itself, one soil at a time."""
+    """Fit the tabulated surface itself, one soil at a time.
+
+    Returns the table and what the optimizer did to reach it.  Raises when a
+    soil stops on max_nfev rather than on a gradient or step criterion, which
+    is not a converged fit.
+    """
     refined = table.copy()
     lo, hi = bounds()
+    runs = []
     for si in range(table.shape[0]):
         rows = slices(data, si, geometry)
 
@@ -170,8 +176,22 @@ def refine(table, data, geometry, max_nfev=600):
 
         start = np.clip(pack(refined[si]), lo, hi)
         out = least_squares(residual, start, bounds=(lo, hi), max_nfev=max_nfev)
+        if out.status <= 0:
+            raise RuntimeError(
+                f"soil {si} refinement did not converge: status {out.status}, "
+                f"{out.nfev} evaluations of a {max_nfev} budget -- {out.message}"
+            )
         refined[si] = unpack(out.x)
-    return refined
+        runs.append(
+            {
+                "soil": si,
+                "status": int(out.status),
+                "nfev": int(out.nfev),
+                "max_nfev": int(max_nfev),
+                "cost": float(out.cost),
+            }
+        )
+    return refined, runs
 
 
 def measure(data, table, geometry):
@@ -330,9 +350,14 @@ if __name__ == "__main__":
     print(f"{len(groups)} groups fitted\n")
     table = build(groups, len(data["soil_names"]), "z_lam", Z_NODES, TWO_D)
     report("unrefined", measure(data, table, geometry))
-    table = refine(table, data, geometry, args.max_nfev)
+    table, runs = refine(table, data, geometry, args.max_nfev)
     factors = measure(data, table, geometry)
     report("refined", factors)
+    for run in runs:
+        print(
+            f"  soil {run['soil']}: status {run['status']}, "
+            f"{run['nfev']}/{run['max_nfev']} evaluations"
+        )
 
     if args.write:
         name = "sloper" if geometry is SLOPER else "flat_top"
