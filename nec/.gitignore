@@ -11,3 +11,5 @@ SOMD.NEC
 nec4_return_height_sweep.npz
 nec4_sloper_sweep.npz
 nec4_node_fill_sweep.npz
+nec4_domain_sweep.npz
+nec4_domain_sloper_sweep.npz
