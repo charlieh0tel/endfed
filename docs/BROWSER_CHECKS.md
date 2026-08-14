@@ -28,7 +28,7 @@ npm --prefix docs/tools run serve
 - [ ] **Do the recommendations look sensible for a real installation?**
       Enter your own height, counterpoise and soil and see whether the
       lengths offered match what you would actually put up.  The model's
-      error bound is in `RANDOM_WIRE_MODEL.md`; this is the sanity check
+      error bound is in `MODEL.md`; this is the sanity check
       that sits outside it.
 - [ ] **Is the EXPERIMENTAL ribbon saying the right thing?**  The suite
       checks that it scrolls away rather than pinning.  Whether the page

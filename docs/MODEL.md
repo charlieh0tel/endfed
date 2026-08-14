@@ -3,7 +3,7 @@
 How the page decides whether a wire length is any good, what the model
 does and does not claim, and how its constants are obtained.
 
-Task status and measured results live in `RANDOM_WIRE_TODO.md`; this
+Task status and measured results live in `TODO.md`; this
 file is the approach.
 
 ## What the model is for
@@ -69,7 +69,7 @@ remains -- `alpha`, and the corrections to `beta` -- is smooth and
 low-dimensional, which is an interpolation problem.  A fitted analytic
 form also extrapolates sanely, states its own assumptions, and can carry
 a written error bound; none of which a black box does.  See
-`RANDOM_WIRE_TODO.md` for the reasoning against a neural network.
+`TODO.md` for the reasoning against a neural network.
 
 ### The anchor problem
 
@@ -156,7 +156,7 @@ user has described, and it checks the installation rather than the
 envelope, which is exactly where this model is weakest.  Worth doing.
 
 The obstacle there is licensing, and it is the reverse of the case in
-`nec/random_wire/README.md`.  Those scripts are fine because they import
+`nec/README.md`.  Those scripts are fine because they import
 PyNEC and never ship it.  A wasm nec2c inside `docs/` would be
 *distributing* GPL object code from an MIT repo, which obliges a
 corresponding source offer under GPL and plausibly makes the page a
@@ -169,7 +169,7 @@ permissively licensed.
 So NEC is a calibration and validation instrument.  **What reaches the
 page is constants and caveat text, never code.**
 
-The modeller itself lives in `nec/random_wire/`.  An earlier draft of
+The modeller itself lives in `nec/`.  An earlier draft of
 this note had it staying outside the repo on licence grounds, which
 confused two separate things.  PyNEC is GPL-3.0-only and is a declared
 PyPI dependency, not vendored; MIT is GPL-compatible, so MIT scripts
@@ -226,7 +226,7 @@ that backwards.
 
 ## What NEC measured
 
-First results, 2026-08-09.  Instrument as above, in `nec/random_wire/`.
+First results, 2026-08-09.  Instrument as above, in `nec/`.
 Driver validated against textbook cases before anything else -- a
 quarter-wave monopole over perfect ground reads 39.5+j22.7 against
 ~36+j21, a free-space half-wave dipole 79.1+j45.2 against ~73+j42, both
@@ -317,7 +317,7 @@ what makes it tractable.
 
 ## Fit results
 
-First fit, `nec/random_wire/fit.py`, over 96 groups of frequency by
+First fit, `nec/fit.py`, over 96 groups of frequency by
 height by soil, each holding 159 lengths by 7 return lengths.  Residuals
 are taken on the complex logarithm: `|Zin|` spans tens of ohms to
 kilohms across a sweep, so an absolute residual would fit the peaks and
@@ -1057,7 +1057,7 @@ above, arriving from the other direction.
 ## The two NEC-2s do not agree over ground
 
 Before building the browser check, its solver was put against the PyNEC
-references in `nec/random_wire/reference_cases.json`.  It failed: 26 of
+references in `nec/reference_cases.json`.  It failed: 26 of
 30 cases outside the 2 percent tolerance, worst 65.7 percent.  The
 fixture existed for exactly this, and the cause took some finding.
 
@@ -1204,7 +1204,7 @@ under `GN 2` at sigma 1e10 against the same geometry under `GN 1`, which
 must agree, so the number is the error in the Sommerfeld evaluation.
 `nec2c` is master, `nec2c-val` the `validation` branch, `nec2dx` and
 `nec2dxs` are FORTRAN NEC-2, and aegnec2 links the original SOMNEC.
-From `nec/random_wire/sommerfeld_cross.py`, which takes the solvers as
+From `nec/sommerfeld_cross.py`, which takes the solvers as
 arguments and carries the invocation recipe.
 
 | height | NEC-4.2 | nec2++ | nec2c | nec2c-val | nec2dx | nec2dxs | aegnec2 |
@@ -1525,7 +1525,7 @@ above.  In this geometry NEC-2 is fine and **nec2++ is the outlier** --
 
 It also reopens the in-browser check, which was declared blocked on the
 grounds that nec2c-wasm would be about 30 percent off in exactly this
-configuration.  It would not be.  See RANDOM_WIRE_TODO.md.
+configuration.  It would not be.  See TODO.md.
 
 The exported deck needs no variant per solver: it is plain NEC-2 cards
 and NEC-4 reads them, so one file serves all three.  What differs is

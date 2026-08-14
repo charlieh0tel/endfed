@@ -4,7 +4,7 @@ Offline instrument behind the impedance model in `docs/random-wire.html`.
 It does not run at the site: it produces fitted coefficients that are
 copied into the page, along with the error bound that becomes the page's
 caveat text.  The approach and the measured findings are in
-`docs/RANDOM_WIRE_MODEL.md`.
+`docs/MODEL.md`.
 
 The point of keeping it in the repo is auditability.  The page's claim
 to be defensible rests on constants with stated assumptions and a
@@ -30,7 +30,7 @@ maintainers: NEC-4.2 and six NEC-2 builds measured against a limit with
 an exact answer, showing that the near-ground failure is NEC-2's
 Sommerfeld evaluation rather than any port of it.  Open it in a browser;
 it is self-contained.  The same findings, with more of the surrounding
-argument, are in `docs/RANDOM_WIRE_MODEL.md`.
+argument, are in `docs/MODEL.md`.
 
 Two scripts produce its numbers.  `sommerfeld_cross.py` sweeps a dipole
 in height, which is where an implementation's envelope shows;

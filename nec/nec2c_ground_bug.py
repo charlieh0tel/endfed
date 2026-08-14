@@ -92,7 +92,7 @@ The consequence for the planned in-browser check is worse than it looked.
 percent, for reasons invisible to the user -- and a fixed nec2c does not
 lift that, because the gap is NEC-2's Sommerfeld evaluation rather than a
 defect awaiting repair.  Only a nec2++ wasm build does.  See
-docs/RANDOM_WIRE_TODO.md.
+docs/TODO.md.
 
 One caveat on how far to carry this.  The dipole deck puts the *fed*
 element near the soil, and there no engine meets the limit below about

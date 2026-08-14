@@ -406,11 +406,11 @@ test('feet and inches never shows twelve inches', () => {
 
 test('inlined coefficients match the fitted table they were generated from', async () => {
   // The page must stay self-contained, so its coefficients are inlined rather
-  // than imported.  nec/random_wire/coefficients2d.json is the original, and
+  // than imported.  nec/coefficients2d.json is the original, and
   // this is what stops the two drifting: regenerate with
   // `uv run coefficients2d.py --write-page` and both move together.
   const { readFile } = await import('node:fs/promises');
-  const url = new URL('../../nec/random_wire/coefficients2d.json', import.meta.url);
+  const url = new URL('../../nec/coefficients2d.json', import.meta.url);
   const data = JSON.parse(await readFile(url, 'utf8'));
 
   assert.deepEqual([...m.MODEL_H_NODES], data.h_nodes, 'height nodes agree');
@@ -475,7 +475,7 @@ test('the fitted coefficients are physically plausible', () => {
 //
 // The comparison is made at MODEL_VF_A throughout.  The modes ship with
 // different velocity factors, which offsets every zone by about 5 percent;
-// that difference is a live decision recorded in RANDOM_WIRE_TODO.md, and
+// that difference is a live decision recorded in TODO.md, and
 // holding it fixed here is what lets these tests speak to anything else.
 
 const AT_MODEL_VF = { region: 'us', segment: 'full', marginPct: 8 };
@@ -923,11 +923,11 @@ const defaultDeck = () => {
 
 test('the deck describes the geometry the model was fitted at', async () => {
   // Checked against the fixture the browser run was always meant to be held
-  // to, nec/random_wire/reference_cases.json, so the deck and the PyNEC runs
+  // to, nec/reference_cases.json, so the deck and the PyNEC runs
   // behind the coefficients describe one antenna.  Its return_ft is the
   // horizontal run alone, which is exactly what counterpoiseM is.
   const { readFile } = await import('node:fs/promises');
-  const url = new URL('../../nec/random_wire/reference_cases.json', import.meta.url);
+  const url = new URL('../../nec/reference_cases.json', import.meta.url);
   const fixture = JSON.parse(await readFile(url, 'utf8'));
 
   close(m.WIRE_RADIUS_M, fixture.wire_radius_m, 5e-7, 'wire radius');
@@ -972,11 +972,11 @@ test('the deck describes the geometry the model was fitted at', async () => {
 });
 
 test('the soil constants are the ones the fit was run at', async () => {
-  // The page inlines them; nec/random_wire/nec_model.py is where they came
+  // The page inlines them; nec/nec_model.py is where they came
   // from, and a deck built at some other soil would ask NEC a question the
   // coefficients cannot be compared against.
   const { readFile } = await import('node:fs/promises');
-  const url = new URL('../../nec/random_wire/nec_model.py', import.meta.url);
+  const url = new URL('../../nec/nec_model.py', import.meta.url);
   const source = await readFile(url, 'utf8');
   for (const [key, soil] of Object.entries(m.SOILS)) {
     const line = new RegExp(`"${key}": \\(([\\d.]+), ([\\d.]+)\\)`).exec(source);

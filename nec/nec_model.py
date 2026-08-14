@@ -1,8 +1,7 @@
 """NEC geometry for an end-fed wire with an explicit return path.
 
-Scratch instrument, not shipped: PyNEC is GPL and the ham_radio repo is
-MIT.  Only fitted numbers cross back over, which a program's output
-licence does not cover.
+Scratch instrument, not shipped: only fitted numbers cross over into the
+page.  PyNEC is GPL, which is one of the reasons this repo is.
 
 Geometry, matching how a random wire is actually hung:
 

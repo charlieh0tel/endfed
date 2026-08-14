@@ -5,7 +5,7 @@
  * node tests prove the DOM-free half computes, and neither can see a
  * control that does not render, a button that activates the wrong thing,
  * or text that has become unreadable.  Every test here corresponds to an
- * item in RANDOM_WIRE_BROWSER_CHECKS.md.
+ * item in BROWSER_CHECKS.md.
  *
  * Assertions are on behaviour and invariants rather than on fixed values,
  * so that changing a coefficient or a default does not break the suite.

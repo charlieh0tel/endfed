@@ -18,7 +18,7 @@ harness beside it, `sommerfeld.mjs`, runs one solver at a time and
 carries the wasm build; this runs them side by side, which is what shows
 that the disagreement is two-way rather than a spread.
 
-Results are in docs/RANDOM_WIRE_MODEL.md, "Every implementation, against
+Results are in docs/MODEL.md, "Every implementation, against
 height".  In short: all agree to 0.05 wavelengths, below which NEC-4.2
 and nec2++ part company with the entire FORTRAN lineage -- nec2c both
 stock and on its `validation` branch, nec2dx, and aegnec2 -- which agrees
