@@ -362,6 +362,48 @@ Remaining:
 
 Tooling: `nec/`, Python + PyNEC, `uv`-managed.
 
+## The shipped table: bounds, convergence, and what re-checks it
+
+From the three-way review of 14 Aug 2026 (two Claude passes and a codex
+pass; the fixes that shipped that day are in the git log).
+
+**Open, and next.**  Coefficients in `coefficients2d.json` sit exactly on
+their refinement bounds: `flat_top.kr` has 3 entries at 0.4000 and 3 at
+1.6000, `alpha_r_lam` 4 at the 0.0500 floor and the sloper 2 more,
+`vf_r` 10 at 1.0000.  A parameter held at its constraint is the bound,
+not a measurement -- the "compensating for the model rather than fitting
+the antenna" case `table_spec.py` says the bounds exist to prevent.
+*Decided:* investigate before refitting.  Find which (h/lambda, z/lambda,
+soil) cells rail and whether they share a corner; a physical edge and a
+model deficiency want different answers.
+
+**Open.**  `coefficients2d.py` refines with `least_squares` and keeps
+`out.x` while discarding `out.status` and `out.success`, so a run that
+stopped at `max_nfev` is indistinguishable from a converged one after
+the fact.  `fit.py` raises on `status <= 0`; this does not.  Nothing in
+the json records nfev, status or the `--max-nfev` used.
+
+**Open, before any refit.**  Two instruments retired with the 1-D fit
+covered claims the page still makes, and want rewriting against the
+shipped 2-D table rather than restoring:
+
+- a gauge check, for "the fit holds from #12 to #22" on the page.
+  `gauge_sweep.npz` is still here.
+- an out-of-band holdout, fresh NEC solves at frequencies the sweep
+  never used.  Every error figure now in `MODEL.md` is in-sample and
+  optimistic by construction.
+
+**Decided, not yet built.**  The NEC exports sweep one 201-point linear
+span, so a selected 60 m or 30 m can receive no sample at all: one `FR`
+card per selected band instead.
+
+**Decided, not yet built.**  Accessibility, all from the same review:
+unselected band and segment buttons at 4.22:1 and the map's axis and
+gridlines at 2.53:1, both below AA; the two number inputs replacing the
+focus ring with a border colour; `role="radio"` groups with no arrow-key
+handling or roving tabindex; and the length map, which is mouse-only
+with no role, name or live region.
+
 ## Considered and declined
 
 - Refitting the coefficients against NEC-4.2.  Measured rather than
