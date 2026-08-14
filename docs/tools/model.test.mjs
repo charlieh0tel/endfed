@@ -1214,3 +1214,34 @@ test('the display unit does not change which antenna is recommended', () => {
       `${lenM.toFixed(2)} m is ${nearest.toFixed(2)} m from any imperial pick`);
   }
 });
+
+test('a site is held to a geometry the model can describe', () => {
+  // Counterpoise raised to the feedpoint leaves no drop, and a counterpoise of
+  // no length then leaves no return conductor at all.
+  const degenerate = { geometry: 'sloper', heightM: 20, balunM: 0.61,
+    counterpoiseZM: 0.61, counterpoiseM: 0, soil: m.DEFAULT_SOIL };
+  const held = m.withSiteInvariants(degenerate);
+  close(m.returnConductorM(held), m.MIN_RETURN_M, 1e-12,
+    'the return conductor keeps its floor');
+  // Lowering the wire under a counterpoise already set pulls it down too.
+  const stale = { geometry: 'flatTop', heightM: 2, balunM: 0.61,
+    counterpoiseZM: 4.5, counterpoiseM: 7.62, soil: m.DEFAULT_SOIL };
+  assert.equal(m.withSiteInvariants(stale).counterpoiseZM, 1,
+    'the counterpoise follows the ceiling down');
+});
+
+test('a length the model cannot describe is declined, not scored as NaN', () => {
+  const bands = m.bandsIn('us').filter(b => b.m === 20);
+  // The counterpoise level with the balun leaves no drop, and no counterpoise
+  // beyond it leaves no return conductor: the two slider drags that reach it.
+  const site = { geometry: 'sloper', heightM: 20, balunM: 0.61,
+    counterpoiseM: 0, counterpoiseZM: 0.61, soil: m.DEFAULT_SOIL };
+  assert.equal(m.returnConductorM(site), 0, 'the corner this guards');
+  assert.equal(m.scoreLength(21.336, bands, 'full', site, m.WIRE_RADIUS_M, 9),
+    null, 'no return conductor, no score');
+  const sane = { ...site, counterpoiseM: m.DEFAULT_COUNTERPOISE_M };
+  assert.equal(m.scoreLength(1e5, bands, 'full', sane, m.WIRE_RADIUS_M, 9), null,
+    'a wire long enough to overflow coth is declined too');
+  assert.ok(m.scoreLength(21.336, bands, 'full', sane, m.WIRE_RADIUS_M, 9),
+    'and an ordinary antenna still scores');
+});

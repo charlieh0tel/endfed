@@ -754,6 +754,15 @@
     const HEIGHT_RANGE_M = Object.freeze({ min: 1, max: 30 });
     const COUNTERPOISE_RANGE_M = Object.freeze({ min: 0, max: 50 });
     /**
+     * Shortest return conductor the model will answer for.  An end-fed wire
+     * fed against nothing at all is not an antenna the two-line model
+     * describes: at zero length its Schelkunoff Z0 is -Infinity and coth is
+     * singular, so the result is NaN rather than a large number.  Matches
+     * nec/nec_model.py, which stands the return 5 cm off the soil and drops
+     * a drop shorter than that.
+     */
+    const MIN_RETURN_M = 0.05;
+    /**
      * Where a balun gets tied off: a stake at a foot, up to as high as
      * someone can reach.  The bounds are the range the sensitivity was
      * measured over rather than a guess at what is possible.  Held fixed in
@@ -1351,6 +1360,28 @@
       COUNTERPOISE_Z_RANGE_M.max);
 
     /**
+     * Hold a site to the geometry the model can describe: the counterpoise no
+     * higher than the feedpoint it hangs from, and the whole return conductor
+     * no shorter than MIN_RETURN_M.  Applied wherever state is made rather
+     * than wherever it is drawn, so the display, the URL, the score and the
+     * deck cannot come to describe different antennas.
+     *
+     * @template {Site} T
+     * @param {T} site
+     * @returns {T}
+     */
+    const withSiteInvariants = (site) => {
+      const counterpoiseZM = Math.min(site.counterpoiseZM,
+                                      counterpoiseCeilingM(site));
+      const held = { ...site, counterpoiseZM };
+      const dropM = Math.max(feedHeightM(held) - counterpoiseZM, 0);
+      return {
+        ...held,
+        counterpoiseM: Math.max(held.counterpoiseM, MIN_RETURN_M - dropM),
+      };
+    };
+
+    /**
      * A sloper's wire has to be longer than the rise from its balun to its
      * support, or it does not reach.  Null when the geometry is buildable.
      *
@@ -1936,6 +1967,11 @@
           const freqHz = loHz + (hiHz - loHz) * i / (SWR_SAMPLES_PER_BAND - 1);
           const swr = swrAtRadio(endFedZin(lenM, freqHz, site, radiusM),
                                  ununRatio);
+          // A geometry the model cannot describe -- a conductor of no length,
+          // or a wire long enough to overflow coth -- yields NaN, which
+          // compares false against everything and would be taken downstream
+          // for a local minimum.  Decline to score it instead.
+          if (!Number.isFinite(swr)) return null;
           logSum += Math.log(swr);
           count++;
           if (worst === null || swr > worst.swr) worst = { swr, band, freqHz };
@@ -2564,13 +2600,10 @@
         soil: isKeyOf(SOILS, soil) ? soil : DEFAULTS.soil,
         tuner: isKeyOf(TUNERS, tuner) ? tuner : DEFAULTS.tuner,
       };
-      // A link can name a counterpoise higher than its geometry allows; the
-      // range clamp above does not know the geometry, so hold it here too.
-      return {
-        ...state,
-        counterpoiseZM: Math.min(state.counterpoiseZM,
-                                 counterpoiseCeilingM(state)),
-      };
+      // A link can name a counterpoise higher than its geometry allows, or a
+      // return conductor of no length at all; the range clamps above do not
+      // know the geometry, so hold the whole site here.
+      return withSiteInvariants(state);
     };
 
     /**
@@ -2785,18 +2818,11 @@
        */
       const set = useCallback(
         /** @param {Partial<ReturnType<typeof getUrlParams>>} updates */
-        (updates) => setP(prev => {
-          // Lowering the wire, or moving to a sloper, lowers the ceiling under
-          // a counterpoise height already set.  Held here rather than in the
-          // slider so that the state, the URL and the deck cannot describe a
-          // different antenna from the one on screen.
-          const next = { ...prev, ...updates };
-          return {
-            ...next,
-            counterpoiseZM: Math.min(next.counterpoiseZM,
-                                     counterpoiseCeilingM(next)),
-          };
-        }), []);
+        // Lowering the wire, or moving to a sloper, lowers the ceiling under a
+        // counterpoise height already set, and raising the counterpoise to the
+        // feedpoint leaves no drop for a return conductor to be made of.
+        (updates) => setP(prev => withSiteInvariants({ ...prev, ...updates })),
+        []);
 
       const { region, bands, segment, velocityFactor, marginPct, units, wireLenM,
               mode, ununRatio, heightM, soil, tuner, geometry, balunM,
@@ -3258,7 +3284,7 @@
                         model solves, so it is what the control sets.  Its
                         floor is the drop, which is already part of it. */}
                     <input className="control-slider" type="range"
-                           min={dropM}
+                           min={Math.max(dropM, MIN_RETURN_M)}
                            max={Math.max(COUNTERPOISE_RANGE_M.max,
                                          dropM + COUNTERPOISE_STEP_M)}
                            step={COUNTERPOISE_STEP_M}
