@@ -257,6 +257,31 @@ def patch_page(block, path=PAGE):
     return True
 
 
+def load_sweeps(paths):
+    """Several sweeps of one geometry as a single grid.
+
+    No one grid covers the whole table: a counterpoise placed in metres
+    cannot reach a small z/lambda at a short wavelength, which is what
+    nec4_node_fill_sweep.py covers.  Groups are keyed on frequency, height,
+    soil and step, and that sweep offsets its step indices past this one's,
+    so concatenating cannot merge two groups into one.
+    """
+    loaded = [np.load(path, allow_pickle=False) for path in paths]
+    names = loaded[0]["soil_names"]
+    fields = set(loaded[0].files)
+    for path, one in zip(paths[1:], loaded[1:]):
+        if set(one.files) != fields:
+            raise SystemExit(f"{path} does not carry the same columns")
+        if list(one["soil_names"]) != list(names):
+            raise SystemExit(f"{path} orders its soils differently")
+    return {
+        field: names
+        if field == "soil_names"
+        else np.concatenate([one[field] for one in loaded])
+        for field in fields
+    }
+
+
 def report(name, factors):
     print(
         f"  {name:<12} n={len(factors):4d}  median x{np.median(factors):.2f}  "
@@ -266,7 +291,12 @@ def report(name, factors):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--sweep", default="nec4_return_height_sweep.npz")
+    parser.add_argument(
+        "--sweep",
+        nargs="+",
+        default=["nec4_return_height_sweep.npz"],
+        help="one or more sweeps of the same geometry, read as one grid",
+    )
     parser.add_argument("--max-nfev", type=int, default=600)
     parser.add_argument(
         "--write",
@@ -290,9 +320,11 @@ if __name__ == "__main__":
         print(f"{'patched' if changed else 'unchanged'} {PAGE.name}")
         raise SystemExit(0)
 
-    data = np.load(args.sweep, allow_pickle=False)
-    geometry = SLOPER if "apex_m" in data.files else FLAT_TOP
-    print(f"{args.sweep}: {'sloper' if geometry is SLOPER else 'flat top'}\n")
+    data = load_sweeps(args.sweep)
+    geometry = SLOPER if "apex_m" in data else FLAT_TOP
+    print(
+        f"{', '.join(args.sweep)}: {'sloper' if geometry is SLOPER else 'flat top'}\n"
+    )
 
     groups = fit_groups(data, geometry)
     print(f"{len(groups)} groups fitted\n")
