@@ -290,6 +290,18 @@ def render(tables, soils):
         f"{[round(float(v), 4) for v in NODES]});",
         f"    const MODEL_Z_NODES = Object.freeze("
         f"{[round(float(v), 5) for v in Z_NODES]});",
+        "    /**",
+        "     * Where the fit applies.  Outside it the table is held flat and",
+        "     * the answer is an extrapolation, which the page says rather",
+        "     * than hides; see nec/table_spec.py.",
+        "     */",
+        "    const MODEL_DOMAIN = Object.freeze({",
+        f"      minHOverLambda: {MIN_H_OVER_LAMBDA},",
+        f"      maxHOverLambda: {round(float(NODES[-1]), 4)},",
+        f"      minCounterpoiseZM: {MIN_COUNTERPOISE_Z_M},",
+        f"      maxCounterpoiseZM: {MAX_COUNTERPOISE_Z_M},",
+        f"      counterpoiseCeilingFraction: {COUNTERPOISE_CEILING_FRACTION},",
+        "    });",
         "    const MODEL_COEFFS = Object.freeze({",
     ]
     for key, table in tables.items():
