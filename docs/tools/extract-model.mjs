@@ -13,6 +13,7 @@
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { extractScript } from './extract.mjs';
 
@@ -75,8 +76,60 @@ const EXPORTS = [
 /**
  * Identifiers that make a region not pure.  Checked as whole words, so
  * `documentation` in a comment is fine and `document.title` is not.
+ *
+ * The list covers the ways back to a global as well as the globals
+ * themselves: `globalThis['docu' + 'ment']` is not caught by any word list,
+ * but reaching for globalThis at all is.  `top` and `open` are deliberately
+ * absent, being MAP.top and prose about a wire open at the far end.
  */
-const DOM_NAMES = /\b(?:window|document|React|ReactDOM|navigator|localStorage)\b/;
+const DOM_NAMES = new RegExp(String.raw`\b(?:${[
+  'window', 'document', 'React', 'ReactDOM', 'navigator', 'localStorage',
+  'sessionStorage', 'globalThis', 'self', 'parent', 'frames', 'location',
+  'history', 'fetch', 'matchMedia', 'alert', 'confirm', 'prompt',
+  'requestAnimationFrame', 'XMLHttpRequest', 'WebSocket', 'Image',
+  'performance', 'postMessage',
+].join('|')})\b`);
+
+/**
+ * Blank out comments and string bodies, keeping every newline so line numbers
+ * survive.  Regexes cannot do this: a `'https://...'` hides the rest of its
+ * line from a comment stripper, and a string holding `/*` swallows to the
+ * next close.  Both are in the page today, which is how a DOM name could have
+ * hidden in plain sight.
+ *
+ * @param {string} region
+ * @returns {string}
+ */
+function blankLiterals(region) {
+  let out = '';
+  let i = 0;
+  /** @type {null | '//' | '/*' | '"' | "'" | '`'} */
+  let mode = null;
+  while (i < region.length) {
+    const c = region[i];
+    const next = region[i + 1];
+    if (mode === null) {
+      if (c === '/' && next === '/') { mode = '//'; out += '  '; i += 2; continue; }
+      if (c === '/' && next === '*') { mode = '/*'; out += '  '; i += 2; continue; }
+      if (c === '"' || c === "'" || c === '`') { mode = c; out += ' '; i += 1; continue; }
+      out += c; i += 1; continue;
+    }
+    if (mode === '//') {
+      if (c === '\n') { mode = null; out += c; } else { out += ' '; }
+      i += 1; continue;
+    }
+    if (mode === '/*') {
+      if (c === '*' && next === '/') { mode = null; out += '  '; i += 2; continue; }
+      out += c === '\n' ? c : ' '; i += 1; continue;
+    }
+    // Inside a string: a backslash escapes whatever follows, including the
+    // quote that would otherwise end it.
+    if (c === '\\') { out += '  '; i += 2; continue; }
+    if (c === mode) { mode = null; out += ' '; i += 1; continue; }
+    out += c === '\n' ? c : ' '; i += 1;
+  }
+  return out;
+}
 
 /**
  * Throw if the extracted region touches the DOM.
@@ -89,11 +142,9 @@ const DOM_NAMES = /\b(?:window|document|React|ReactDOM|navigator|localStorage)\b
  * @param {string} region
  */
 export function assertPure(region) {
-  // Comments are stripped first, in place, so line numbers survive: prose
+  // Comments and strings go first, in place, so line numbers survive: prose
   // says "document" often and means nothing by it.
-  const code = region
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
-    .replace(/\/\/[^\n]*/g, '');
+  const code = blankLiterals(region);
   const offenders = code
     .split('\n')
     .map((line, i) => [i + 1, line])
@@ -121,15 +172,22 @@ export function pureRegion(body) {
   return body.slice(start + BEGIN.length, end);
 }
 
-const [source, target] = process.argv.slice(2);
-if (!source || !target) {
-  console.error('usage: extract-model.mjs <page.html> <out.mjs>');
-  process.exit(2);
-}
+// Only when run as a command, so a test can import assertPure without the
+// extraction running underneath it.
+const invokedAs = process.argv[1] ? pathToFileURL(process.argv[1]).href : null;
+if (import.meta.url === invokedAs) {
+  const [source, target] = process.argv.slice(2);
+  if (!source || !target) {
+    console.error('usage: extract-model.mjs <page.html> <out.mjs>');
+    process.exit(2);
+  }
 
-const html = await readFile(resolve(source), 'utf8');
-const { body } = extractScript(html);
-const region = pureRegion(body);
-assertPure(region);
-await mkdir(dirname(resolve(target)), { recursive: true });
-await writeFile(resolve(target), `${region}\nexport { ${EXPORTS.join(', ')} };\n`);
+  const html = await readFile(resolve(source), 'utf8');
+  const { body } = extractScript(html);
+  const region = pureRegion(body);
+  // Checked before the file is written, so a region that touches the DOM
+  // leaves the previous module in place rather than a page-sized wreck.
+  assertPure(region);
+  await mkdir(dirname(resolve(target)), { recursive: true });
+  await writeFile(resolve(target), `${region}\nexport { ${EXPORTS.join(', ')} };\n`);
+}

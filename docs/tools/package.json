@@ -7,7 +7,7 @@
     "extract": "node extract.mjs ../random-wire.html .check/random-wire.jsx",
     "check": "npm run extract && tsc -p tsconfig.check.json && eslint .check/random-wire.jsx",
     "extract:model": "node extract-model.mjs ../random-wire.html .check/model.mjs",
-    "test": "npm run extract:model && node --test model.test.mjs",
+    "test": "npm run extract && npm run extract:model && node --test model.test.mjs extract.test.mjs",
     "lint": "npm run extract && eslint .check/random-wire.jsx",
     "serve": "node serve.mjs",
     "test:browser": "playwright test"
