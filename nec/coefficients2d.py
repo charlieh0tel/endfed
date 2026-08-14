@@ -52,8 +52,8 @@ from table2d import RETURN_ONLY, build, look_up
 FLAT_TOP = ("height_m", None)
 SLOPER = ("apex_m", BALUN_HEIGHT_M)
 
-#: Written beside this script, as coefficients.json is, so the shipped
-#: numbers have a checkable original outside the page.
+#: Written beside this script, so the shipped numbers have a checkable
+#: original outside the page.
 DATA = Path(__file__).resolve().parent / "coefficients2d.json"
 
 #: The page, and the block this script owns in it.
@@ -404,12 +404,13 @@ if __name__ == "__main__":
 
     groups = fit_groups(data, geometry)
     print(f"{len(groups)} groups fitted\n")
-    table = build(groups, len(data["soil_names"]), "z_lam", Z_NODES, TWO_D)
+    n_soils = len(data["soil_names"])
+    table = build(groups, n_soils, "z_lam", Z_NODES, TWO_D)
     report("unrefined", measure(data, table, geometry))
     table, runs = refine(table, data, geometry, args.max_nfev)
     report("refined", measure(data, table, geometry))
 
-    counts = support(data, geometry, len(data["soil_names"]))
+    counts = support(data, geometry, n_soils)
     table, filled = fill_unsupported(table, counts)
     factors = measure(data, table, geometry)
     report("filled", factors)
