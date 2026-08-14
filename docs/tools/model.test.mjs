@@ -1144,3 +1144,17 @@ test('the project file needs a length and a band, as the deck does', () => {
     m.buildAntennaSimProject(20, [], 'full', site, m.WIRE_RADIUS_M, at), null,
     'no band, no sweep');
 });
+
+// The sloper impedance path, which the flat-top defaults never exercise.
+
+test('the counterpoise ceiling follows the geometry it hangs from', () => {
+  const flat = { geometry: 'flatTop', heightM: 9.144, balunM: 0.61 };
+  assert.equal(m.counterpoiseCeilingM(flat), 9.144 / 2,
+    'a flat top reaches half the wire height, as the fit does');
+  const sloper = { geometry: 'sloper', heightM: 30, balunM: 0.61 };
+  assert.equal(m.counterpoiseCeilingM(sloper), 0.61,
+    'a sloper hangs from its balun');
+  const tall = { geometry: 'flatTop', heightM: 60, balunM: 0.61 };
+  assert.equal(m.counterpoiseCeilingM(tall), m.COUNTERPOISE_Z_RANGE_M.max,
+    'and never past the range the table was fitted over');
+});

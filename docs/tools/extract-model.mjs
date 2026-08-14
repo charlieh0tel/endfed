@@ -36,6 +36,7 @@ const EXPORTS = [
   'returnConductorM',
   'feedHeightM',
   'riseShortfallM',
+  'counterpoiseCeilingM',
   'DEFAULT_SOIL', 'DEFAULT_UNUN_RATIO', 'UNUN_RATIOS', 'Z_SYSTEM_OHMS',
   'PUBLISHED_FT', 'TUNERS', 'DEFAULT_TUNER', 'isGoodScore',
   'HEIGHT_RANGE_M', 'COUNTERPOISE_RANGE_M',

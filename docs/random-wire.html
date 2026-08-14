@@ -1326,6 +1326,19 @@
       site.geometry === 'sloper' ? site.balunM : site.heightM;
 
     /**
+     * How high the counterpoise may be raised: it hangs below the feedpoint,
+     * and the flat-top fit reaches half the wire height.  A counterpoise above
+     * this is a geometry the coefficients were never fitted over, so the state
+     * is held at or below it rather than the slider merely drawing it there.
+     *
+     * @param {{geometry: GeometryKey, heightM: Meters, balunM: Meters}} site
+     * @returns {Meters}
+     */
+    const counterpoiseCeilingM = (site) => Math.min(
+      site.geometry === 'sloper' ? site.balunM : site.heightM / 2,
+      COUNTERPOISE_Z_RANGE_M.max);
+
+    /**
      * A sloper's wire has to be longer than the rise from its balun to its
      * support, or it does not reach.  Null when the geometry is buildable.
      *
@@ -2506,7 +2519,7 @@
       const geometry = params.get(URL_KEYS.geometry);
       const heightM = clamp(
         parseNum(params.get(URL_KEYS.heightM), DEFAULTS.heightM), HEIGHT_RANGE_M);
-      return {
+      const state = {
         region,
         bands,
         segment: isKeyOf(SEGMENTS, segment) ? segment : DEFAULTS.segment,
@@ -2531,6 +2544,13 @@
           COUNTERPOISE_Z_RANGE_M),
         soil: isKeyOf(SOILS, soil) ? soil : DEFAULTS.soil,
         tuner: isKeyOf(TUNERS, tuner) ? tuner : DEFAULTS.tuner,
+      };
+      // A link can name a counterpoise higher than its geometry allows; the
+      // range clamp above does not know the geometry, so hold it here too.
+      return {
+        ...state,
+        counterpoiseZM: Math.min(state.counterpoiseZM,
+                                 counterpoiseCeilingM(state)),
       };
     };
 
@@ -2746,21 +2766,25 @@
        */
       const set = useCallback(
         /** @param {Partial<ReturnType<typeof getUrlParams>>} updates */
-        (updates) => setP(prev => ({ ...prev, ...updates })), []);
+        (updates) => setP(prev => {
+          // Lowering the wire, or moving to a sloper, lowers the ceiling under
+          // a counterpoise height already set.  Held here rather than in the
+          // slider so that the state, the URL and the deck cannot describe a
+          // different antenna from the one on screen.
+          const next = { ...prev, ...updates };
+          return {
+            ...next,
+            counterpoiseZM: Math.min(next.counterpoiseZM,
+                                     counterpoiseCeilingM(next)),
+          };
+        }), []);
 
       const { region, bands, segment, velocityFactor, marginPct, units, wireLenM,
               mode, ununRatio, heightM, soil, tuner, geometry, balunM,
               counterpoiseM, counterpoiseZM } = p;
 
-      /**
-       * How high the counterpoise may be raised: it hangs below the
-       * feedpoint, and the fit reaches half the wire height on a flat top.
-       *
-       * @type {Meters}
-       */
-      const counterpoiseCeilingM = Math.min(
-        geometry === 'sloper' ? balunM : heightM / 2,
-        COUNTERPOISE_Z_RANGE_M.max);
+      /** @type {Meters} */
+      const counterpoiseCeiling = counterpoiseCeilingM(p);
 
       /** @type {Site} */
       const site = useMemo(
@@ -3245,13 +3269,12 @@
                 {mode === 'impedance' && (
                   <label className="control-label">
                     Counterpoise height: <span className="control-value">
-                      {fmtLen(Math.min(counterpoiseZM, counterpoiseCeilingM),
-                              units)}</span>
+                      {fmtLen(counterpoiseZM, units)}</span>
                     <input className="control-slider" type="range"
                            min={COUNTERPOISE_Z_RANGE_M.min}
-                           max={counterpoiseCeilingM}
+                           max={counterpoiseCeiling}
                            step={COUNTERPOISE_Z_STEP_M}
-                           value={Math.min(counterpoiseZM, counterpoiseCeilingM)}
+                           value={counterpoiseZM}
                            onChange={(e) => set({
                              counterpoiseZM: clamp(Number(e.target.value),
                                                    COUNTERPOISE_Z_RANGE_M) })} />
