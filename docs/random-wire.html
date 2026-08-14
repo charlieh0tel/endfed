@@ -393,6 +393,7 @@
     }
 
     .verdict-detail { font-size: 11px; color: #aaa; line-height: 1.6; }
+    .verdict-domain { margin-top: 6px; color: #e0b050; }
 
     /* Verdict column of the published-lengths table. */
     .score-ok { color: #009e73; }
@@ -1484,6 +1485,37 @@
     const bandEdgesHz = (band, segment) => {
       const [loHz, hiHz] = band[SEGMENTS[segment].key];
       return [loHz, hiHz];
+    };
+
+    /**
+     * Bands whose geometry sits outside the fit's domain, and which edge.
+     *
+     * The table is indexed on wire height in wavelengths, so one installation
+     * is inside the fit on some bands and outside it on others: 30 ft of wire
+     * is 0.06 wavelengths up on 160 m and 1.3 on 10 m.  Outside, interpAt
+     * holds the table flat and still returns a number, which is extrapolation
+     * whether or not anyone says so.  This is what lets the page say so.
+     *
+     * @param {Band[]} bands
+     * @param {SegmentKey} segment
+     * @param {Site} site
+     * @returns {{band: Band, edge: 'below'|'above'}[]}
+     */
+    const outOfDomainBands = (bands, segment, site) => {
+      const out = [];
+      for (const band of bands) {
+        const [loHz, hiHz] = bandEdgesHz(band, segment);
+        // Height in wavelengths rises with frequency, so the band's own edges
+        // bracket it: the low edge is the lowest h/lambda it reaches.
+        const lowest = site.heightM * loHz / C_SPEED;
+        const highest = site.heightM * hiHz / C_SPEED;
+        if (lowest < MODEL_DOMAIN.minHOverLambda) {
+          out.push({ band, edge: /** @type {'below'} */ ('below') });
+        } else if (highest > MODEL_DOMAIN.maxHOverLambda) {
+          out.push({ band, edge: /** @type {'above'} */ ('above') });
+        }
+      }
+      return out;
     };
 
     /**
@@ -2873,6 +2905,19 @@
       const shortfallM = riseShortfallM(site, wireLenM);
 
       /**
+       * Bands this installation puts outside the fit, if any.  Impedance
+       * mode only: the classical rule is arithmetic and has no domain.
+       *
+       * @type {{band: Band, edge: 'below'|'above'}[]}
+       */
+      const outsideDomain = useMemo(
+        () => (mode === 'impedance'
+          ? outOfDomainBands(bandsIn(region).filter(b => bands.includes(b.m)),
+                             segment, site)
+          : []),
+        [mode, region, bands, segment, site]);
+
+      /**
        * The drop from the feedpoint down to the counterpoise, which is part
        * of the return conductor and therefore the floor of it.
        *
@@ -3505,6 +3550,16 @@
                         + `${fmtLen(verdict.clearance, units)} from the near edge.`}
                   {wireLenM > maxLenM
                     && ' Longer than one wavelength on the lowest band selected.'}
+                  {outsideDomain.length > 0 && (
+                    <div className="verdict-domain">
+                      Outside the fitted range on{' '}
+                      {outsideDomain.map(o => o.band.label).join(', ')}: the
+                      wire is{' '}
+                      {outsideDomain.some(o => o.edge === 'below') ? 'low' : 'high'}
+                      {' '}in wavelengths there, the table is held flat beyond
+                      what was fitted, and those figures are extrapolation.
+                    </div>
+                  )}
                   {mode === 'classical' && verdict && !verdict.ok && clearLength !== null && (
                     <>
                       {' '}
