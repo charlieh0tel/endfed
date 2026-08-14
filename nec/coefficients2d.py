@@ -51,7 +51,7 @@ Z_NODES = np.array([1e-4, 1e-3, 8e-3, 6e-2])
 DATA = Path(__file__).resolve().parent / "coefficients2d.json"
 
 #: The page, and the block this script owns in it.
-PAGE = Path(__file__).resolve().parents[2] / "docs" / "random-wire.html"
+PAGE = Path(__file__).resolve().parents[1] / "docs" / "random-wire.html"
 BEGIN = "// BEGIN GENERATED COEFFICIENTS"
 END = "// END GENERATED COEFFICIENTS"
 

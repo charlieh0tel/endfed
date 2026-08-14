@@ -223,7 +223,7 @@ def tabulated_error(d, z, table):
 DATA = Path(__file__).resolve().parent / "coefficients.json"
 
 #: The page marks the block this script owns.
-PAGE = Path(__file__).resolve().parents[2] / "docs" / "random-wire.html"
+PAGE = Path(__file__).resolve().parents[1] / "docs" / "random-wire.html"
 BEGIN = "// BEGIN GENERATED COEFFICIENTS"
 END = "// END GENERATED COEFFICIENTS"
 
