@@ -43,6 +43,6 @@ PyNEC, and the NEC-4.2 sweeps need a NEC-4 binary you supply yourself.
 `master` is deployed by GitHub Pages, so pushing it publishes. A
 `pre-push` hook is in `githooks/`: `git config core.hooksPath githooks`.
 
-## Licence
+## License
 
 GPL-3.0-or-later. See `LICENSE`.

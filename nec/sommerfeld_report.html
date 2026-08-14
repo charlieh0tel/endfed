@@ -67,7 +67,7 @@
     padding: clamp(1.5rem, 4vw, 4rem) clamp(1rem, 4vw, 2rem) 6rem;
   }
 
-  /* Prose sits in a 74ch centre column; tables break out to the full width
+  /* Prose sits in a 74ch center column; tables break out to the full width
      so their columns fit without a scrollbar. */
   .page {
     max-width: 940px;
@@ -318,7 +318,7 @@
       <li>
         <strong>At real soil the pairing reverses, with nothing to arbitrate it.</strong>
         With the fed element well up and only a counterpoise near the ground, nec2c tracks
-        NEC-4.2 to 1% down to a centimetre while nec2++ departs by 50%. No exact answer
+        NEC-4.2 to 1% down to a centimeter while nec2++ departs by 50%. No exact answer
         exists there, so this says who agrees, not who is right &mdash; but it does say
         that passing the limit predicts nothing about the soil anyone has.
       </li>
@@ -330,12 +330,12 @@
     <p>
       As a soil's conductivity rises, a lossy half-space becomes a perfect conductor. So
       <code>GN 2</code> at sigma 1e10 must reproduce what <code>GN 1</code> gives for the same
-      geometry. That is exact physics rather than a modelling judgement, every implementation
+      geometry. That is exact physics rather than a modeling judgment, every implementation
       computes the <code>GN 1</code> side identically, and the correct value of the gap is
       therefore zero everywhere.
     </p>
     <p>
-      The deck is a horizontal half-wave dipole, centre fed, 11 segments, 145.9 MHz, swept in
+      The deck is a horizontal half-wave dipole, center fed, 11 segments, 145.9 MHz, swept in
       height. Each cell below is the feedpoint resistance under <code>GN 2</code> against the
       same geometry under <code>GN 1</code>, as a percentage.
     </p>
@@ -344,7 +344,7 @@
   <div class="scroller wide">
     <table>
       <caption>
-        Error against a known-zero. Grey is agreement to two decimal places; amber is a
+        Error against a known-zero. Gray is agreement to two decimal places; amber is a
         real but small gap; red is a gross one. The rule after nec2++ marks the split.
       </caption>
       <thead>
@@ -611,7 +611,7 @@ Segmentation fault (core dumped)</code></pre>
         <strong>Not that passing the limit proves correctness over real soil.</strong> The test
         only exercises the high-conductivity corner, where an exact answer exists. That was a
         caveat when this was written and is now measured: nec2++ passes the limit and is a
-        factor of two out at a centimetre over average soil. Passing is necessary rather than
+        factor of two out at a centimeter over average soil. Passing is necessary rather than
         sufficient, and there is still no oracle at real soil &mdash; NEC-4.2 is preferred there
         on its record in both regimes, not on a proof.
       </li>
@@ -684,7 +684,7 @@ EN</code></pre>
   <footer>
     <p>
       Found while fitting a closed-form feedpoint model for an end-fed random wire against
-      NEC, where the return path lies a few centimetres off the soil and the choice of
+      NEC, where the return path lies a few centimeters off the soil and the choice of
       implementation moved the answer by a third &mdash; in the direction the limit test
       would not have predicted.
     </p>

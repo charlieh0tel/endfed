@@ -10,7 +10,7 @@ Two questions, as with gauge.
 Dependence is the hopeful case: return height is a property of the return
 line, and that line already carries three fitted parameters.  If they
 absorb it smoothly it becomes another axis to tabulate against, and the
-page can offer it as a control rather than an unmodelled caveat.
+page can offer it as a control rather than an unmodeled caveat.
 """
 
 import itertools

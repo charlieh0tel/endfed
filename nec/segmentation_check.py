@@ -14,7 +14,7 @@ Two things are measured, because they are different questions:
   converged both of those refined together, so a difference that is only
             coarseness shows up as one that closes
 
-A difference that survives refinement is a real modelling error and the
+A difference that survives refinement is a real modeling error and the
 sweeps need re-running.  One that closes is coarseness, and the fitted
 coefficients absorbed it.
 """

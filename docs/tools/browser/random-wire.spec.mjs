@@ -7,7 +7,7 @@
  * or text that has become unreadable.  Every test here corresponds to an
  * item in BROWSER_CHECKS.md.
  *
- * Assertions are on behaviour and invariants rather than on fixed values,
+ * Assertions are on behavior and invariants rather than on fixed values,
  * so that changing a coefficient or a default does not break the suite.
  */
 
@@ -16,8 +16,8 @@ import { expect, test } from '@playwright/test';
 /** SWR the page promises to stay within, per tuner button. */
 const TUNER_LIMITS = { '3:1': 3, '5:1': 5, '9:1': 9, '12:1': 12 };
 
-/** Feet per metre, for the legacy URL parameter check. */
-const FEET_PER_METRE = 1 / 0.3048;
+/** Feet per meter, for the legacy URL parameter check. */
+const FEET_PER_METER = 1 / 0.3048;
 
 /**
  * A control group, addressed by its legend.  Scoping matters: "9:1" is an
@@ -82,8 +82,8 @@ const selected = (page, legend) =>
 const lengthField = (page) => page.locator('input[type=number]');
 
 /** Relative luminance of an "rgb(r, g, b)" string, per WCAG 2.1. */
-function luminance(colour) {
-  const [r, g, b] = colour.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+function luminance(color) {
+  const [r, g, b] = color.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
   const channel = (value) => {
     const v = value / 255;
     return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
@@ -179,7 +179,7 @@ test.describe('the tuner decides the verdicts', () => {
 });
 
 test.describe('the installation panel', () => {
-  /** A labelled slider's readout, in feet. */
+  /** A labeled slider's readout, in feet. */
   const readout = async (page, label) =>
     Number.parseFloat(
       (await page.locator('label', { hasText: label }).first().textContent()).match(
@@ -329,7 +329,7 @@ test.describe('URLs', () => {
   test('the legacy ?len= is still read as feet', async ({ page }) => {
     await open(page, '?mode=impedance&len=70');
     const legacy = await lengthField(page).inputValue();
-    await open(page, `?mode=impedance&len_m=${(70 / FEET_PER_METRE).toFixed(4)}`);
+    await open(page, `?mode=impedance&len_m=${(70 / FEET_PER_METER).toFixed(4)}`);
     expect(Number.parseFloat(await lengthField(page).inputValue())).toBeCloseTo(
       Number.parseFloat(legacy),
       1,
@@ -360,9 +360,9 @@ test.describe('layout and legibility', () => {
       /** Walk up for the first ancestor that actually paints a background. */
       const backgroundOf = (node) => {
         for (let el = node; el; el = el.parentElement) {
-          const colour = getComputedStyle(el).backgroundColor;
-          if (colour && colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') {
-            return colour;
+          const color = getComputedStyle(el).backgroundColor;
+          if (color && color !== 'rgba(0, 0, 0, 0)' && color !== 'transparent') {
+            return color;
           }
         }
         return 'rgb(0, 0, 0)';

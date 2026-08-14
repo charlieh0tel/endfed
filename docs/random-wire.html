@@ -8,7 +8,7 @@
   to load nec2c-wasm on demand to check a chosen length against NEC, and
   nec2c is Neoklis Kyriazis's GPL translation of NEC-2, so a page that
   combines with it must be GPL too.  That runtime path is not built yet;
-  the licence was settled first so it could not arrive by accident.
+  the license was settled first so it could not arrive by accident.
 
   This program is free software: you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the Free
@@ -528,7 +528,7 @@
           // four retained 2.8 kHz channels centered on 5332, 5348, 5373 and
           // 5405 kHz at 100 W ERP.  The span below covers all of it.
           // US 60 m is one 15 kHz band plus four discrete channels.  Only the
-          // band is modelled: sampling across the whole 5.3306-5.4064 MHz
+          // band is modeled: sampling across the whole 5.3306-5.4064 MHz
           // envelope would put most samples on spectrum nobody may transmit
           // on, and would widen the classical keep-out zones to match.
           { m: 60,   label: '60m',   full: [5.3515e6, 5.3665e6], cw: [5.3515e6, 5.3665e6] },
@@ -698,7 +698,7 @@
     /**
      * Soils the model is fitted for, the three standard NEC cases.
      *
-     * Deliberately not labelled poor/average/good as if that were a quality
+     * Deliberately not labeled poor/average/good as if that were a quality
      * axis.  Better ground does not give a better match: it gives a sharper
      * resonance, so deeper minima and higher peaks.  Permittivity shifts the
      * effective electrical length while conductivity damps, and the two do
@@ -720,7 +720,7 @@
     const DEFAULT_SOIL = 'average';
 
     /**
-     * Height and return-path length, in metres, with the ranges the fit
+     * Height and return-path length, in meters, with the ranges the fit
      * covers.  25 ft of return is the default because that is a typical coax
      * run from an outdoor feedpoint back to the shack.
      */
@@ -767,7 +767,7 @@
     /**
      * How high the counterpoise runs.  The floor is not zero: a conductor in
      * the surface is half in air and half in soil, which is the one case NEC
-     * cannot express, so the model is fitted from a centimetre up.  The
+     * cannot express, so the model is fitted from a centimeter up.  The
      * ceiling is where the fit stops -- half the wire height on a flat top,
      * the balun on a sloper -- and the control is clamped to it.
      */
@@ -1040,7 +1040,7 @@
      * below it; see docs/MODEL.md.
      */
     /**
-     * The modelling note, which the page points at whenever it says
+     * The modeling note, which the page points at whenever it says
      * something the reader might reasonably want the workings for.  On
      * GitHub rather than beside the page: the note is a companion document
      * and is not served with the site.
@@ -1132,7 +1132,7 @@
     /**
      * Roundings tried for a recommended length, coarsest first, in whatever
      * unit the user is reading.  Roundness is a property of the number on
-     * screen, not of the metre it is stored in: someone cutting wire to a tape
+     * screen, not of the meter it is stored in: someone cutting wire to a tape
      * marked in feet wants a round number of feet.
      */
     const PICK_STEPS = Object.freeze([1, 0.5, 0.1, 0.01]);
@@ -1181,7 +1181,7 @@
      * avoid, and a clearance of 0.04 ft shown as "0.0" reads as none at all.
      *
      * @param {string} abbrev
-     * @param {number} perMeter  display units per metre
+     * @param {number} perMeter  display units per meter
      * @returns {(lenM: Meters) => string}
      */
     const decimalLength = (abbrev, perMeter) => (lenM) => {
@@ -1214,8 +1214,8 @@
      *   label:     button text
      *   abbrev:    suffix on the length input, which is always decimal
      *   axisLabel: unit of the map's tick numbers, which are always decimal
-     *   perMeter:  scale from metres, for the input, slider and map ticks
-     *   format:    renders a length in metres as text
+     *   perMeter:  scale from meters, for the input, slider and map ticks
+     *   format:    renders a length in meters as text
      * Feet and inches shares its scale with feet, differing only in format,
      * so the input and the map stay decimal while readouts carry inches.
      */
@@ -1244,8 +1244,8 @@
         note: 'Excludes lengths near a half-wave multiple, after AB3AP.',
       },
       impedance: {
-        label: 'Impedance',
-        note: 'Scores lengths by modelled SWR at the radio through the unun.  '
+        label: 'Modeled',
+        note: 'Scores lengths by modeled SWR at the radio through the unun.  '
           + 'Indicative only: height, ground and counterpoise move the real '
           + 'figures.',
       },
@@ -1348,8 +1348,8 @@
      */
     /**
      * Wire length used to be written in feet under ?len=.  New links carry
-     * metres under ?len_m=; the old key is still read so links shared before
-     * the internals moved to metres resolve to the same wire.
+     * meters under ?len_m=; the old key is still read so links shared before
+     * the internals moved to meters resolve to the same wire.
      */
     const LEGACY_LEN_FT_KEY = 'len';
 
@@ -1381,7 +1381,7 @@
     // ============================================================
 
     /**
-     * Half wavelength of a wire, in metres.
+     * Half wavelength of a wire, in meters.
      * lambda/2 = c / (2 f) scaled by the wire's velocity factor.  With
      * vf = 0.95 this is the familiar 468 / f(MHz) dipole formula in feet.
      *
@@ -1556,7 +1556,7 @@
 
     /**
      * Everything the length map and tables need, derived from the current
-     * selection.  All lengths are in metres.
+     * selection.  All lengths are in meters.
      *
      * @param {RegionKey} region
      * @param {number[]} bandsM      selected bands, by wavelength in meters
@@ -1938,7 +1938,7 @@
      * virtue, so this deliberately changes nothing it recommends.  It only
      * says what the margin buys, in the currency the impedance mode already
      * grades in, because a percentage of a half wave means nothing alone.
-     * Modelled, therefore, and labelled as such where it is shown.
+     * Modeled, therefore, and labeled as such where it is shown.
      *
      * @param {Span[]} suggestions
      * @param {Band[]} bands
@@ -2024,7 +2024,7 @@
     // ============================================================
 
     /**
-     * How high the return conductor lies, metres.  Not zero: bonding it to
+     * How high the return conductor lies, meters.  Not zero: bonding it to
      * ground would short the source.  This is the geometry the coefficients
      * were fitted at, so a deck built any other way is a different antenna
      * from the one the page just scored; see nec/nec_model.py,
@@ -2036,7 +2036,7 @@
     /**
      * Segmentation, matching the fitting runs: 20 segments per wavelength is
      * the usual NEC accuracy rule, and a floor keeps a short wire from being
-     * described by two or three.  Counts are made odd so a centre segment
+     * described by two or three.  Counts are made odd so a center segment
      * exists, and capped because NEC-2 builds a dense matrix and the browser
      * solvers this deck is aimed at cap it too.
      */
@@ -2053,7 +2053,7 @@
      */
     const DECK_SWEEP_POINTS = 201;
 
-    /** Decimals used for metres, radii and megahertz in a card. */
+    /** Decimals used for meters, radii and megahertz in a card. */
     const DECK_LEN_DIGITS = 4;
     const DECK_RADIUS_DIGITS = 6;
     const DECK_MHZ_DIGITS = 6;
@@ -2093,7 +2093,7 @@
     };
 
     /**
-     * @typedef {Object} DeckWire  one NEC wire, metres throughout
+     * @typedef {Object} DeckWire  one NEC wire, meters throughout
      * @property {number} tag
      * @property {number} segments
      * @property {Meters} x1
@@ -2478,7 +2478,7 @@
     };
 
     /**
-     * File name for a deck, in metres regardless of the display unit: the
+     * File name for a deck, in meters regardless of the display unit: the
      * name is a file on disk rather than something being read off the page,
      * and one unit keeps a directory of them sortable.
      *
@@ -2654,7 +2654,7 @@
                     fill={a.kind === 'short' ? 'url(#hatch-short)' : COLORS.avoid}
                     opacity={a.kind === 'short' ? 1 : 0.9} />
             ))}
-            {/* Modelled SWR, with the too-short zone still marked */}
+            {/* Modeled SWR, with the too-short zone still marked */}
             {score !== null && (
               <g>
                 <rect x={MAP.left} y={MAP.top}
@@ -2723,7 +2723,7 @@
             ) : (
               <>
                 <span><span className="swatch" style={{ background: COLORS.usableEdge }}></span>
-                  modelled SWR at the radio, lower is better</span>
+                  modeled SWR at the radio, lower is better</span>
                 <span><span className="swatch swatch-hatch"></span>
                   shorter than λ/4</span>
               </>
@@ -2868,7 +2868,7 @@
           : null),
         [mode, solution, segment, site, ununRatio]);
 
-      /** Modelled SWR for the length in hand, for the verdict line. */
+      /** Modeled SWR for the length in hand, for the verdict line. */
       const scoreHere = useMemo(
         () => (mode === 'impedance' && wireLenM > 0 && solution.bands.length > 0
           ? scoreLength(wireLenM, solution.bands, segment, site,
@@ -2929,7 +2929,7 @@
       // The dependencies are the physical inputs rather than the derived
       // solution and score.  Those two are rebuilt when `units` changes, since
       // a recommendation is rounded in the unit it will be read in, and
-      // depending on them meant switching feet to metres silently replaced a
+      // depending on them meant switching feet to meters silently replaced a
       // length the user had typed or clicked.  Nothing physical changes when
       // the unit does.
       const autoLenM = useRef(/** @type {?Meters} */ (null));
@@ -3435,7 +3435,7 @@
                 <div className="panel">
                   <div className="panel-header">
                     {mode === 'impedance'
-                      ? 'Best lengths (lowest modelled SWR)'
+                      ? 'Best lengths (lowest modeled SWR)'
                       : 'Best lengths (widest clear spans)'}
                   </div>
                   {mode === 'impedance' ? (
@@ -3613,7 +3613,7 @@
                     and it is fitted at a coarser segmentation than the deck
                     asks for. See the{' '}
                     <a href={MODEL_NOTE_URL} target="_blank"
-                       rel="noopener">modelling note</a>.
+                       rel="noopener">modeling note</a>.
                   </div>
                   <div className="control-hint">
                     This installation, swept across the bands you picked.
@@ -3647,12 +3647,12 @@
             <p>
               US band edges are from{' '}
               <a href="https://www.law.cornell.edu/cfr/text/47/97.301">47 CFR 97.301</a>
-              {' '}as summarised by the{' '}
+              {' '}as summarized by the{' '}
               <a href="https://www.arrl.org/frequency-allocations">ARRL frequency chart</a>,
               including the{' '}
               <a href="https://www.arrl.org/news/new-60-meter-frequencies-available-as-of-february-13">60m
               rules effective 13 February 2026</a>. Other regions follow the IARU band
-              plans; national rules vary within a region, so check your own licence
+              plans; national rules vary within a region, so check your own license
               conditions before trusting the edges.
             </p>
             <p>

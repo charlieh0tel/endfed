@@ -10,7 +10,7 @@ file is the approach.
 
 The page answers one question: given the bands you want, how long
 should the wire be?  Both methods it offers are answers to that, and
-neither is a prediction of what an antenna analyser will read at your
+neither is a prediction of what an antenna analyzer will read at your
 feedpoint.
 
 - **Classic mode** keeps a percentage margin away from `n * lambda/2`.
@@ -26,7 +26,7 @@ feedpoint.
 The output is an **envelope, not a prediction**.  A real end-fed's
 feedpoint impedance is dominated by height, ground, the return path,
 common-mode current on the feedline, and sag.  Measured resonant peaks
-vary severalfold from modelled ones.  Quoting `|Z|` to three figures
+vary severalfold from modeled ones.  Quoting `|Z|` to three figures
 would be false precision, and the page's caveat text exists to say so.
 
 ## Conventions
@@ -128,13 +128,13 @@ Split by what the user can actually measure.
 **Velocity factor is an output, not an input.**  It is not an
 independent physical quantity: it is the emergent consequence of
 conductor diameter, height, return path, insulation and sag.  It was a
-user control only because none of those were modelled, making it the one
+user control only because none of those were modeled, making it the one
 fudge factor absorbing all of them.  Once height and diameter are
 explicit, leaving it settable would let the user set the same physical
 effect twice.  `?vf=` is still read as an override so existing links
 resolve, following the `len`/`len_m` precedent.
 
-Soil is exposed but must not be labelled as if it were a quality axis.
+Soil is exposed but must not be labeled as if it were a quality axis.
 "Better" ground does not mean a better match: it means a sharper
 resonance, deeper minima and higher peaks.  Permittivity shifts the
 effective electrical length while conductivity damps, and the two do not
@@ -162,20 +162,20 @@ PyNEC and never ship it.  A wasm nec2c inside `docs/` would be
 corresponding source offer under GPL and plausibly makes the page a
 combined work covered by GPLv3 rather than MIT.  Loading it from a
 separate file does not clearly escape that; it is the classic unsettled
-boundary.  Decide the licence before building: either the NEC-enabled
+boundary.  Decide the license before building: either the NEC-enabled
 page is explicitly GPLv3 with its own notice, or the engine has to be
 permissively licensed.
 
 So NEC is a calibration and validation instrument.  **What reaches the
 page is constants and caveat text, never code.**
 
-The modeller itself lives in `nec/`.  An earlier draft of
-this note had it staying outside the repo on licence grounds, which
+The modeler itself lives in `nec/`.  An earlier draft of
+this note had it staying outside the repo on license grounds, which
 confused two separate things.  PyNEC is GPL-3.0-only and is a declared
 PyPI dependency, not vendored; MIT is GPL-compatible, so MIT scripts
 that import it are fine to distribute, and nothing here copies PyNEC or
 nec2c source.  Separately, and still true, a program's numeric output is
-not covered by the producing program's licence, so the fitted constants
+not covered by the producing program's license, so the fitted constants
 carry no obligation into the page.
 
 Keeping it in the repo is the point rather than a concession.  The
@@ -190,7 +190,7 @@ cannot be checked by anyone.
    dipole.  Both should land within the overshoot thin-wire
    segmentation predicts.
 2. Sweep the grid.  Antenna length is swept in wavelengths; height and
-   return length are held in metres so every grid point is an
+   return length are held in meters so every grid point is an
    installation someone could build.  Frequency is a real axis, for the
    reason under Conventions above.
 3. Decide the fit form against the data before fitting to it.
@@ -343,7 +343,7 @@ parameter model is nested inside that seven parameter one, so the
 comparison was fair, and end effect is simply not what the model was
 missing.  Dropped rather than kept at zero.
 
-Fitted values, with `alpha` in nepers per wavelength.  Per metre it came
+Fitted values, with `alpha` in nepers per wavelength.  Per meter it came
 out proportional to frequency, which is only the statement that a wire
 loses a fixed fraction of its power per wavelength; per wavelength the
 numbers are comparable across bands, which is what an interpolable
@@ -528,11 +528,11 @@ return length -- flat against return length, but running from +1.09 in
 log magnitude at short lengths to -0.57 at three wavelengths, with an
 oscillation peaking near the odd quarter waves.  So it is not the mutual
 coupling finding 7 predicted; that attribution was wrong.  Something in
-how loss scales with length is still unmodelled.
+how loss scales with length is still unmodeled.
 
 Chasing it further is not obviously worth it.  The remaining error lives
 in six groups at `h/lambda < 0.02`, which is 160 m with a wire 6 to 16 ft
-up over poor soil -- a marginal antenna whose real behaviour is
+up over poor soil -- a marginal antenna whose real behavior is
 dominated by the installation variance this model already refuses to
 predict.  x1.22 median is comfortably inside the severalfold spread that
 height, counterpoise and common-mode current impose on a real
@@ -579,7 +579,7 @@ That generalises uncomfortably: if the effective velocity factor is
 nearer 1.00 than 0.95, the published lengths are systematically placed
 against resonances about 5 percent too short.  Stated carefully, `vf_a`
 is a parameter of the antenna line inside a two-line model, not a
-directly measured wave speed -- but NEC confirms the behaviour it
+directly measured wave speed -- but NEC confirms the behavior it
 predicts at 71 ft without reference to the fit.
 
 Checked for a published refutation of 71 ft, and there is none.  The
@@ -603,7 +603,7 @@ at 21-307 ohms across the bands, challenging the 450 ohm and 9:1
 convention rather than the lengths.  Those figures are lower than this
 model or NEC gives and sit against finding 2, though a commenter
 attributed them to the 3 ft coax jumper used, and the piece reports no
-height, counterpoise or modelling.
+height, counterpoise or modeling.
 
 So the 71 ft result here is novel rather than a restatement of known
 criticism, which is a reason to hold it more loosely, not less: it rests
@@ -723,7 +723,7 @@ bound, so the two-line form can represent one.  It cannot be used,
 because the height it wants depends on frequency: the same 6 m apex needs
 2.5 m at 7.15 MHz and 1.0 m at 14.175.  One antenna cannot have two
 heights and the page scores several bands at once, so no geometric
-remapping survives.  Supporting slopers means modelling them.
+remapping survives.  Supporting slopers means modeling them.
 
 **The classical mode still defaults to vf 0.95.**  The impedance mode's
 71 ft result says that figure places the resonances about 5 percent too
@@ -801,7 +801,7 @@ and length:
 
 The second is the one that matters, because that is the regime the
 length picker operates in.  So the standoff is not a harmless artifact;
-it is a modelling assumption with teeth, and it was adopted for a
+it is a modeling assumption with teeth, and it was adopted for a
 solver's convenience rather than for a physical reason.
 
 #### The case we want is the one NEC cannot express
@@ -836,9 +836,9 @@ dielectric rather than a conductor:
 |---|---|---|---|---|
 | loss tangent | 3.64 | 0.97 | 0.49 | 0.24 |
 
-Skin depth is metres throughout -- 5.2 m at 1.9 MHz, 1.3 m at 28.85 --
+Skin depth is meters throughout -- 5.2 m at 1.9 MHz, 1.3 m at 28.85 --
 so a wire in contact is not shorted to anything, and touching against a
-millimetre off is not a discontinuity a jacket would protect against.
+millimeter off is not a discontinuity a jacket would protect against.
 Coax and bare wire are the same case here.  That table also says the
 soil changes character across the bands the page covers, from
 conductor-like at 160 m to dielectric-like at 10 m, which is likely part
@@ -846,9 +846,9 @@ of why the bracket refuses to close uniformly.
 
 So what justifies keeping the return above ground is mechanical rather
 than electrical: **real ground is not flat.**  Coax drapes over grass,
-leaf litter and ruts, so a centimetre or two of average clearance is a
+leaf litter and ruts, so a centimeter or two of average clearance is a
 fair description of a real installation, and it is a statement about the
-install rather than a modelling convenience.  Burial is the wrong model
+install rather than a modeling convenience.  Burial is the wrong model
 for something lying on top and the right one for radials under the turf,
 which is a different antenna the page also invites.
 
@@ -906,13 +906,13 @@ recording.
 228960 solves over soil by frequency by antenna height by return height
 by return length, `unified_sweep.py`, then fitted per group.
 
-First, the axis to index on is **return height in metres**, not
+First, the axis to index on is **return height in meters**, not
 `rh/lambda`.  That breaks the dimensionless-ratio convention and does so
 for a reason: the return lies over a lossy half-space, and the image sits
 about a skin depth down, which is an absolute length.  In these soils
 that is 0.5 to 11.5 m across HF, the same order as the return heights
 themselves, so absolute height is what the return line feels.  The
-fitted parameters agree, moving monotonically against metres while
+fitted parameters agree, moving monotonically against meters while
 `rh/lambda` barely separates them.
 
 Second, and decisively, **the model form fails before the table does**.
@@ -937,7 +937,7 @@ hedges.  Tabulating cannot beat the form it tabulates.
 The physical reading is that the additive decomposition is what breaks.
 H1 was measured at a return lying on the ground, where the image
 cancels most of the coupling between the two conductors.  Lift the
-return a metre or two and it becomes a radiator in its own right,
+return a meter or two and it becomes a radiator in its own right,
 coupled to the antenna, and `Za + Zr` stops being the whole story --
 which is the same mutual coupling the finding 7 residual tail pointed
 at.
@@ -977,7 +977,7 @@ sitting at zero in 14 percent.  A parameter that is either absent or
 railed is not measuring anything.
 
 Two parameters for that is a bad trade, so it is not kept.  The reading
-is that a scalar mutual term is too weak a description: at a metre or
+is that a scalar mutual term is too weak a description: at a meter or
 two of separation the return is not a lumped neighbour of the antenna
 but a second radiator with its own current distribution, which wants a
 genuinely coupled two-port rather than one number scaling
@@ -1069,7 +1069,7 @@ Segmentation: both converge, and they converge to different numbers --
 PyNEC near 1400 ohms, nec2c near 1860, on the same deck at 160 segments
 per wavelength.
 
-The isolating test settles it.  A plain centre-fed dipole in free space,
+The isolating test settles it.  A plain center-fed dipole in free space,
 no ground solver involved:
 
 | | 14.2 MHz | 7.15 MHz |
@@ -1144,8 +1144,8 @@ as close to it as to a perfect ground.
 
 The consequence for this model is good news, arrived at the long way
 round.  Every coefficient is fitted against PyNEC, which is nec2++, the
-implementation that passes the limit test.  The near-ground behaviour
-the model rests on is the behaviour that reduces correctly to a case
+implementation that passes the limit test.  The near-ground behavior
+the model rests on is the behavior that reduces correctly to a case
 with a known answer, so the earlier finding stands unqualified: return
 height really does move the feedpoint that much, and the 4.6x is
 physical rather than numerical.
@@ -1198,7 +1198,7 @@ why.
 
 ### Every implementation, against height
 
-One horizontal half-wave dipole, centre fed, 11 segments, 145.9 MHz,
+One horizontal half-wave dipole, center fed, 11 segments, 145.9 MHz,
 swept in height over ground.  Each cell is the feedpoint resistance
 under `GN 2` at sigma 1e10 against the same geometry under `GN 1`, which
 must agree, so the number is the error in the Sommerfeld evaluation.
@@ -1258,7 +1258,7 @@ FORTRAN went, just later.  Our return path sits at 0.0012 wavelengths on
 wavelengths, and the feedpoint impedance is dominated by the elevated
 wire.  The 5 cm limit test above passes at 0.0 percent, so this
 installation is inside the envelope by measurement rather than by
-argument.  It is not a general licence, and a model with the *source*
+argument.  It is not a general license, and a model with the *source*
 near the soil would need its own check.
 
 Two limits on that reassurance, both worth keeping in view:
@@ -1352,12 +1352,12 @@ The second is the low-`h/lambda` row, which was not predicted.  Below
 0.05 the same form fits the NEC-4.2 grid about twice as well, worst case
 x1.71 against x3.12.  The model has not improved; the target has got
 smoother.  That is indirect evidence that NEC-4.2's near-ground
-behaviour is the more physical one, since a fixed form tracks a simpler
+behavior is the more physical one, since a fixed form tracks a simpler
 function more easily, and it is exactly the regime where nec2++ is
 nearing its own envelope.
 
 So the ordering inverts.  NEC-4.2 is not worth adopting for the antenna
-modelled today, and it becomes the right target the moment the model
+modeled today, and it becomes the right target the moment the model
 reaches below `h/lambda` 0.05 -- which is what a counterpoise-height
 control would require.
 
@@ -1506,7 +1506,7 @@ at 7.15 MHz:
 | 0.02 m | 0.0005 | 2581 | 2574 | 1.00 |
 | 0.01 m | 0.0002 | 2585 | 2554 | 1.01 |
 
-Within one percent all the way down to a centimetre, on average and on
+Within one percent all the way down to a centimeter, on average and on
 good soil alike.  **NEC-2's Sommerfeld failure needs the fed element
 near the interface**, and a counterpoise there is a far milder case.
 
@@ -1540,7 +1540,7 @@ which to trust.  The same deck, average soil, 7.15 MHz:
 
 nec2c holds to 1 percent of NEC-4.2 throughout.  nec2++ falls away as the
 counterpoise descends -- 29 percent low at the shipped 5 cm default, and
-half at a centimetre.  So **nec2++ is the one to avoid for this antenna**,
+half at a centimeter.  So **nec2++ is the one to avoid for this antenna**,
 which is the reverse of what the limit test alone would suggest, and the
 reverse of what this note said before the geometries were separated.
 
@@ -1627,7 +1627,7 @@ across the 40 m half wave and comparing with NEC:
 
 Within a couple of percent of the resonance the model runs nearly twice
 high, and just past it nearly half.  Everywhere else it tracks within
-about 20 percent.  The modelled peak is taller and narrower than the
+about 20 percent.  The modeled peak is taller and narrower than the
 real one, which is what `coth` does: it has a true pole where an antenna
 has a finite maximum, and `alpha` is not damping it enough.
 
@@ -1665,4 +1665,4 @@ form already serves correctly.
   all, whatever the model prints.
 - Model sag, insulation, nearby structures, or coupling to house wiring.
 - Claim accuracy better than the installation variance, which is the
-  dominant term and is not modelled.
+  dominant term and is not modeled.

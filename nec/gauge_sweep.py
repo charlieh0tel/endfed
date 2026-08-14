@@ -24,7 +24,7 @@ import numpy as np
 
 from nec_model import C, end_fed_zin
 
-#: Radii in metres for common antenna wire.  #12 through #22 spans what
+#: Radii in meters for common antenna wire.  #12 through #22 spans what
 #: anyone actually hangs, a factor of 3.2 in diameter.
 GAUGES = {
     "12": 2.053e-3 / 2,

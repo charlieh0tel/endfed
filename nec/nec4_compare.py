@@ -129,7 +129,7 @@ def compare(binary, heights_m, returns_m, soils, ratios):
                             )
 
 
-def summarise(label, rows):
+def summarize(label, rows):
     """Ratio of |Z| between the solvers, as a spread."""
     if not len(rows):
         print(f"{label:>22}  no points")
@@ -164,21 +164,21 @@ if __name__ == "__main__":
     print("|Z| from NEC-4.2 against |Z| from nec2++, as a factor.")
     print("x1.000 would mean the refit cannot change anything.\n")
 
-    summarise("all", rows)
+    summarize("all", rows)
     print()
     # h/lambda is the model's weak axis and the one the page gates on, so
     # resolve it rather than splitting it in two.
     edges = (0.0, 0.05, 0.1, 0.2, 0.5, 10.0)
     for low, high in zip(edges, edges[1:]):
         mask = (rows[:, 4] >= low) & (rows[:, 4] < high)
-        summarise(f"h/lambda {low:g}-{high:g}", rows[mask])
+        summarize(f"h/lambda {low:g}-{high:g}", rows[mask])
 
     print()
     for freq_hz in FREQS_HZ:
-        summarise(f"{freq_hz / 1e6:g} MHz", rows[rows[:, 0] == freq_hz])
+        summarize(f"{freq_hz / 1e6:g} MHz", rows[rows[:, 0] == freq_hz])
     print()
     for height_m in np.unique(rows[:, 1]):
-        summarise(f"{height_m:g} m up", rows[rows[:, 1] == height_m])
+        summarize(f"{height_m:g} m up", rows[rows[:, 1] == height_m])
 
     # Where the disagreement sits matters more than its size.  |Zin| is a
     # steep function of length on the flanks of a half-wave resonance, so
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         ("0.05 to 0.15 away", (from_peak >= 0.05) & (from_peak < 0.15)),
         ("more than 0.15", from_peak >= 0.15),
     ):
-        summarise(label, rows[mask])
+        summarize(label, rows[mask])
 
     print(
         f"\nThe fitted model is quoted at x1.35 worst case for "

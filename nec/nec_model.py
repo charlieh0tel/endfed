@@ -39,7 +39,7 @@ GROUNDS = {
 SEGMENTS_PER_WAVELENGTH = 20
 MIN_SEGMENTS = 9
 
-#: How high the return path lies, metres.  Not at z = 0 because bonding it to
+#: How high the return path lies, meters.  Not at z = 0 because bonding it to
 #: ground would short the source.
 #:
 #: This stands for a feedline or counterpoise lying on the soil, which is the
@@ -79,7 +79,7 @@ MIN_DROP_M = 0.05
 
 
 def _segments(length_m, wavelength_m):
-    """Segment count for a wire, odd so a centre segment exists."""
+    """Segment count for a wire, odd so a center segment exists."""
     n = int(np.ceil(SEGMENTS_PER_WAVELENGTH * length_m / wavelength_m))
     n = max(n, MIN_SEGMENTS)
     return n + 1 if n % 2 == 0 else n

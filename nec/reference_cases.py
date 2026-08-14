@@ -40,9 +40,9 @@ FT = 0.3048
 #: will not.
 TOLERANCE = 0.02
 
-#: Band centres the page checks, hertz.  One run per band, since nec2c
+#: Band centers the page checks, hertz.  One run per band, since nec2c
 #: emits a full result block per frequency and the parser takes one.
-BAND_CENTRES_HZ = {
+BAND_CENTERS_HZ = {
     "80m": 3.75e6,
     "40m": 7.15e6,
     "20m": 14.175e6,
@@ -70,7 +70,7 @@ def build():
     for name, length_ft, height_ft, return_ft, soil in CASES:
         eps, sigma = GROUNDS[soil]
         bands = {}
-        for band, freq_hz in BAND_CENTRES_HZ.items():
+        for band, freq_hz in BAND_CENTERS_HZ.items():
             z = end_fed_zin(
                 length_ft * FT, freq_hz, height_ft * FT, return_ft * FT, ground=soil
             )

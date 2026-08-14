@@ -4,7 +4,7 @@ Axes are dimensionless where the physics is scale invariant and physical
 where it is not.  NEC geometry scales with wavelength, but the ground does
 not: the soil's complex permittivity, eps - j*sigma/(omega*eps0), is a
 function of frequency, so a handful of frequencies spanning HF is swept
-rather than one.  Height and return length are held in metres so every
+rather than one.  Height and return length are held in meters so every
 point in the grid is an installation someone could actually build.
 
 Output is a compressed .npz of R and X over the grid, which fit.py reads.
@@ -22,10 +22,10 @@ from nec_model import C, GROUNDS, end_fed_zin
 #: frequency dependence, which is smooth; the rest of the problem scales.
 FREQS_HZ = (1.9e6, 7.15e6, 14.175e6, 28.85e6)
 
-#: Heights someone might actually hang a wire at, metres.
+#: Heights someone might actually hang a wire at, meters.
 HEIGHTS_M = (2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 25.0)
 
-#: Return-path runs, metres.  7.62 m is the 25 ft default.
+#: Return-path runs, meters.  7.62 m is the 25 ft default.
 RETURNS_M = (2.0, 4.0, 7.62, 12.0, 20.0, 30.0, 45.0)
 
 #: Antenna length in wavelengths.  Step resolves the half-wave peaks, which

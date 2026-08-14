@@ -1,4 +1,4 @@
-# NEC modelling for the random wire picker
+# NEC modeling for the random wire picker
 
 Offline instrument behind the impedance model in `docs/random-wire.html`.
 It does not run at the site: it produces fitted coefficients that are
@@ -11,7 +11,7 @@ to be defensible rests on constants with stated assumptions and a
 bounded error, and constants whose producing code has been discarded
 cannot be checked.  This is the source for them.
 
-## Licence
+## License
 
 These scripts are MIT, like the rest of the repo.  They import PyNEC,
 which is GPL-3.0-only, but PyNEC is a declared dependency fetched from
@@ -20,7 +20,7 @@ your own machine is fine; what would not be fine is copying PyNEC or
 nec2c source into this repo, which is why nothing does.
 
 The numeric output is a separate matter again: a program's output is not
-covered by the program's licence, so the fitted constants carry no GPL
+covered by the program's license, so the fitted constants carry no GPL
 obligation into the MIT page.
 
 ## The Sommerfeld comparison
@@ -64,7 +64,7 @@ distrust everything else.
   anchors, over height, return length and soil.
 - `return_sweep.py` -- return length alone, showing its resonance.
 - `chase.py` -- decomposes the quarter-wave disagreement.
-- `ground_low.py` -- soil behaviour at low height, as curves.
+- `ground_low.py` -- soil behavior at low height, as curves.
 - `sommerfeld_cross.py` -- every NEC build against the conductivity
   limit, swept in height.  `--decks=DIR` writes the decks out.
 - `nec2c_ground_bug.py` -- the same limit for this page's installation,

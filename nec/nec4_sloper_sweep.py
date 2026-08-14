@@ -26,7 +26,7 @@ rather than up to the wire.
 
 A sloper's wire must be longer than the rise it climbs, so the length
 axis is truncated -- severely for a high apex on a high band.  Points
-that cannot be built are skipped rather than modelled.
+that cannot be built are skipped rather than modeled.
 
     uv run python nec4_sloper_sweep.py /usr/bin/nec4d42
 """

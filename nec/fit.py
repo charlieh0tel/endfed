@@ -30,7 +30,7 @@ from nec_model import C, WIRE_RADIUS_M
 SWEEP = "sweep.npz"
 
 #: Fitted parameters, in the order least_squares sees them.  The alphas
-#: are nepers per wavelength, not per metre: fitted per metre they came
+#: are nepers per wavelength, not per meter: fitted per meter they came
 #: out proportional to frequency, which is just the statement that a wire
 #: loses a fixed fraction per wavelength.  Per wavelength they are
 #: comparable across bands, which is what the coefficient surface needs.

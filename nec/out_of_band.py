@@ -29,7 +29,7 @@ from coefficients import (
 from fit import load, model_zin
 from nec_model import C, end_fed_zin
 
-#: Band centres the sweep never saw, one per band it skipped.
+#: Band centers the sweep never saw, one per band it skipped.
 UNSEEN_HZ = {
     "80m": 3.75e6,
     "30m": 10.125e6,

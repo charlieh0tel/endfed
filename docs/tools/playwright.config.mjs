@@ -7,7 +7,7 @@ import { defineConfig, devices } from '@playwright/test';
  * unreadable.  These tests open the real page, served exactly as GitHub
  * Pages serves it, and drive it.
  *
- * Chromium only, deliberately: this checks our own behaviour, not browser
+ * Chromium only, deliberately: this checks our own behavior, not browser
  * compatibility, and a second engine would double the run for no new
  * information about the page.
  */

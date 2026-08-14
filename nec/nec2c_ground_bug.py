@@ -9,7 +9,7 @@ that diagnosis over, so this script now compares implementations.
 
 As a soil's conductivity rises it becomes a perfect ground plane, so
 `GN 2` must converge on the `GN 1` answer for the same geometry.  That
-limit is exact physics, not a modelling judgement, and every
+limit is exact physics, not a modeling judgment, and every
 implementation computes the `GN 1` side identically.  A gap is therefore
 the size of a fault in the Sommerfeld evaluation.
 
@@ -72,7 +72,7 @@ that same dipole deck, with the fed element itself near the soil:
 So nec2++ holds to roughly 0.005 wavelengths and then goes the way the
 FORTRAN went, just later.  "Fitted against the implementation that
 passes" is a statement about this geometry, which is measured below, and
-not a general licence.
+not a general license.
 
 Two further limits on the reassurance.  The limit test only exercises the
 high-conductivity corner: at sigma 1000 there is an exact answer to check

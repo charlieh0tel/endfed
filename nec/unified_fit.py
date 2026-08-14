@@ -7,7 +7,7 @@ of it, and the return line's own parameters absorb it cleanly.
 Which variable to index on is a question rather than a choice.  Height uses
 h/lambda because the physics is scale invariant there.  The return lies
 close to a lossy half-space, where the loading depends on rh/lambda, so the
-same argument says rh/lambda -- but the sweep holds return height in metres
+same argument says rh/lambda -- but the sweep holds return height in meters
 because that is what an installation has, and the two disagree by more than
 a decade across HF.  Fit per group, then look.
 """
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     )
 
     print("\nwhich axis does each parameter track?  (rank correlation)")
-    print(f"{'parameter':>12} {'h/lambda':>10} {'rh/lambda':>11} {'rh metres':>11}")
+    print(f"{'parameter':>12} {'h/lambda':>10} {'rh/lambda':>11} {'rh meters':>11}")
     for i, name in enumerate(PARAM_NAMES):
         if name == "vf_a":
             continue

@@ -1,6 +1,6 @@
 # random-wire.html TODO
 
-Task status and open decisions.  The modelling approach, the parameter
+Task status and open decisions.  The modeling approach, the parameter
 split, and what NEC measured are in `MODEL.md`.
 
 ## Impedance-based length selection
@@ -64,7 +64,7 @@ gone -- the return height is swept and tabulated, and is a control --
 while unconverged segmentation and a disagreement with the published
 tables over staple lengths stand.  Neither geometry has been checked
 against anything but NEC.  The impedance mode scores every
-length by the geometric mean of the modelled SWR at the radio and
+length by the geometric mean of the modeled SWR at the radio and
 offers the local minima.  A worst-case score was tried first and
 discarded: the lowest band always sets it, so it collapses into "prefer
 the longest wire".
@@ -118,7 +118,7 @@ there.
 
 Remaining:
 
-- [ ] **Ship the two geometries.**  Modelling is done and measured;
+- [ ] **Ship the two geometries.**  Modeling is done and measured;
       what is left is the page.  Refined, for `h/lambda >= 0.05`:
 
       | | median | 90th | worst |
@@ -146,7 +146,7 @@ Remaining:
       - **Refuse unbuildable slopers.**  The wire must be longer than
         the rise from balun to apex, and the check is on the physical
         length rather than per band.  Say so, and say what length would
-        reach, rather than modelling something that cannot be put up.
+        reach, rather than modeling something that cannot be put up.
       - **Ribbon stays on both, text updated.**  Its first stated reason
         was an unswept return height, and that is now swept and
         tabulated.  The other two stand, and neither geometry has been
@@ -163,7 +163,7 @@ Remaining:
       is frequency dependent (2.5 m at 7.15 MHz against 1.0 m at 14.175
       for the same antenna), and the page scores several bands at once.
 
-      So it wants modelling, as a second geometry with its own table
+      So it wants modeling, as a second geometry with its own table
       rather than another axis on this one.  A sloper's return really is
       different: the balun is already low, so there is almost no drop and
       the return is essentially just the counterpoise, where a flat top's
@@ -184,7 +184,7 @@ Remaining:
       tabulated for it.
 
 - [ ] **A sloper's wire has to be longer than the rise it climbs.**  Not
-      a modelling choice but geometry: a wire from a 0.6 m balun to a
+      a modeling choice but geometry: a wire from a 0.6 m balun to a
       20 m apex spans a 19.4 m rise, so nothing shorter reaches, and on
       10 m that rules out the entire length axis the page offers.  The
       page would have to refuse the combination rather than quietly
@@ -225,7 +225,7 @@ Remaining:
       checks the installation rather than the envelope.
 
       `nec2c-wasm` and `nec2c-deck` now exist on npm (0.1.0, both
-      GPL-3.0-or-later, both ours).  They split the licence question
+      GPL-3.0-or-later, both ours).  They split the license question
       rather than answering it:
 
       - `nec2c-deck` builds decks and parses output, no solver and no
@@ -285,11 +285,11 @@ Remaining:
       does not.  In this geometry -- feedpoint 0.22 wavelengths up, only
       the counterpoise near the ground -- nec2c agrees with NEC-4.2 to
       within 1 percent at every counterpoise height down to a
-      centimetre, on average and good soil alike.  NEC-2's Sommerfeld
+      centimeter, on average and good soil alike.  NEC-2's Sommerfeld
       failure needs the *fed element* near the interface, which this
       antenna does not have.
 
-      So `nec2c-wasm` is a usable solver for the button, and the licence
+      So `nec2c-wasm` is a usable solver for the button, and the license
       question it raises is already settled: the page is
       GPL-3.0-or-later for this reason.  `necpp-wasm` also now exists
       and is reported in good shape, so either would do; nec2c-wasm is
@@ -331,7 +331,7 @@ Remaining:
 
       So the decision is not a depth but a regime, and the honest
       justification for staying above ground is mechanical: real ground
-      is not flat, and a centimetre or two of average clearance
+      is not flat, and a centimeter or two of average clearance
       describes coax draped over grass and ruts.  Two things follow,
       both open:
 
@@ -355,7 +355,7 @@ Remaining:
 - [ ] Exercise the page in a browser for the things a machine cannot
       judge.  The mechanical half is automated in
       `docs/tools/browser/random-wire.spec.mjs` and runs in CI;
-      `BROWSER_CHECKS.md` is now only the judgement calls --
+      `BROWSER_CHECKS.md` is now only the judgment calls --
       whether the caveat text reads well, whether the recommendations
       look right for a real installation, whether anything has drifted
       that no assertion covers.
@@ -385,14 +385,14 @@ Tooling: `nec/`, Python + PyNEC, `uv`-managed.
   mostly "nothing qualifies" teaches the user less than the fixed
   percentage it would replace.
 
-- Modelling the ARRL counterpoise configuration -- source at the tuner,
-  counterpoise folded around a room a metre or two up -- as a spike.
+- Modeling the ARRL counterpoise configuration -- source at the tuner,
+  counterpoise folded around a room a meter or two up -- as a spike.
   Cheap to build, about eighty lines beside `end_fed_zin` reusing the
   existing sweep and fit machinery, but limited in what it could settle.
   NEC-2 has no walls, no mains wiring and no plumbing, so "indoors"
   becomes "folded wire in free space over ground", and the room size is
   a parameter nothing determines.  More to the point, at one to three
-  metres the two-line form is already measured at x1.60, so a successful
+  meters the two-line form is already measured at x1.60, so a successful
   spike would establish what that configuration does while confirming
   the page still cannot score it.
 
@@ -403,7 +403,7 @@ Tooling: `nec/`, Python + PyNEC, `uv`-managed.
   a thrown-out wire is well defined, while the coax shield carries
   common-mode current that makes "the feedpoint impedance" not a single
   well-defined number at all.  How much of that caveat reaches the user?
-- How should the soil control be labelled so it does not imply that
+- How should the soil control be labeled so it does not imply that
   "good" ground gives a better match?  Finding 6 says it does not.
 - Does the fitted `alpha`/`beta` surface interpolate cleanly over
   `h/lambda` once the return resonance is pulled out into its own term,

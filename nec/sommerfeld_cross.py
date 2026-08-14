@@ -12,7 +12,7 @@ give what `GN 1` gives for the same geometry.  Every implementation
 computes the `GN 1` side identically, so the gap is the error in the
 Sommerfeld evaluation and nothing else.
 
-The deck is a horizontal half-wave dipole, centre fed, from
+The deck is a horizontal half-wave dipole, center fed, from
 nec2-js/investigations/sommerfeld_near_ground.nec.  The JavaScript
 harness beside it, `sommerfeld.mjs`, runs one solver at a time and
 carries the wasm build; this runs them side by side, which is what shows
@@ -238,7 +238,7 @@ if __name__ == "__main__":
 
     found = solvers(arguments)
 
-    print("Horizontal half-wave dipole, 145.9 MHz, centre fed, 11 segments.")
+    print("Horizontal half-wave dipole, 145.9 MHz, center fed, 11 segments.")
     print("GN 2 at sigma 1e10 against GN 1, as percent.  Both must agree,")
     print("so every cell is an error with a known correct value of zero.\n")
     print(f"{'height':>9}" + "".join(f"{name:>13}" for name, _ in found))

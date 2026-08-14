@@ -79,7 +79,7 @@ def parse_impedance(text):
 def return_heights(height_m):
     """Counterpoise heights under a wire at `height_m`, with their labels.
 
-    Labelled by the step rather than by the achieved fraction: 1 cm is
+    Labeled by the step rather than by the achieved fraction: 1 cm is
     "on the ground" whether the wire is 3 m up or 20, and grouping by the
     fraction would split that row three ways.
     """

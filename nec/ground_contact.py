@@ -1,7 +1,7 @@
 """What does holding the return 5 cm off the soil actually cost?
 
 `nec_model.RETURN_HEIGHT_M` is 0.05 m, and the reason is a NEC-2 limit
-rather than a modelling choice: a wire bonded to the ground plane shorts
+rather than a modeling choice: a wire bonded to the ground plane shorts
 the source, so the return has to float just above it.  Most people simply
 let the coax lie on the dirt, so the standoff is an approximation nobody
 asked for.
@@ -19,7 +19,7 @@ tested rather than carried.  Three things have to be right:
   - z = 0 exactly is degenerate and must be avoided.  It returns a value
     inconsistent with both sides -- 281 ohms where 1 cm above gives 2585
     and 1 cm below gives 2123 -- because the wire then lies in the
-    interface.  A depth of a millimetre fails outright in junction
+    interface.  A depth of a millimeter fails outright in junction
     finding.
 
 The finding: it depends entirely on where the antenna is electrically.
@@ -50,13 +50,13 @@ same one that gives insulated wire a velocity factor near 0.95 rather
 than 1.0: it raises the effective radius and lightly loads the line.  It
 does not move the conductor into the air regime, because soil at HF is a
 lossy dielectric rather than a conductor -- loss tangent 3.6 at 1.9 MHz
-falling to 0.24 at 28.85, skin depth metres throughout -- so a wire in
-contact is not shorted to anything, and touching versus a millimetre off
+falling to 0.24 at 28.85, skin depth meters throughout -- so a wire in
+contact is not shorted to anything, and touching versus a millimeter off
 is not the discontinuity a jacket would protect against.
 
 So what justifies keeping the return above ground is mechanical, not
 electrical: real ground is not flat.  Coax drapes over grass, leaf
-litter and ruts, so a centimetre or two of average clearance describes
+litter and ruts, so a centimeter or two of average clearance describes
 a real install.  Burial is the wrong model for something lying on top,
 and the right one for radials under the turf, which is a different
 installation.

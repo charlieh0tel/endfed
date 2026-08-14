@@ -19,7 +19,7 @@ npm --prefix docs/tools run serve
 # then http://127.0.0.1:4173/random-wire.html
 ```
 
-## Judgement, not assertion
+## Judgment, not assertion
 
 - [ ] **Does the caveat text read comfortably?**  The suite proves every
       piece of small print clears 4.5:1 against its background.  It
@@ -32,7 +32,7 @@ npm --prefix docs/tools run serve
       that sits outside it.
 - [ ] **Is the EXPERIMENTAL ribbon saying the right thing?**  The suite
       checks that it scrolls away rather than pinning.  Whether the page
-      still deserves the ribbon is a judgement about the model.
+      still deserves the ribbon is a judgment about the model.
 - [ ] **Does anything look wrong that no assertion covers?**  Spacing
       that has drifted, a panel in an order that reads oddly, a control
       that is technically reachable but awkward to use.

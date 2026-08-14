@@ -1,4 +1,4 @@
-"""Ground behaviour at low height, done as a curve rather than a minimum.
+"""Ground behavior at low height, done as a curve rather than a minimum.
 
 Forcing a single minimum was the wrong instrument: at h = 5 m with a short
 return there is no clean low-Z resonance to find, and the search ran into

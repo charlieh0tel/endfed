@@ -15,7 +15,7 @@ One page and the measurements behind it.
   tables the page ships. Python, `uv`-managed. PyNEC is GPL, which is
   why this repo is GPL.
 
-Companion notes, not served. `docs/MODEL.md` is the modelling approach
+Companion notes, not served. `docs/MODEL.md` is the modeling approach
 -- what the impedance model claims, the parameter split, and what NEC
 measured. `docs/TODO.md` is task status. `docs/BROWSER_CHECKS.md` is the
 by-hand pass, for what no automated check can judge. Keep findings and
@@ -31,6 +31,9 @@ design decisions in the model note and task state in the TODO.
   already have these capabilities built-in.
 - Prefer ASCII in all code and user-facing strings (logs, CLI output,
   error messages).  Ask before using Unicode.
+- Use US spellings everywhere -- prose, comments, identifiers and
+  user-facing strings: modeling, meter, center, license, color,
+  behavior, labeled, normalized, analyzer.
 
 ## Documentation
 
@@ -70,14 +73,15 @@ design decisions in the model note and task state in the TODO.
 - Calculate in SI internally.  Convert at the edges: read input and
   format output in whatever unit the user wants, but keep one coherent
   system in between.  Name the unit in the type, not only in the
-  identifier.  `Feet`, `KiloHertz`, `MegaHertz` and `Meters` are
-  declared as aliases in `random-wire.html`.  They are plain
-  `@typedef {number}` aliases, so they document intent but do not
-  enforce it: `tsc` sees them as `number` and will not catch metres
-  added to hertz.  Treat them as naming discipline, not a type system.
-  The exception to SI-internally is roundness: a recommended length is
-  rounded in whatever unit the user is reading, so the picker takes the
-  display unit.
+  identifier.
+- The unit aliases here (`Feet`, `KiloHertz`, `MegaHertz`, `Meters` in
+  `random-wire.html`) are plain `@typedef {number}` aliases, so they
+  document intent but do not enforce it: `tsc` sees them as `number` and
+  will not catch meters added to hertz.  Treat them as naming
+  discipline, not a type system.
+- The one exception to calculating in SI is roundness: a recommended
+  length is rounded in whatever unit the user is reading, so the picker
+  takes the display unit.
 - Do not annotate a lookup table with `Object<string, ...>`. That widens
   its keys to `string` and defeats the narrowing that keeps a bad URL
   parameter out of the table.
@@ -201,7 +205,7 @@ must pass before committing and before pushing.
 - **URL parameters**: The page encodes state in URL params. Ensure
   changes preserve backward-compatible URL parsing. When a parameter's
   unit changes, give the new unit a new key and keep reading the old
-  one: the page writes `?len_m=` in metres and still accepts the older
+  one: the page writes `?len_m=` in meters and still accepts the older
   `?len=` in feet.
 - **Accessibility**: Maintain readable contrast ratios in the dark
   theme. Ensure interactive controls are keyboard-accessible.

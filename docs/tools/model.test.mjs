@@ -19,7 +19,7 @@ test('half wave reproduces the 468 / f(MHz) rule at vf 0.95', () => {
   }
 });
 
-test('feet per metre is the international foot', () => {
+test('feet per meter is the international foot', () => {
   close(m.FT_PER_M, 1 / 0.3048, 1e-12, 'FT_PER_M');
 });
 
@@ -27,7 +27,7 @@ test('display units convert against their definitions', () => {
   // Against the definition of the international foot, not against itself:
   // a round trip through a scale factor cannot fail.
   close(m.toDisplay(0.3048, 'ft'), 1, 1e-12, '0.3048 m is one foot');
-  close(m.toDisplay(1, 'm'), 1, 1e-12, 'metres are the internal unit');
+  close(m.toDisplay(1, 'm'), 1, 1e-12, 'meters are the internal unit');
   close(m.fromDisplay(100, 'ft'), 30.48, 1e-12, '100 ft is 30.48 m');
 });
 
@@ -134,7 +134,7 @@ test('a quarter wave is not a high-impedance point', () => {
 });
 
 test('raising the wire changes the answer', () => {
-  // Height was unmodelled before the fit; a model that ignores it would
+  // Height was unmodeled before the fit; a model that ignores it would
   // return the same impedance twice.
   const freqHz = 7.15e6;
   const lenM = 21.6;
@@ -200,14 +200,14 @@ test('every region has bands, and every band a sane edge pair', () => {
   }
 });
 
-test('band metres and frequency agree', () => {
-  // A band labelled 40 m should sit near 300/40 = 7.5 MHz.  Catches a row
+test('band meters and frequency agree', () => {
+  // A band labeled 40 m should sit near 300/40 = 7.5 MHz.  Catches a row
   // typed into the wrong place in the band table.
   for (const region of Object.keys(m.REGIONS)) {
     for (const band of m.bandsIn(region)) {
       const [lo, hi] = m.bandEdgesHz(band, 'full');
-      const centreM = m.C_SPEED / ((lo + hi) / 2);
-      close(centreM / band.m, 1, 0.15, `${region} ${band.m}m centre wavelength`);
+      const centerM = m.C_SPEED / ((lo + hi) / 2);
+      close(centerM / band.m, 1, 0.15, `${region} ${band.m}m center wavelength`);
     }
   }
 });
@@ -386,7 +386,7 @@ test('the transformer ratio moves the match', () => {
 
 test('lengths format in the unit asked for', () => {
   assert.match(m.fmtLen(30.48, 'ft'), /100/, '30.48 m is 100 ft');
-  assert.match(m.fmtLen(30.48, 'm'), /30/, '30.48 m reads as metres');
+  assert.match(m.fmtLen(30.48, 'm'), /30/, '30.48 m reads as meters');
   assert.match(m.fmtLen(30.48, 'ftin'), /100/, 'ft + in still leads with feet');
 });
 
@@ -480,7 +480,7 @@ test('the fitted coefficients are physically plausible', () => {
 
 const AT_MODEL_VF = { region: 'us', segment: 'full', marginPct: 8 };
 
-test('the classical avoid zones bracket the modelled impedance peaks', () => {
+test('the classical avoid zones bracket the modeled impedance peaks', () => {
   const site = { geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
     soil: m.DEFAULT_SOIL };
   const bandM = 20;
@@ -822,9 +822,9 @@ test('bestFeasibleMargin finds a margin that leaves something', () => {
 // URL round-tripping, which the page promises and could not test
 // ---------------------------------------------------------------------------
 
-test('a length written as metres reads back unchanged', () => {
+test('a length written as meters reads back unchanged', () => {
   const params = new URLSearchParams({ [m.URL_KEYS.wireLenM]: '21.336' });
-  close(m.readWireLenM(params), 21.336, 1e-9, 'len_m is metres');
+  close(m.readWireLenM(params), 21.336, 1e-9, 'len_m is meters');
 });
 
 test('the legacy ?len= is still read as feet', () => {
@@ -1011,7 +1011,7 @@ test('a one-band selection sweeps that band alone', () => {
 });
 
 test('segments are odd, bounded, and short against the shortest wave', () => {
-  // Odd so a centre segment exists, and dense enough at the top of the sweep,
+  // Odd so a center segment exists, and dense enough at the top of the sweep,
   // where segments are electrically longest.  The source sits on segment 1 of
   // tag 1, so a wire described by too few segments moves the feedpoint.
   const bands = m.bandsIn('us').filter(b => [40, 10].includes(b.m));
@@ -1104,7 +1104,7 @@ test('the AntennaSim project describes the same antenna as the deck', () => {
   const [lowLo, lowHi] = m.bandEdgesHz(
     bands.reduce((a, b) => (a.m > b.m ? a : b)), 'full');
   close(project.editor.designFrequencyMhz * 1e6, (lowLo + lowHi) / 2, 1,
-    'the design frequency is the centre of the lowest band');
+    'the design frequency is the center of the lowest band');
 });
 
 test('the AntennaSim project carries the fields its loader demands', () => {

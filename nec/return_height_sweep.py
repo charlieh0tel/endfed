@@ -1,4 +1,4 @@
-"""Sweep the return path's height, the largest unmodelled term.
+"""Sweep the return path's height, the largest unmodeled term.
 
 geometry_check.py found that raising the return from 5 cm to 1-2 m moves
 the feedpoint by up to 4.6x -- further than the quoted bound, and further
@@ -25,7 +25,7 @@ from PyNEC import nec_context
 
 from nec_model import C, GROUNDS, WIRE_RADIUS_M, _segments
 
-#: Return heights, metres.  0.01 is lying on the soil, 3 m is a properly
+#: Return heights, meters.  0.01 is lying on the soil, 3 m is a properly
 #: elevated counterpoise; the shipped sweep used 0.05 throughout.
 RETURN_HEIGHTS_M = (0.01, 0.05, 0.15, 0.5, 1.0, 2.0, 3.0)
 

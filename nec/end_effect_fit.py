@@ -7,11 +7,11 @@ candidates on the antenna side:
   ka  a scale on Z0a.  Schelkunoff gives an *average* characteristic
       impedance, but Z0 varies along a real wire, so the average may be
       systematically off.
-  be  a normalised susceptance terminating the open end, standing for the
+  be  a normalized susceptance terminating the open end, standing for the
       capacitive loading of a real wire end.
 
 Terminating a line of characteristic impedance Z0 in a shunt susceptance
-`be` normalised to Y0 = 1/Z0 gives
+`be` normalized to Y0 = 1/Z0 gives
 
     Zin = Z0 * (be*tanh(gamma l) - j) / (be - j*tanh(gamma l))
 

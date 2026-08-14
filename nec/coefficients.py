@@ -130,7 +130,7 @@ def refine_table(table, d, z, soils, max_nfev=400):
     vector can sit outside the joint feasible set.
 
     The error is measured on the tabulated model anyway, so it is the thing to
-    optimise.  This takes the median table as a starting point, which is close
+    optimize.  This takes the median table as a starting point, which is close
     enough to converge quickly, and refines it against the same residual the
     per-group fits use.  One soil at a time: soils do not interact, and 40
     parameters converges where 120 struggles.

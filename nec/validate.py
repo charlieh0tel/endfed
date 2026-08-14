@@ -26,7 +26,7 @@ def monopole_zin(length_m, freq_hz, radius_m=WIRE_RADIUS_M, segments=SEGMENTS):
 
 
 def dipole_zin(length_m, freq_hz, radius_m=WIRE_RADIUS_M, segments=SEGMENTS):
-    """Centre-fed dipole in free space.  Expect ~73 + j42."""
+    """Center-fed dipole in free space.  Expect ~73 + j42."""
     ctx = nec_context()
     geo = ctx.get_geometry()
     geo.wire(1, segments, 0, 0, -length_m / 2, 0, 0, length_m / 2, radius_m, 1, 1)
