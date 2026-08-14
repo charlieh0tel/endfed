@@ -1276,3 +1276,62 @@ test('the page refuses the near-vertical slopers the sweep refused to fit', () =
   close(m.riseShortfallM(site, riseM), riseM * m.SLOPER_REACH_MARGIN, 1e-9,
     'the shortfall reports the shortest wire the model will answer for');
 });
+
+// The fit's domain, and the page knowing where it ends.
+
+test('the model carries the domain the fit was measured over', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const url = new URL('../../nec/coefficients2d.json', import.meta.url);
+  const { domain } = JSON.parse(await readFile(url, 'utf8'));
+  close(m.MODEL_DOMAIN.minHOverLambda, domain.min_h_over_lambda, 1e-12,
+    'the h/lambda floor is the fit floor');
+  close(m.MODEL_DOMAIN.maxHOverLambda, m.MODEL_H_NODES[m.MODEL_H_NODES.length - 1],
+    1e-12, 'the ceiling is the top node');
+  close(m.MODEL_DOMAIN.minCounterpoiseZM, domain.min_counterpoise_z_m, 1e-12,
+    'the counterpoise floor');
+  close(m.MODEL_DOMAIN.maxCounterpoiseZM, domain.max_counterpoise_z_m, 1e-12,
+    'and its ceiling');
+  close(m.COUNTERPOISE_Z_RANGE_M.min, domain.min_counterpoise_z_m, 1e-12,
+    'the control offers what the model defines');
+  close(m.COUNTERPOISE_Z_RANGE_M.max, domain.max_counterpoise_z_m, 1e-12,
+    'at both ends');
+});
+
+test('a band below the fit floor is named, and one above it', () => {
+  const bands = m.bandsIn('us');
+  const at = (heightM) => ({ geometry: 'flatTop', heightM, balunM: m.DEFAULT_BALUN_M,
+    counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
+    counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: m.DEFAULT_SOIL });
+
+  // 5 m of height is 0.03 wavelengths on 160 m, under the 0.05 floor.
+  const low = m.outOfDomainBands(bands.filter(b => b.m === 160), 'full', at(5));
+  assert.equal(low.length, 1, '160 m at 5 m up is outside');
+  assert.equal(low[0].edge, 'below', 'below the floor');
+
+  // 30 m of height is 2.9 wavelengths at the top of 10 m, past the 2.5 node.
+  const high = m.outOfDomainBands(bands.filter(b => b.m === 10), 'full', at(30));
+  assert.equal(high.length, 1, '10 m at 30 m up is outside');
+  assert.equal(high[0].edge, 'above', 'above the top node');
+
+  // The default installation is inside the fit on every band, 160 m
+  // included: 9.144 m is 0.055 wavelengths at 1.8 MHz, just over the floor.
+  assert.deepEqual(m.outOfDomainBands(bands, 'full', at(m.DEFAULT_HEIGHT_M)), [],
+    'nothing is outside at the default height');
+});
+
+test('every band the page can select is judged against its own edges', () => {
+  // A band is outside when any frequency in it is, so the check has to use
+  // the band's edges rather than a midpoint.
+  const bands = m.bandsIn('us').filter(b => b.m === 160);
+  const site = { geometry: 'flatTop', heightM: 8.0, balunM: m.DEFAULT_BALUN_M,
+    counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
+    counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: m.DEFAULT_SOIL };
+  const [loHz, hiHz] = m.bandEdgesHz(bands[0], 'full');
+  const lowest = site.heightM * loHz / m.C_SPEED;
+  const highest = site.heightM * hiHz / m.C_SPEED;
+  assert.ok(lowest < m.MODEL_DOMAIN.minHOverLambda
+    && highest >= m.MODEL_DOMAIN.minHOverLambda,
+    'this height straddles the floor within one band');
+  assert.equal(m.outOfDomainBands(bands, 'full', site).length, 1,
+    'straddling counts as outside');
+});

@@ -290,6 +290,27 @@ test.describe('geometry', () => {
   });
 });
 
+test.describe('the fit\'s domain', () => {
+  test('a band the height puts outside the fit says so', async ({ page }) => {
+    // 3 m of wire height is 0.018 wavelengths on 160 m, well under the 0.05
+    // the table was fitted from; the page holds its table flat there.
+    await open(page, '?mode=impedance&bands=160,40&h_m=3&len_m=21.336');
+    await expect(page.locator('.verdict-domain')).toContainText('160m');
+    await expect(page.locator('.verdict-domain')).toContainText('extrapolation');
+    await expect(page.locator('.verdict-domain')).not.toContainText('40m');
+  });
+
+  test('a band inside the fit says nothing', async ({ page }) => {
+    await open(page, '?mode=impedance&bands=20,15&h_m=9.144&len_m=21.336');
+    await expect(page.locator('.verdict-domain')).toHaveCount(0);
+  });
+
+  test('the classical rule has no domain to be outside of', async ({ page }) => {
+    await open(page, '?mode=classical&bands=160&h_m=3&len_m=21.336');
+    await expect(page.locator('.verdict-domain')).toHaveCount(0);
+  });
+});
+
 test.describe('the length field', () => {
   test('a typed length survives a change of display units', async ({ page }) => {
     await open(page);
