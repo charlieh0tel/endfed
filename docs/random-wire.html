@@ -575,12 +575,15 @@
       },
       r3: {
         label: 'IARU Region 3',
-        note: 'Asia-Pacific. 80m and 40m upper edges vary widely by country.',
+        note: 'Asia-Pacific. 80m and 40m upper edges vary widely by country; '
+          + 'Australia and New Zealand reach 7.3 MHz where the plan stops at 7.2.',
         bands: [
           { m: 160,  label: '160m',  full: [1.8e6, 2e6],         cw: [1.8e6, 1.84e6] },
           { m: 80,   label: '80m',   full: [3.5e6, 3.9e6],       cw: [3.5e6, 3.54e6] },
           { m: 60,   label: '60m',   full: [5.3515e6, 5.3665e6], cw: [5.3515e6, 5.354e6] },
-          { m: 40,   label: '40m',   full: [7e6, 7.3e6],         cw: [7e6, 7.04e6] },
+          // 7.1-7.2 is amateur in Regions 1 and 3; 7.2-7.3 is Region 2 only,
+          // and broadcasting here.
+          { m: 40,   label: '40m',   full: [7e6, 7.2e6],         cw: [7e6, 7.04e6] },
           { m: 30,   label: '30m',   full: [10.1e6, 10.15e6],    cw: [10.1e6, 10.13e6] },
           { m: 20,   label: '20m',   full: [14e6, 14.35e6],      cw: [14e6, 14.07e6] },
           { m: 17,   label: '17m',   full: [18.068e6, 18.168e6], cw: [18.068e6, 18.095e6] },
