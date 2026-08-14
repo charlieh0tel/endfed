@@ -1260,3 +1260,19 @@ test('the quoted accuracy is the accuracy the shipped table measures', async () 
     && flatTop.error.p90 >= sloper.error.p90,
     'the flat top is the weaker of the two, which is why it is quoted');
 });
+
+test('the page refuses the near-vertical slopers the sweep refused to fit', () => {
+  // nec/nec_model.py sloper_deck returns None at or below rise * the margin,
+  // so answering inside that wedge would be answering without evidence.
+  const site = { geometry: 'sloper', heightM: 20, balunM: 0.61,
+    counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
+    counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: m.DEFAULT_SOIL };
+  const riseM = 20 - 0.61;
+  assert.ok(m.SLOPER_REACH_MARGIN > 1, 'the margin is a margin');
+  assert.notEqual(m.riseShortfallM(site, riseM * 1.01), null,
+    'a wire inside the wedge is refused');
+  assert.equal(m.riseShortfallM(site, riseM * 1.03), null,
+    'and one clear of it is answered');
+  close(m.riseShortfallM(site, riseM), riseM * m.SLOPER_REACH_MARGIN, 1e-9,
+    'the shortfall reports the shortest wire the model will answer for');
+});

@@ -1312,6 +1312,14 @@
     const RETURN_DIRECTION = Object.freeze({ flatTop: 1, sloper: -1 });
 
     /**
+     * How much longer than its rise a sloper's wire has to be before the
+     * model will answer for it, matching nec/nec_model.py's sloper_deck.
+     * Within this the wire is all but vertical, and the sweep fitted nothing
+     * there.
+     */
+    const SLOPER_REACH_MARGIN = 1.02;
+
+    /**
      * The installation the impedance model is asked about: how the wire is
      * hung, how high, how much counterpoise there is and how high that sits.
      *
@@ -1388,14 +1396,18 @@
      * A sloper's wire has to be longer than the rise from its balun to its
      * support, or it does not reach.  Null when the geometry is buildable.
      *
+     * The margin is the sweep's: nec/nec_model.py refuses a sloper within it
+     * of vertical, so a wire in that wedge has no fitted evidence behind it
+     * as well as nowhere to go.
+     *
      * @param {Site} site
      * @param {Meters} lenM
-     * @returns {?Meters} the shortest wire that would reach
+     * @returns {?Meters} the shortest wire the model will answer for
      */
     const riseShortfallM = (site, lenM) => {
       if (site.geometry !== 'sloper') return null;
-      const riseM = site.heightM - site.balunM;
-      return lenM <= riseM ? riseM : null;
+      const shortestM = (site.heightM - site.balunM) * SLOPER_REACH_MARGIN;
+      return lenM <= shortestM ? shortestM : null;
     };
 
     /**
@@ -3461,9 +3473,8 @@
                 <div className="verdict-detail">
                   {mode === 'impedance' ? (
                     shortfallM !== null
-                      ? `The wire climbs ${fmtLen(shortfallM, units)} from the `
-                        + `balun to the far end, so it has to be longer than `
-                        + `that before it reaches. Lengthen the wire, lower `
+                      ? `Needs at least ${fmtLen(shortfallM, units)} to reach `
+                        + `the far end from the balun. Lengthen the wire, lower `
                         + `the far end, or raise the balun.`
                     : !scoreHere
                       ? 'Type a length, click the map, or pick one from the table below.'

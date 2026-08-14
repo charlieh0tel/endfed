@@ -77,6 +77,12 @@ BALUN_HEIGHT_M = 0.61
 #: counterpoise level with the balun leaves none at all.
 MIN_DROP_M = 0.05
 
+#: How much longer than its rise a sloper's wire must be before it is worth
+#: solving: within this it is all but vertical, and the reach it has left is
+#: a difference of two nearly equal numbers.  The page holds the same margin,
+#: so it never answers for a geometry this refused to fit.
+SLOPER_REACH_MARGIN = 1.02
+
 
 def _segments(length_m, wavelength_m):
     """Segment count for a wire, odd so a center segment exists."""
@@ -187,7 +193,7 @@ def sloper_deck(
     which is unbuildable rather than merely inaccurate.
     """
     rise_m = apex_m - balun_m
-    if slant_m <= rise_m * 1.02:
+    if slant_m <= rise_m * SLOPER_REACH_MARGIN:
         return None
     wavelength_m = C / freq_hz
     eps, sigma = GROUNDS[ground]
