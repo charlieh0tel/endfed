@@ -31,6 +31,9 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from table_spec import (
+    COUNTERPOISE_CEILING_FRACTION,
+    MAX_COUNTERPOISE_Z_M,
+    MIN_COUNTERPOISE_Z_M,
     MIN_H_OVER_LAMBDA,
     NODES,
     REFINE_BOUNDS,
@@ -432,6 +435,14 @@ if __name__ == "__main__":
                 "two_d_params": [TABLE_PARAMS[i] for i in TWO_D],
                 "vf_a": VF_A,
                 "soils": [str(s) for s in data["soil_names"]],
+                # The range the model is fitted over, carried beside the
+                # numbers so a consumer need not restate it to know it.
+                "domain": {
+                    "min_h_over_lambda": MIN_H_OVER_LAMBDA,
+                    "min_counterpoise_z_m": MIN_COUNTERPOISE_Z_M,
+                    "max_counterpoise_z_m": MAX_COUNTERPOISE_Z_M,
+                    "counterpoise_ceiling_fraction": COUNTERPOISE_CEILING_FRACTION,
+                },
                 name: {
                     "table": table.tolist(),
                     "error": {
