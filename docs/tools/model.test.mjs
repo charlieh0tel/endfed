@@ -1335,3 +1335,21 @@ test('every band the page can select is judged against its own edges', () => {
   assert.equal(m.outOfDomainBands(bands, 'full', site).length, 1,
     'straddling counts as outside');
 });
+
+test('the shipped tables are fitted from NEC-4.2 alone', async () => {
+  // NEC-2 disagrees with NEC-4.2 over ground, which is the whole argument of
+  // MODEL.md's Sommerfeld section, so a table fitted from a NEC-2 grid would
+  // be a different model wearing the same numbers.  The generator records
+  // what it read; this is what makes that record load bearing.
+  const { readFile } = await import('node:fs/promises');
+  const url = new URL('../../nec/coefficients2d.json', import.meta.url);
+  const data = JSON.parse(await readFile(url, 'utf8'));
+  for (const geometry of ['flat_top', 'sloper']) {
+    const { sweeps } = data[geometry].provenance;
+    assert.ok(sweeps.length > 0, `${geometry} names the sweeps it was fitted from`);
+    for (const sweep of sweeps) {
+      assert.match(sweep, /^nec4_/,
+        `${geometry} is fitted from ${sweep}, which is not a NEC-4.2 sweep`);
+    }
+  }
+});
