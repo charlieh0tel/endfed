@@ -35,6 +35,8 @@ jobs:
         working-directory: nec
       - run: uv run python pipeline_check.py
         working-directory: nec
+      - run: uv run python deck_check.py
+        working-directory: nec
 
   browser:
     runs-on: ubuntu-latest

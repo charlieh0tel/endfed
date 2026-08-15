@@ -408,6 +408,14 @@ Wanted: the page reads the domain from the generated block, a test holds
 its constants to it, and a length whose band puts it outside says so --
 the way an unbuildable sloper does -- rather than quietly extrapolating.
 
+**Open.**  `nec_model._wires` segments the flat top's drop by the wire
+height rather than by the drop's own length, so a counterpoise well up
+gets a finer drop than intended -- 49 segments where 25 are asked for, at
+28.85 MHz with a 25 m wire and the counterpoise at 12 m.  `sloper_deck`
+segments its drop correctly.  Finer is not wrong, and every shipped
+table was fitted with it, so correcting it means a re-sweep before the
+tables can be reproduced from source.
+
 **Decided, not yet built.**  The NEC exports sweep one 201-point linear
 span, so a selected 60 m or 30 m can receive no sample at all: one `FR`
 card per selected band instead.

@@ -106,6 +106,10 @@ design decisions in the model note and task state in the TODO.
 - Run `ruff format` and `ruff check` after changes and before commits.
 - There is no pytest suite. `nec/validate.py` is the regression check for
   the physics and prints numbers a human reads.
+- `nec/deck_check.py` reads the NEC decks the geometry builds -- wires,
+  segmentation, source, ground card, both geometries -- without solving
+  them, so CI runs it.  `nec/validate.py` is the other half and needs a
+  solver: textbook physics, by hand, locally.
 - `nec/pipeline_check.py` is the regression check for the fitting code: it
   runs `fit.py`, `table2d.py` and `coefficients2d.py` over a committed cut
   of a NEC-4.2 sweep and compares against committed coefficients, in about

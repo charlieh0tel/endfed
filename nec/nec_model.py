@@ -105,7 +105,8 @@ def _wires(
     constant is an assumption worth testing, not a property of the antenna.
     """
     wavelength_m = C / freq_hz
-    return (
+    drop_m = height_m - return_height_m
+    wires = [
         (
             1,
             _segments(length_m, wavelength_m),
@@ -117,17 +118,25 @@ def _wires(
             height_m,
             radius_m,
         ),
-        (
-            2,
-            _segments(height_m, wavelength_m),
-            0.0,
-            0.0,
-            height_m,
-            0.0,
-            0.0,
-            return_height_m,
-            radius_m,
-        ),
+    ]
+    # A drop shorter than this is not a wire: its segments come out below the
+    # wire radius, where the thin-wire assumption does not hold.  sloper_deck
+    # refuses the same case.
+    if drop_m > MIN_DROP_M:
+        wires.append(
+            (
+                2,
+                _segments(height_m, wavelength_m),
+                0.0,
+                0.0,
+                height_m,
+                0.0,
+                0.0,
+                return_height_m,
+                radius_m,
+            )
+        )
+    wires.append(
         (
             3,
             _segments(return_len_m, wavelength_m),
@@ -138,8 +147,9 @@ def _wires(
             0.0,
             return_height_m,
             radius_m,
-        ),
+        )
     )
+    return tuple(wires)
 
 
 def end_fed_deck(
