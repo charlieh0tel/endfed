@@ -33,6 +33,8 @@ jobs:
         working-directory: nec
       - run: uv run ruff check .
         working-directory: nec
+      - run: uv run python pipeline_check.py
+        working-directory: nec
 
   browser:
     runs-on: ubuntu-latest

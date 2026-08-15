@@ -104,8 +104,14 @@ design decisions in the model note and task state in the TODO.
   tables are fitted from them, so a silent resolver change is a silent
   change to the shipped page.
 - Run `ruff format` and `ruff check` after changes and before commits.
-- There is no pytest suite. `nec/validate.py` is the regression
-  check and prints numbers a human reads; CI runs `ruff` only.
+- There is no pytest suite. `nec/validate.py` is the regression check for
+  the physics and prints numbers a human reads.
+- `nec/pipeline_check.py` is the regression check for the fitting code: it
+  runs `fit.py`, `table2d.py` and `coefficients2d.py` over a committed cut
+  of a NEC-4.2 sweep and compares against committed coefficients, in about
+  two seconds and with no solver.  CI runs it, because CI cannot have
+  NEC-4.2.  After an intended change, `--write` and say in the commit what
+  moved.
 
 ## TypeScript Rules
 
