@@ -35,6 +35,9 @@ design decisions in the model note and task state in the TODO.
   already have these capabilities built-in.
 - Prefer ASCII in all code and user-facing strings (logs, CLI output,
   error messages).  Ask before using Unicode.
+- Never use `pkill` with a regex, or `pkill -f` at all.  It matches every
+  process on the machine, not this project's: it has killed a browser
+  because a tab had a source file open.  Kill by PID.
 - Use US spellings everywhere -- prose, comments, identifiers and
   user-facing strings: modeling, meter, center, license, color,
   behavior, labeled, normalized, analyzer.
