@@ -126,7 +126,7 @@ def _wires(
         wires.append(
             (
                 2,
-                _segments(height_m, wavelength_m),
+                _segments(drop_m, wavelength_m),
                 0.0,
                 0.0,
                 height_m,

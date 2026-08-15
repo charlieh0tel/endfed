@@ -22,6 +22,7 @@ from nec_model import (
     RETURN_HEIGHT_M,
     SEGMENTS_PER_WAVELENGTH,
     WIRE_RADIUS_M,
+    _segments,
     end_fed_deck,
     sloper_deck,
 )
@@ -124,6 +125,37 @@ def flat_top(failures):
     )
     check("deck ends", deck.strip().endswith("EN"), failures)
     return deck
+
+
+def drop_segmentation(failures):
+    """The drop is segmented by its own length, as the antenna and run are.
+
+    The antenna wire and the drop meet at the feedpoint, where the source
+    sits, and NEC wants comparable segment lengths across that junction.
+    Segmenting the drop by the wire height instead grades it against the
+    antenna about twice as steeply.
+    """
+    height_m, z_m, length_m = 25.0, 12.0, 30.0
+    freq_hz = 28.85e6
+    wavelength_m = C / freq_hz
+    deck = end_fed_deck(length_m, freq_hz, height_m, 7.62, return_height_m=z_m)
+    antenna, drop, _ = wires(deck)
+    drop_m = height_m - z_m
+    check(
+        "drop is segmented by the drop",
+        drop[1] == _segments(drop_m, wavelength_m),
+        failures,
+        f"{drop[1]} against {_segments(drop_m, wavelength_m)}",
+    )
+    grading = max(length_m / antenna[1], drop_m / drop[1]) / min(
+        length_m / antenna[1], drop_m / drop[1]
+    )
+    check(
+        "segments across the feedpoint junction are comparable",
+        grading < 1.5,
+        failures,
+        f"{grading:.2f}:1",
+    )
 
 
 def segmentation(failures):
@@ -236,6 +268,7 @@ def main():
     failures = []
     deck = flat_top(failures)
     segmentation(failures)
+    drop_segmentation(failures)
     sloper(failures)
     counterpoise_height(failures)
 
