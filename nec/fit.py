@@ -20,14 +20,10 @@ and ignore everything else; log residual is relative in magnitude and
 plain angular error in phase, which is what SWR actually cares about.
 """
 
-import itertools
-
 import numpy as np
 from scipy.optimize import least_squares
 
-from nec_model import C, WIRE_RADIUS_M
-
-SWEEP = "sweep.npz"
+from nec_model import WIRE_RADIUS_M
 
 #: Fitted parameters, in the order least_squares sees them.  The alphas
 #: are nepers per wavelength, not per meter: fitted per meter they came
@@ -124,48 +120,3 @@ def fit_group(length_m, total_return_m, wavelength_m, z_nec, radius_m=WIRE_RADIU
     rms_log_mag = float(np.sqrt(np.mean(out.fun[:half] ** 2)))
     rms_phase = float(np.sqrt(np.mean(out.fun[half:] ** 2)))
     return out.x, np.exp(rms_log_mag), np.degrees(rms_phase)
-
-
-def load(path=SWEEP):
-    """The sweep and its impedances.
-
-    `path` exists so the same fit can run against a grid from another
-    solver -- `nec4_sweep.py` writes this schema -- without every caller
-    having to know which one it is.
-    """
-    d = np.load(path, allow_pickle=False)
-    return d, d["resistance"] + 1j * d["reactance"]
-
-
-if __name__ == "__main__":
-    d, z = load()
-    soils = list(d["soil_names"])
-    freqs = np.unique(d["freq_hz"])
-    heights = np.unique(d["height_m"])
-
-    print(
-        f"{'f MHz':>7} {'h m':>5} {'soil':>8} "
-        + " ".join(f"{n:>8}" for n in PARAM_NAMES)
-        + f" {'x err':>7} {'deg':>6}"
-    )
-    results = []
-    for freq, height, si in itertools.product(freqs, heights, range(len(soils))):
-        sel = (d["freq_hz"] == freq) & (d["height_m"] == height) & (d["soil"] == si)
-        wavelength_m = C / freq
-        length_m = d["ratio"][sel] * wavelength_m
-        total_return_m = height + d["return_m"][sel]
-        params, factor, degrees = fit_group(
-            length_m, total_return_m, wavelength_m, z[sel]
-        )
-        results.append((freq, height, si, params, factor, degrees))
-        print(
-            f"{freq / 1e6:7.2f} {height:5.0f} {soils[si]:>8} "
-            + " ".join(f"{v:8.4f}" for v in params)
-            + f" {factor:7.2f} {degrees:6.1f}"
-        )
-
-    factors = np.array([r[4] for r in results])
-    print(
-        f"\nmagnitude error factor: median {np.median(factors):.2f}, "
-        f"90th pct {np.percentile(factors, 90):.2f}, worst {factors.max():.2f}"
-    )

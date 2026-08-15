@@ -33,14 +33,14 @@ from pathlib import Path
 
 import numpy as np
 
-import sweep
+import sweep_grid
 from fit import PARAM_NAMES, fit_group
 from nec_model import C, GROUNDS, end_fed_deck
 
 OUTPUT = "nec4_return_height_sweep.npz"
 
-FREQS_HZ = sweep.FREQS_HZ
-HEIGHTS_M = sweep.HEIGHTS_M
+FREQS_HZ = sweep_grid.FREQS_HZ
+HEIGHTS_M = sweep_grid.HEIGHTS_M
 SOILS = tuple(sorted(GROUNDS))
 
 #: Trimmed: short, default and long.  See the module docstring.

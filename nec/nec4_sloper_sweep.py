@@ -41,14 +41,14 @@ from pathlib import Path
 
 import numpy as np
 
-import sweep
+import sweep_grid
 from fit import PARAM_NAMES, fit_group
 from nec_model import BALUN_HEIGHT_M, C, GROUNDS, sloper_deck
 
 OUTPUT = "nec4_sloper_sweep.npz"
 
-FREQS_HZ = sweep.FREQS_HZ
-APEXES_M = sweep.HEIGHTS_M
+FREQS_HZ = sweep_grid.FREQS_HZ
+APEXES_M = sweep_grid.HEIGHTS_M
 SOILS = tuple(sorted(GROUNDS))
 RETURNS_M = (4.0, 7.62, 20.0)
 RATIOS = np.arange(0.05, 4.0 + 1e-9, 0.05)

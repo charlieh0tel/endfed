@@ -31,18 +31,20 @@ from pathlib import Path
 
 import numpy as np
 
-import sweep
+import sweep_grid
 from nec_model import C, GROUNDS, end_fed_deck
 
 OUTPUT = "nec4_sweep.npz"
 
 #: The axes are sweep.py's, so the two grids are the same problem.
-FREQS_HZ = sweep.FREQS_HZ
-HEIGHTS_M = sweep.HEIGHTS_M
-RETURNS_M = sweep.RETURNS_M
+FREQS_HZ = sweep_grid.FREQS_HZ
+HEIGHTS_M = sweep_grid.HEIGHTS_M
+RETURNS_M = sweep_grid.RETURNS_M
 SOILS = tuple(sorted(GROUNDS))
 RATIOS = np.arange(
-    sweep.RATIO_MIN, sweep.RATIO_MAX + sweep.RATIO_STEP / 2, sweep.RATIO_STEP
+    sweep_grid.RATIO_MIN,
+    sweep_grid.RATIO_MAX + sweep_grid.RATIO_STEP / 2,
+    sweep_grid.RATIO_STEP,
 )
 
 IMPEDANCE_FIELD = 4

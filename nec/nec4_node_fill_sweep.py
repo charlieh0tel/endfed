@@ -30,14 +30,14 @@ from pathlib import Path
 
 import numpy as np
 
-import sweep
+import sweep_grid
 from nec_model import C, GROUNDS, end_fed_deck
 from table_spec import MIN_H_OVER_LAMBDA, Z_NODES, counterpoise_range_m
 
 OUTPUT = "nec4_node_fill_sweep.npz"
 
-FREQS_HZ = sweep.FREQS_HZ
-HEIGHTS_M = sweep.HEIGHTS_M
+FREQS_HZ = sweep_grid.FREQS_HZ
+HEIGHTS_M = sweep_grid.HEIGHTS_M
 SOILS = tuple(sorted(GROUNDS))
 
 #: As the main sweep trims them, and for the same reasons: return length

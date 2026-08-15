@@ -39,9 +39,10 @@ installation.  Both take solvers as `name=style:path`.
 ## Running
 
 ```sh
-uv run validate.py       # textbook cases; run this first
-uv run sweep.py          # the full grid, ~9 minutes on 16 cores
-uv run analyze.py        # tests the series decomposition against sweep.npz
+uv run validate.py         # textbook cases; run this first
+uv run pipeline_check.py   # the fit, against a committed cut of a sweep
+uv run nec4_return_height_sweep.py /usr/bin/nec4d42
+uv run coefficients2d.py --sweep nec4_*.npz --write --write-page
 ```
 
 `validate.py` is the regression test.  A quarter-wave monopole over
@@ -49,16 +50,18 @@ perfect ground should read near 36+j21 and a free-space half-wave dipole
 near 73+j42, both overshooting slightly for a thin wire.  If those move,
 distrust everything else.
 
-`sweep.npz` is generated, not committed; `sweep.py` rebuilds it.  Note
-that it is a NEC-2 grid: what the page ships is fitted to the NEC-4.2
-sweeps instead, for the reason the Sommerfeld comparison below gives.
+The `.npz` sweeps are generated, not committed, and need the NEC-4.2
+binary.  `pipeline_check.py` covers the fitting code without one.
 
 ## Files
 
 What ships comes from one chain, and only this chain:
 
-    nec4_return_height_sweep.py |  ->  fit.py  ->  table2d.py
-    nec4_sloper_sweep.py        |        ->  coefficients2d.py  ->  the page
+    nec4_return_height_sweep.py |
+    nec4_node_fill_sweep.py     |  ->  fit.py  ->  table2d.py
+    nec4_domain_sweep.py        |        ->  coefficients2d.py  ->  the page
+    nec4_sloper_sweep.py        |
+    nec4_domain_sloper_sweep    |
 
 - `table_spec.py` -- what is tabulated, over what nodes, within what
   bounds.  The specification the other three are built to.
@@ -74,8 +77,8 @@ The rest are instruments:
   drop at the feedpoint, horizontal return run standing for the coax
   shield or a counterpoise.  Everything else imports this.
 - `validate.py` -- textbook cases and an end-fed smoke test.
-- `sweep.py` -- the full parameter grid, written to `sweep.npz`.
-- `analyze.py` -- tests whether the return path is additive.
+- `sweep_grid.py` -- the frequencies, heights and lengths the sweeps share.
+- `pipeline_check.py` -- the fit against a committed fixture.
 - `probe.py` -- compares NEC against the page's shipped model at both
   anchors, over height, return length and soil.
 - `return_sweep.py` -- return length alone, showing its resonance.

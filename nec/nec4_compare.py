@@ -32,14 +32,14 @@ from pathlib import Path
 
 import numpy as np
 
-import sweep
+import sweep_grid
 from nec_model import C, GROUNDS, end_fed_deck, end_fed_zin
 
 #: A stratified sample of sweep.py's grid: every frequency, the extremes
 #: and middle of the height axis, the default return and a long one.  The
 #: ratio step is coarser than the sweep's 0.025, which exists to resolve
 #: peak shape, because here the question is agreement rather than shape.
-FREQS_HZ = sweep.FREQS_HZ
+FREQS_HZ = sweep_grid.FREQS_HZ
 HEIGHTS_M = (3.0, 10.0, 20.0)
 RETURNS_M = (7.62, 20.0)
 SOILS = ("average",)
@@ -48,11 +48,13 @@ RATIOS = np.arange(0.05, 2.0 + 1e-9, 0.05)
 #: `--full` instead solves exactly the grid the coefficients are fitted on,
 #: so the answer is about the fit rather than about a sample of it.  About
 #: 107k points and a little over an hour.
-FULL_HEIGHTS_M = sweep.HEIGHTS_M
-FULL_RETURNS_M = sweep.RETURNS_M
+FULL_HEIGHTS_M = sweep_grid.HEIGHTS_M
+FULL_RETURNS_M = sweep_grid.RETURNS_M
 FULL_SOILS = tuple(sorted(GROUNDS))
 FULL_RATIOS = np.arange(
-    sweep.RATIO_MIN, sweep.RATIO_MAX + sweep.RATIO_STEP / 2, sweep.RATIO_STEP
+    sweep_grid.RATIO_MIN,
+    sweep_grid.RATIO_MAX + sweep_grid.RATIO_STEP / 2,
+    sweep_grid.RATIO_STEP,
 )
 
 #: Where the page stops claiming accuracy, and the axis that matters.
