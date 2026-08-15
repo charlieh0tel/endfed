@@ -291,14 +291,19 @@ test.describe('geometry', () => {
 });
 
 test.describe('the fit\'s domain', () => {
-  test('a band the height puts outside the fit says so', async ({ page }) => {
-    // 3 m of wire height is 0.018 wavelengths on 160 m, well under the 0.05
-    // the table was fitted from; the page holds its table flat there.
-    await open(page, '?mode=impedance&bands=160,40&h_m=3&len_m=21.336');
-    await expect(page.locator('.verdict-domain')).toContainText('160m');
-    await expect(page.locator('.verdict-domain')).toContainText('extrapolation');
-    await expect(page.locator('.verdict-domain')).not.toContainText('40m');
-  });
+  // The sweeps cover the whole control space, so the caveat should never
+  // appear through the UI.  It is still wired up, and unit tested, for a
+  // control widened past the fit or a fit narrowed under the controls.
+  for (const [what, query] of [
+    ['the lowest wire on the lowest band', '?mode=impedance&bands=160&h_m=1'],
+    ['the highest wire on the highest band', '?mode=impedance&bands=10&h_m=30'],
+    ['every band at once', '?mode=impedance&bands=160,80,40,30,20,17,15,12,10&h_m=1'],
+  ]) {
+    test(`${what} stays inside the fit`, async ({ page }) => {
+      await open(page, `${query}&len_m=21.336`);
+      await expect(page.locator('.verdict-domain')).toHaveCount(0);
+    });
+  }
 
   test('a band inside the fit says nothing', async ({ page }) => {
     await open(page, '?mode=impedance&bands=20,15&h_m=9.144&len_m=21.336');
