@@ -29,6 +29,7 @@ from pathlib import Path
 
 import numpy as np
 from scipy.optimize import least_squares
+from scipy.sparse import csr_matrix
 
 from table_spec import (
     COUNTERPOISE_CEILING_FRACTION,
@@ -145,6 +146,67 @@ def fit_groups(data, geometry):
     return out
 
 
+#: Total interpolation weight below which a node counts as unconstrained.
+#: Not zero: a group can brush a node with a weight of 1e-12 and still leave
+#: it a direction the residual cannot see.
+WEIGHT_FLOOR = 1e-6
+
+
+def _axis_weights(nodes, value):
+    """The two nodes np.interp lands between in log space, and their weights."""
+    xs = np.log10(nodes)
+    x = np.log10(np.clip(value, nodes[0], nodes[-1]))
+    i = min(max(int(np.searchsorted(xs, x)) - 1, 0), len(nodes) - 2)
+    span = xs[i + 1] - xs[i]
+    upper = 0.0 if span == 0 else (x - xs[i]) / span
+    return (i, 1.0 - upper), (i + 1, upper)
+
+
+def weight_matrix(rows, n_params):
+    """Each group's five coefficients as a linear map over the flat table.
+
+    h_lam and z_lam are fixed for a group, so the interpolation weights are
+    fixed for the whole refinement and only the table values move: the lookup
+    is a matrix multiply computed once rather than an np.interp per group per
+    evaluation.  Same arithmetic as table2d.look_up, to 1e-14.
+    """
+    data, rows_at, cols_at = [], [], []
+    for gi, (h_lam, z_lam, *_) in enumerate(rows):
+        (i0, wh0), (i1, wh1) = _axis_weights(NODES, h_lam)
+        (j0, wz0), (j1, wz1) = _axis_weights(Z_NODES, z_lam)
+        for k, pi in enumerate(ONE_D):
+            for node, weight in ((i0, wh0), (i1, wh1)):
+                if weight:
+                    rows_at.append(gi * len(TABLE_PARAMS) + pi)
+                    cols_at.append(k * len(NODES) + node)
+                    data.append(weight)
+        base = len(ONE_D) * len(NODES)
+        for k, pi in enumerate(TWO_D):
+            block = base + k * len(NODES) * len(Z_NODES)
+            for hn, wh in ((i0, wh0), (i1, wh1)):
+                for zn, wz in ((j0, wz0), (j1, wz1)):
+                    if wh * wz:
+                        rows_at.append(gi * len(TABLE_PARAMS) + pi)
+                        cols_at.append(block + hn * len(Z_NODES) + zn)
+                        data.append(wh * wz)
+    return csr_matrix(
+        (data, (rows_at, cols_at)),
+        shape=(len(rows) * len(TABLE_PARAMS), n_params),
+    )
+
+
+def group_points(rows):
+    """Every group's points end to end, with the counts to spread them by."""
+    counts = np.array([len(row[2]) for row in rows])
+    return (
+        counts,
+        np.concatenate([row[2] for row in rows]),
+        np.concatenate([row[3] for row in rows]),
+        np.repeat([row[4] for row in rows], counts),
+        np.concatenate([row[5] for row in rows]),
+    )
+
+
 def refine(table, data, geometry, max_nfev=600):
     """Fit the tabulated surface itself, one soil at a time.
 
@@ -155,36 +217,70 @@ def refine(table, data, geometry, max_nfev=600):
     refined = table.copy()
     lo, hi = bounds()
     runs = []
-    for si in range(table.shape[0]):
-        rows = slices(data, si, geometry)
+    grouped = [slices(data, si, geometry) for si in range(table.shape[0])]
+    for si, rows in enumerate(grouped):
+        weights = weight_matrix(rows, len(lo))
+        counts, length_m, total_return_m, wavelength_m, z_nec = group_points(rows)
+        log_abs_nec = np.log(np.abs(z_nec))
+        angle_nec = np.angle(z_nec)
 
-        def residual(flat, rows=rows):
-            block = unpack(flat)[np.newaxis]
-            out = []
-            for h_lam, z_lam, length_m, total_return_m, wavelength_m, z_nec in rows:
-                alpha_a, ka, alpha_r, vf_r, kr = look_up(
-                    block, 0, h_lam, Z_NODES, z_lam
-                )
-                model = model_zin(
-                    (alpha_a, VF_A, ka, alpha_r, vf_r, kr),
-                    length_m,
-                    total_return_m,
-                    wavelength_m,
-                )
-                magnitude = np.log(np.abs(model)) - np.log(np.abs(z_nec))
-                phase = np.angle(model) - np.angle(z_nec)
-                phase = (phase + np.pi) % (2.0 * np.pi) - np.pi
-                out.append(np.concatenate([magnitude, phase]))
-            return np.concatenate(out)
+        # A node no group interpolates from is a direction the residual cannot
+        # see: the trust region wanders along it until max_nfev, never
+        # converging, and the value it lands on is the optimizer's rather than
+        # the antenna's.  Those columns are held at what build() tabulated and
+        # filled from a measured neighbour afterwards.
+        held = np.asarray(np.abs(weights).sum(axis=0)).ravel() <= WEIGHT_FLOOR
+        free = np.flatnonzero(~held)
+        fixed_at = np.clip(pack(refined[si]), lo, hi)
+        fixed_at[free] = 0.0
+        constant = weights @ fixed_at
+        weights = weights[:, free]
+
+        def residual(
+            flat,
+            weights=weights,
+            constant=constant,
+            counts=counts,
+            length_m=length_m,
+            total_return_m=total_return_m,
+            wavelength_m=wavelength_m,
+            log_abs_nec=log_abs_nec,
+            angle_nec=angle_nec,
+        ):
+            per_group = (weights @ flat + constant).reshape(-1, len(TABLE_PARAMS))
+            alpha_a, ka, alpha_r, vf_r, kr = (
+                np.repeat(per_group[:, pi], counts) for pi in range(len(TABLE_PARAMS))
+            )
+            model = model_zin(
+                (alpha_a, VF_A, ka, alpha_r, vf_r, kr),
+                length_m,
+                total_return_m,
+                wavelength_m,
+            )
+            magnitude = np.log(np.abs(model)) - log_abs_nec
+            phase = np.angle(model) - angle_nec
+            return np.concatenate([magnitude, (phase + np.pi) % (2.0 * np.pi) - np.pi])
 
         start = np.clip(pack(refined[si]), lo, hi)
-        out = least_squares(residual, start, bounds=(lo, hi), max_nfev=max_nfev)
+        out = least_squares(
+            residual,
+            start[free],
+            bounds=(lo[free], hi[free]),
+            max_nfev=max_nfev,
+        )
         if out.status <= 0:
             raise RuntimeError(
                 f"soil {si} refinement did not converge: status {out.status}, "
                 f"{out.nfev} evaluations of a {max_nfev} budget -- {out.message}"
             )
-        refined[si] = unpack(out.x)
+        settled = start.copy()
+        settled[free] = out.x
+        refined[si] = unpack(settled)
+        print(
+            f"  soil {si} refined: status {out.status}, {out.nfev} evaluations, "
+            f"{len(free)} of {len(lo)} parameters fitted",
+            flush=True,
+        )
         runs.append(
             {
                 "soil": si,
@@ -192,6 +288,8 @@ def refine(table, data, geometry, max_nfev=600):
                 "nfev": int(out.nfev),
                 "max_nfev": int(max_nfev),
                 "cost": float(out.cost),
+                "fitted": int(len(free)),
+                "held": int(held.sum()),
             }
         )
     return refined, runs
