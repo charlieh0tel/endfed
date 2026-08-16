@@ -85,10 +85,35 @@ SLOPER_REACH_MARGIN = 1.02
 
 
 def _segments(length_m, wavelength_m):
-    """Segment count for a wire, odd so a center segment exists."""
+    """Segments for the wire that carries the source, odd for a center segment.
+
+    The floor matters on a short wire: twenty per wavelength leaves a tenth
+    of a wavelength with two segments, which is not enough to carry a feed.
+    """
     n = int(np.ceil(SEGMENTS_PER_WAVELENGTH * length_m / wavelength_m))
     n = max(n, MIN_SEGMENTS)
     return n + 1 if n % 2 == 0 else n
+
+
+def _matched_segments(length_m, wavelength_m, target_m):
+    """Segments giving this wire the deck's segment length, near enough.
+
+    NEC wants comparable segment lengths across a junction, and the junction
+    here carries the source.  Segmenting each wire independently against the
+    same floor does the opposite: a short drop under a long antenna gets the
+    floor's nine segments however short it is, which graded the feedpoint by
+    up to 88:1 on a low flat top and 1472:1 on a sloper, and drove the drop's
+    segments under the wire radius where the thin-wire approximation stops
+    holding.  Matching lengths instead makes the grading 1:1 by construction.
+
+    Matching may only ever refine.  A 20 m return under a 666 m antenna at
+    1.8 MHz matches at two segments of 10 m, which is coarser than twenty per
+    wavelength, and NEC-4 failed outright on that geometry a centimetre above
+    the soil.  Accuracy comes first and the grading is what gives.
+    """
+    matched = int(round(length_m / target_m))
+    per_wavelength = int(np.ceil(SEGMENTS_PER_WAVELENGTH * length_m / wavelength_m))
+    return max(1, matched, per_wavelength)
 
 
 def _wires(
@@ -106,10 +131,21 @@ def _wires(
     """
     wavelength_m = C / freq_hz
     drop_m = height_m - return_height_m
+    antenna_segments = _segments(length_m, wavelength_m)
+    target_m = length_m / antenna_segments
+    # A drop too short to be a wire leaves the return at the feedpoint, so the
+    # geometry stays connected and the source still drives something.  The
+    # threshold is physical: whether a drop can be resolved against the deck's
+    # segment length is a separate question, and belongs to whoever chooses
+    # what to sweep, not to the deck, which must describe the antenna the
+    # model is told about.
+    if drop_m <= MIN_DROP_M:
+        return_height_m = height_m
+        drop_m = 0.0
     wires = [
         (
             1,
-            _segments(length_m, wavelength_m),
+            antenna_segments,
             0.0,
             0.0,
             height_m,
@@ -122,11 +158,11 @@ def _wires(
     # A drop shorter than this is not a wire: its segments come out below the
     # wire radius, where the thin-wire assumption does not hold.  sloper_deck
     # refuses the same case.
-    if drop_m > MIN_DROP_M:
+    if drop_m > 0.0:
         wires.append(
             (
                 2,
-                _segments(drop_m, wavelength_m),
+                _matched_segments(drop_m, wavelength_m, target_m),
                 0.0,
                 0.0,
                 height_m,
@@ -139,7 +175,7 @@ def _wires(
     wires.append(
         (
             3,
-            _segments(return_len_m, wavelength_m),
+            _matched_segments(return_len_m, wavelength_m, target_m),
             0.0,
             0.0,
             return_height_m,
@@ -209,25 +245,30 @@ def sloper_deck(
     eps, sigma = GROUNDS[ground]
     reach_m = float(np.sqrt(slant_m**2 - rise_m**2))
     drop_m = balun_m - return_height_m
+    antenna_segments = _segments(slant_m, wavelength_m)
+    target_m = slant_m / antenna_segments
+    if drop_m <= MIN_DROP_M:
+        return_height_m = balun_m
+        drop_m = 0.0
     lines = [
         "CM end-fed sloper, fed at the balun near the ground",
         "CE",
-        f"GW 1 {_segments(slant_m, wavelength_m)} 0 0 {balun_m:.9g} "
+        f"GW 1 {antenna_segments} 0 0 {balun_m:.9g} "
         f"{reach_m:.9g} 0 {apex_m:.9g} {radius_m:.9g}",
     ]
     # A counterpoise strung out at the balun's own height leaves no drop,
     # and a wire with both ends in the same place is not a wire.
-    if drop_m > MIN_DROP_M:
+    if drop_m > 0.0:
         lines.append(
-            f"GW 2 {_segments(drop_m, wavelength_m)} 0 0 {balun_m:.9g} "
+            f"GW 2 {_matched_segments(drop_m, wavelength_m, target_m)} 0 0 {balun_m:.9g} "
             f"0 0 {return_height_m:.9g} {radius_m:.9g}"
         )
     lines += [
         # Away from the wire: the coax heads back to the station.
-        f"GW 3 {_segments(return_len_m, wavelength_m)} 0 0 "
-        f"{return_height_m if drop_m > MIN_DROP_M else balun_m:.9g} "
+        f"GW 3 {_matched_segments(return_len_m, wavelength_m, target_m)} 0 0 "
+        f"{return_height_m:.9g} "
         f"{-return_len_m:.9g} 0 "
-        f"{return_height_m if drop_m > MIN_DROP_M else balun_m:.9g} "
+        f"{return_height_m:.9g} "
         f"{radius_m:.9g}",
         "GE 1",
         f"GN 2 0 0 0 {eps:.9g} {sigma:.9g}",
