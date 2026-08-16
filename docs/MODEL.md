@@ -418,11 +418,32 @@ for anything resting on it.
 The bound the caveat text should carry.  Taken over 96 groups, each
 fitted across 159 lengths and 7 return lengths.
 
-This section measures the 1-D `sweep.npz` fit.  What ships is the 2-D
-NEC-4.2 table, whose own error block reads median x1.25, p90 x1.33 and
-worst x1.62 for a flat top, and x1.15 / x1.21 / x1.27 for a sloper.  The
-page quotes the flat top's first two figures, and a test holds it to
-`coefficients2d.json` so a refit cannot leave the claim behind.
+This section measures the retired 1-D fit.  What ships is the 2-D NEC-4.2
+table, and it is measured two ways, because the two answer different
+questions.
+
+Per group, an RMS over the couple of hundred lengths in one (soil,
+frequency, height, counterpoise) cell, which is what the fit is scored on:
+
+| | median | 90th | worst |
+|---|---|---|---|
+| flat top | x1.247 | x1.335 | x1.591 |
+| sloper | x1.163 | x1.265 | x1.394 |
+
+Per length, which is what a user meets, because they pick a length and not
+a group:
+
+| | median | 90th | 99th | worst | phase, 90th |
+|---|---|---|---|---|---|
+| flat top | x1.14 | x1.43 | x2.23 | x5.32 | 20 deg |
+| sloper | x1.10 | x1.31 | x1.72 | x3.80 | 14 deg |
+
+The per-group median flatters and the per-group 90th understates: an RMS
+over a group hides that group's own tail.  The page quotes the flat top's
+per-length figures, and a test holds it to `coefficients2d.json` so a
+refit cannot leave the claim behind.
+
+Both are in sample.  There is no holdout for this table.
 
 Three sets of figures, and only the last says anything about what a user
 will see.
@@ -560,36 +581,44 @@ miscall is a length the model calls usable and NEC does not.
 
 Against the sweeps the tables were fitted from, in sample:
 
-| unun into tuner | flat top calls usable | of those, wrong | sloper | wrong |
+| unun into tuner | flat top offers | of those, wrong | sloper offers | wrong |
 |---|---|---|---|---|
-| 9:1 into 3:1 | 36.5% | **21.9%** | 35.4% | 14.9% |
-| 9:1 into 5:1 | 63.8% | 14.5% | 64.9% | 7.3% |
-| 9:1 into 9:1 | 85.5% | 7.3% | 86.9% | 4.0% |
-| 4:1 into 3:1 | 17.0% | 24.1% | 13.4% | 14.1% |
-| 1:1 into 3:1 | 0.8% | 34.6% | 0.6% | 40.1% |
+| 9:1 into 3:1 | 36.2% | **21.9%** | 34.1% | 14.5% |
+| 9:1 into 5:1 | 63.5% | 14.5% | 63.5% | 7.2% |
+| 9:1 into 9:1 | 85.1% | 7.4% | 86.0% | 4.2% |
+| 4:1 into 3:1 | 16.9% | 24.0% | 12.8% | 13.9% |
+| 1:1 into 3:1 | 0.8% | 34.4% | 0.6% | 38.2% |
 
 At the page's own defaults -- 9:1 into a 3:1 rig tuner -- one length in
 five that it offers is not usable.  By band, flat top, same setting:
-160 m 34.9 percent wrong, 40 m 25.6, 20 m 25.2, 10 m 15.8.  It is worst
+160 m 33.4 percent wrong, 40 m 25.6, 20 m 25.3, 10 m 16.4.  It is worst
 on the low bands and the tight tuners, which is the case a random wire
 exists for.
 
-Two things this says that the `|Z|` bound does not.
+Three things this says that the `|Z|` bound does not.
 
 The error lives in the reactance.  Computing the same table with the
 reactance discarded -- taking `|Z|` as a resistance -- gives 8.2 percent
-where the honest figure is 21.9.  The fit's objective does carry phase
-(`fit.py`), but every reported figure and the page's caveat are magnitude
-only, so the quantity the answer turns on is the one nothing measures.
+where the honest figure is 21.9.  The fit's objective does carry phase,
+and the table now records it, but a magnitude-only bound hides most of
+what a user meets.
 
-And it is not an interpolation problem, so snapping a user's height or
+It is not an interpolation problem, so snapping a user's height or
 counterpoise to a table node would not help: the table is evaluated at
 each group's own geometry when this is measured, and the misses
 concentrate at the resonance structure the form gets wrong (see "The
 peaks are too sharp").
 
-This is the number for judging any change to the model.  It is in sample,
-like everything else here.
+And it is not a measurement problem either, which was tested rather than
+assumed.  The decks were rebuilt to fix a segment-grading defect at the
+feedpoint and re-swept -- 480,000 NEC-4.2 solves -- which moved individual
+impedances by a median of x1.03, a 99th percentile of x2.2 and a worst of
+x6.5, with a tenth of flat-top points and a sixth of sloper points moving
+more than 25 percent.  The miscall rate did not move at all: 21.9 percent
+before, 21.9 after.  The fit simply re-absorbed the change.  What sets
+this number is the model form, and better data cannot reach it.
+
+This is the number for judging any change to the model.
 
 ## What it does to the recommendations
 
