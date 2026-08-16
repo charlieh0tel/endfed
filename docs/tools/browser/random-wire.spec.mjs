@@ -145,10 +145,14 @@ test.describe('the tuner decides the verdicts', () => {
       expect(rows.length).toBeGreaterThan(0);
       for (const [length, , worst, verdict] of rows) {
         const swr = Number.parseFloat(worst);
+        // The cell is rounded to a tenth, so a worst of 5.04 reads as 5.0
+        // against a 5:1 limit and the verdict cannot be predicted from the
+        // display.  Skip only that sliver; everything else is decidable.
+        if (Math.abs(swr - limit) <= 0.05) continue;
         expect(
           verdict,
           `${length} worst ${worst} against a ${button} tuner`,
-        ).toBe(swr <= limit ? 'ok' : 'poor');
+        ).toBe(swr < limit ? 'ok' : 'poor');
       }
     }
   });
