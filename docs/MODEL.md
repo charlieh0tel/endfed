@@ -549,6 +549,48 @@ predict.  x1.22 median is comfortably inside the severalfold spread that
 height, counterpoise and common-mode current impose on a real
 installation.
 
+## The decision metric: how often a recommended length is not usable
+
+The error bound above is about `|Z|`, and `|Z|` is not what the page
+decides on.  A user asks whether a length will match through their tuner,
+which is SWR at the radio, from R and X together.  `nec/miscall_check.py`
+measures that directly: the shipped table and NEC, at the same geometry,
+each taken through the unun, each compared against the tuner's limit.  A
+miscall is a length the model calls usable and NEC does not.
+
+Against the sweeps the tables were fitted from, in sample:
+
+| unun into tuner | flat top calls usable | of those, wrong | sloper | wrong |
+|---|---|---|---|---|
+| 9:1 into 3:1 | 36.5% | **21.9%** | 35.4% | 14.9% |
+| 9:1 into 5:1 | 63.8% | 14.5% | 64.9% | 7.3% |
+| 9:1 into 9:1 | 85.5% | 7.3% | 86.9% | 4.0% |
+| 4:1 into 3:1 | 17.0% | 24.1% | 13.4% | 14.1% |
+| 1:1 into 3:1 | 0.8% | 34.6% | 0.6% | 40.1% |
+
+At the page's own defaults -- 9:1 into a 3:1 rig tuner -- one length in
+five that it offers is not usable.  By band, flat top, same setting:
+160 m 34.9 percent wrong, 40 m 25.6, 20 m 25.2, 10 m 15.8.  It is worst
+on the low bands and the tight tuners, which is the case a random wire
+exists for.
+
+Two things this says that the `|Z|` bound does not.
+
+The error lives in the reactance.  Computing the same table with the
+reactance discarded -- taking `|Z|` as a resistance -- gives 8.2 percent
+where the honest figure is 21.9.  The fit's objective does carry phase
+(`fit.py`), but every reported figure and the page's caveat are magnitude
+only, so the quantity the answer turns on is the one nothing measures.
+
+And it is not an interpolation problem, so snapping a user's height or
+counterpoise to a table node would not help: the table is evaluated at
+each group's own geometry when this is measured, and the misses
+concentrate at the resonance structure the form gets wrong (see "The
+peaks are too sharp").
+
+This is the number for judging any change to the model.  It is in sample,
+like everything else here.
+
 ## What it does to the recommendations
 
 Swapping the model moved the picks a long way, which is the change worth
