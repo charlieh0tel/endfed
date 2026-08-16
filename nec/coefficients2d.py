@@ -23,6 +23,7 @@ set -- each entry sensible, the vector not a fit of anything.
 
 import argparse
 import itertools
+import warnings
 import json
 import re
 from pathlib import Path
@@ -120,7 +121,28 @@ def slices(data, si, geometry, min_points=1):
         if height_m / wavelength_m < MIN_H_OVER_LAMBDA:
             continue
         z_m = float(np.unique(data["return_height_m"][sel])[0])
-        drops_from_m = height_m if feed_m is None else feed_m
+        if feed_m is None:
+            drops_from_m = height_m
+        elif "balun_m" in data:
+            # The sweep raises the balun to clear an elevated counterpoise,
+            # so the drop is against what it actually solved with.
+            drops_from_m = np.unique(data["balun_m"][sel])
+            if len(drops_from_m) != 1:
+                raise RuntimeError(
+                    f"group at {freq_hz / 1e6:g} MHz, height {height_m:g}, "
+                    f"step {step} spans {len(drops_from_m)} balun heights"
+                )
+            drops_from_m = float(drops_from_m[0])
+        else:
+            # A sloper sweep written before that column, which is only right
+            # if it never raised the balun.  nec4_domain_sloper_sweep.npz did.
+            warnings.warn(
+                "sloper sweep has no balun_m column: assuming the drop is "
+                f"from {feed_m} m, which is wrong wherever it was raised",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            drops_from_m = feed_m
         rows.append(
             (
                 height_m / wavelength_m,
@@ -349,8 +371,20 @@ def fill_unsupported(table, counts):
 
 
 def measure(data, table, geometry):
-    """Tabulated error over every group, as coefficients.py measures it."""
-    factors = []
+    """Tabulated error, per group and per length.
+
+    Per group is an RMS over the ~240 lengths in one (soil, frequency,
+    height, counterpoise) cell, which is what the fit is scored on.  Per
+    length is the error of one answer, which is what a user gets: they pick
+    a length, not a group, so it is the figure the page has to quote.  The
+    two differ by more than rounding -- an RMS over a group hides its own
+    tail -- so both are recorded and the page is bound to the second.
+
+    Phase is carried because SWR is computed from R and X together: a
+    magnitude that is right and an angle that is twenty degrees out is a
+    match the user does not get.
+    """
+    factors, magnitude, phase = [], [], []
     for si in range(len(data["soil_names"])):
         for h_lam, z_lam, length_m, total_return_m, wavelength_m, z_nec in slices(
             data, si, geometry
@@ -364,7 +398,35 @@ def measure(data, table, geometry):
             )
             err = np.log(np.abs(model)) - np.log(np.abs(z_nec))
             factors.append(np.exp(np.sqrt(np.mean(err**2))))
-    return np.array(factors)
+            magnitude.append(np.abs(err))
+            angle = np.angle(model) - np.angle(z_nec)
+            phase.append(np.abs((angle + np.pi) % (2.0 * np.pi) - np.pi))
+    return np.array(factors), np.concatenate(magnitude), np.concatenate(phase)
+
+
+def error_block(factors, magnitude, phase):
+    """What the json records about how wrong the table is."""
+    per_length = np.exp(magnitude)
+    return {
+        # Per group, the statistic the fit is scored on.  Kept because every
+        # earlier figure in docs/MODEL.md is one of these.
+        "median": float(np.median(factors)),
+        "p90": float(np.percentile(factors, 90)),
+        "worst": float(factors.max()),
+        # Per length, the statistic a user meets.
+        "per_length": {
+            "median": float(np.median(per_length)),
+            "p90": float(np.percentile(per_length, 90)),
+            "p99": float(np.percentile(per_length, 99)),
+            "worst": float(per_length.max()),
+        },
+        # Degrees, because SWR needs the angle as much as the magnitude.
+        "phase_deg": {
+            "median": float(np.degrees(np.median(phase))),
+            "p90": float(np.degrees(np.percentile(phase, 90))),
+            "worst": float(np.degrees(phase.max())),
+        },
+    }
 
 
 def render(tables, soils):
@@ -516,14 +578,24 @@ if __name__ == "__main__":
     print(f"{len(groups)} groups fitted\n")
     n_soils = len(data["soil_names"])
     table = build(groups, n_soils, "z_lam", Z_NODES, TWO_D)
-    report("unrefined", measure(data, table, geometry))
+    report("unrefined", measure(data, table, geometry)[0])
     table, runs = refine(table, data, geometry, args.max_nfev)
-    report("refined", measure(data, table, geometry))
+    report("refined", measure(data, table, geometry)[0])
 
     counts = support(data, geometry, n_soils)
     table, filled = fill_unsupported(table, counts)
-    factors = measure(data, table, geometry)
+    factors, magnitude, phase = measure(data, table, geometry)
     report("filled", factors)
+    per_length = np.exp(magnitude)
+    print(
+        f"  per length   median x{np.median(per_length):.3f}  "
+        f"90th x{np.percentile(per_length, 90):.3f}  "
+        f"99th x{np.percentile(per_length, 99):.3f}"
+    )
+    print(
+        f"  phase        median {np.degrees(np.median(phase)):.1f} deg  "
+        f"90th {np.degrees(np.percentile(phase, 90)):.1f} deg"
+    )
     print(
         f"\n{int((counts == 0).sum())} of {counts.size} nodes have no group "
         f"nearest them and take a measured neighbour's values"
@@ -556,11 +628,7 @@ if __name__ == "__main__":
                 },
                 name: {
                     "table": table.tolist(),
-                    "error": {
-                        "median": float(np.median(factors)),
-                        "p90": float(np.percentile(factors, 90)),
-                        "worst": float(factors.max()),
-                    },
+                    "error": error_block(factors, magnitude, phase),
                     # What produced these numbers, so a shipped table can be
                     # told from a converged, fully measured one by reading.
                     "provenance": {

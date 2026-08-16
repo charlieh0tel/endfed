@@ -30,6 +30,7 @@ import numpy as np
 from coefficients2d import (
     FLAT_TOP,
     TWO_D,
+    error_block,
     fill_unsupported,
     fit_groups,
     load_sweeps,
@@ -57,7 +58,7 @@ def run():
     table, runs = refine(table, data, FLAT_TOP)
     counts = support(data, FLAT_TOP, n_soils)
     table, filled = fill_unsupported(table, counts)
-    factors = measure(data, table, FLAT_TOP)
+    factors, magnitude, phase = measure(data, table, FLAT_TOP)
     return {
         "h_nodes": NODES.tolist(),
         "z_nodes": Z_NODES.tolist(),
@@ -67,11 +68,7 @@ def run():
         "held": [run["held"] for run in runs],
         "filled": len(filled),
         "table": table.tolist(),
-        "error": {
-            "median": float(np.median(factors)),
-            "p90": float(np.percentile(factors, 90)),
-            "worst": float(factors.max()),
-        },
+        "error": error_block(factors, magnitude, phase),
     }
 
 
@@ -81,9 +78,17 @@ def differences(got, want):
     for key in ("h_nodes", "z_nodes", "params", "groups", "fitted", "held", "filled"):
         if got[key] != want[key]:
             out.append(f"{key}: {got[key]}, expected {want[key]}")
-    for key, value in got["error"].items():
-        if abs(value - want["error"][key]) > TOLERANCE:
-            out.append(f"error {key}: {value:.9f}, expected {want['error'][key]:.9f}")
+
+    def compare_errors(got_block, want_block, prefix=""):
+        for key, value in got_block.items():
+            if isinstance(value, dict):
+                compare_errors(value, want_block[key], f"{prefix}{key} ")
+            elif abs(value - want_block[key]) > TOLERANCE:
+                out.append(
+                    f"error {prefix}{key}: {value:.9f}, expected {want_block[key]:.9f}"
+                )
+
+    compare_errors(got["error"], want["error"])
     a, b = np.array(got["table"]), np.array(want["table"])
     if a.shape != b.shape:
         out.append(f"table shape: {a.shape}, expected {b.shape}")
