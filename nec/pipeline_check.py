@@ -44,11 +44,12 @@ from table2d import build
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "pipeline_fixture.npz"
 EXPECTED = Path(__file__).resolve().parent / "fixtures" / "pipeline_expected.json"
 
-#: Tight enough to catch a changed formula, loose enough to survive a
-#: different BLAS summing in a different order.  The error statistics are
-#: aggregates over ~7000 points and move in the fifth decimal between
-#: machines.
-TOLERANCE = 1e-4
+#: Relative, and tight enough to catch a changed formula.  The error
+#: statistics are order statistics over thousands of points: a median hops
+#: between neighbouring samples when rounding reorders them, so it moves
+#: further between machines than a mean would.  Measured against CI, the
+#: worst was 2.3e-4 relative, on the ninetieth percentile of the phase.
+TOLERANCE = 1e-3
 
 #: Coefficients get their own, much looser, and the reason is not sloppiness.
 #: The refinement has flat directions wherever a node is thinly supported --
@@ -102,7 +103,9 @@ def differences(got, want):
         for key, value in got_block.items():
             if isinstance(value, dict):
                 compare_errors(value, want_block[key], f"{prefix}{key} ")
-            elif abs(value - want_block[key]) > TOLERANCE:
+            elif abs(value - want_block[key]) > TOLERANCE * max(
+                abs(want_block[key]), 1e-9
+            ):
                 out.append(
                     f"error {prefix}{key}: {value:.9f}, expected {want_block[key]:.9f}"
                 )
