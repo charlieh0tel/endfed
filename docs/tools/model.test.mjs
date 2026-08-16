@@ -1196,23 +1196,29 @@ test('a recommended length is rounded to its unit own grid', () => {
   close(m.roundToUnit(17.63, 'm'), 17.5, 1e-9, 'and not to whole meters');
 });
 
-test('the display unit does not change which antenna is recommended', () => {
+test('the display unit does not change the quality of what is offered', () => {
+  // The two grids are 1 ft and 0.5 m, so a length can round to either of two
+  // neighbouring minima.  Where those minima score the same to two decimals,
+  // which one reaches the list is a coin toss and asserting on lengths would
+  // be asserting on the toss.  What must not change is how good the offered
+  // antennas are.
   const site = { geometry: 'flatTop', heightM: m.DEFAULT_HEIGHT_M,
     balunM: m.DEFAULT_BALUN_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
     counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: m.DEFAULT_SOIL };
   const picks = (units) => m.solveImpedance('us', [40, 20, 15, 10], 'full', site,
-    m.WIRE_RADIUS_M, 9, 60, units).suggestions.map(s => s.lenM);
+    m.WIRE_RADIUS_M, 9, 60, units).suggestions;
   const feet = picks('ft');
   const meters = picks('m');
+
   assert.equal(feet.length, meters.length, 'the same number of lengths');
-  // The two grids are 1 ft and 0.5 m, so two readings of one minimum can sit
-  // half of each apart and no further.
-  const toleranceM = 0.5 / 2 + m.fromDisplay(1, 'ft') / 2;
-  for (const lenM of meters) {
-    const nearest = Math.min(...feet.map(f => Math.abs(f - lenM)));
-    assert.ok(nearest <= toleranceM,
-      `${lenM.toFixed(2)} m is ${nearest.toFixed(2)} m from any imperial pick`);
+  for (let i = 0; i < feet.length; i++) {
+    close(meters[i].swr, feet[i].swr, 0.05,
+      `pick ${i + 1} is as good either way`);
   }
+  // And the best pick really is the same antenna, not merely as good.
+  assert.ok(Math.abs(feet[0].lenM - meters[0].lenM)
+    <= 0.5 / 2 + m.fromDisplay(1, 'ft') / 2,
+    `best pick ${feet[0].lenM.toFixed(2)} m against ${meters[0].lenM.toFixed(2)} m`);
 });
 
 test('a site is held to a geometry the model can describe', () => {
@@ -1249,16 +1255,24 @@ test('a length the model cannot describe is declined, not scored as NaN', () => 
 test('the quoted accuracy is the accuracy the shipped table measures', async () => {
   // The caveat text is a claim about coefficients2d.json's own error block.
   // Nothing else compares them, so a refit could move the error and leave the
-  // page quoting the old one.
+  // page quoting the old one.  Per length rather than per group: the page
+  // recommends lengths, and a group is an RMS over a couple of hundred of
+  // them, which hides its own tail.
   const { readFile } = await import('node:fs/promises');
   const url = new URL('../../nec/coefficients2d.json', import.meta.url);
   const { flat_top: flatTop, sloper } = JSON.parse(await readFile(url, 'utf8'));
 
-  close(m.MODEL_TYPICAL_FACTOR, flatTop.error.median, 5e-3, 'typical is the median');
-  close(m.MODEL_BOUND_FACTOR, flatTop.error.p90, 5e-3, 'the bound is the p90');
-  assert.ok(flatTop.error.median >= sloper.error.median
-    && flatTop.error.p90 >= sloper.error.p90,
+  close(m.MODEL_TYPICAL_FACTOR, flatTop.error.per_length.median, 5e-3,
+    'typical is the median length');
+  close(m.MODEL_BOUND_FACTOR, flatTop.error.per_length.p90, 5e-3,
+    'the bound is the ninetieth length');
+  assert.ok(flatTop.error.per_length.median >= sloper.error.per_length.median
+    && flatTop.error.per_length.p90 >= sloper.error.per_length.p90,
     'the flat top is the weaker of the two, which is why it is quoted');
+  assert.ok(flatTop.error.per_length.p90 > flatTop.error.p90,
+    'the per-length ninetieth is worse than the per-group one, which is why '
+    + 'the page quotes it');
+  assert.ok(flatTop.error.phase_deg.p90 > 0, 'phase error is recorded');
 });
 
 test('the page refuses the near-vertical slopers the sweep refused to fit', () => {
