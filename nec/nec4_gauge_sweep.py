@@ -51,8 +51,10 @@ HEIGHTS_M = (3.0, 10.0, 25.0)
 RETURNS_M = (4.0, 7.62, 20.0)
 SOIL = "average"
 
-#: Runs beside other work.
-WORKERS = 4
+#: Solves are small and separate, so this is a core count rather than a
+#: memory budget.  The default leaves the machine usable; --workers takes
+#: it up.  More than one per (frequency, soil) group does nothing.
+DEFAULT_WORKERS = 4
 
 IMPEDANCE_FIELD = 4
 SCIENTIFIC = re.compile(r"[-+]?\d*\.?\d+[Ee][-+]?\d+")
@@ -126,6 +128,9 @@ def solve_group(job):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("binary")
+    parser.add_argument(
+        "--workers", type=int, default=DEFAULT_WORKERS, help="parallel solvers"
+    )
     args = parser.parse_args()
 
     jobs = [(args.binary, gauge, freq) for gauge in sorted(GAUGES) for freq in FREQS_HZ]
@@ -133,7 +138,7 @@ def main():
     print(f"{len(jobs) * per_job} points over {len(GAUGES)} gauges", flush=True)
 
     start = time.time()
-    with Pool(WORKERS) as pool:
+    with Pool(args.workers) as pool:
         collected = pool.map(solve_group, jobs)
     columns = np.array([row for group in collected for row in group])
     print(f"solved in {time.time() - start:.0f} s", flush=True)
