@@ -1728,10 +1728,46 @@ everywhere else.  Forcing it to fit the first peak -- 0.13 to 0.25
 nepers per wavelength -- wrecks the higher ones, taking `l = lambda` from
 0.87 of NEC to 0.53, and makes the overall error worse, x1.50 to x1.67.
 
-The obvious form change fails too.  Letting `alpha` grow with electrical
-length, on the physical grounds that radiation loss accumulates along a
-wire, makes the peak *worse*: at a power of 0.5 the peak ratio goes from
-1.85 to 3.19 and the overall error from x1.11 to x1.17.
+The obvious form change fails, and its opposite half works.  Letting
+`alpha` *grow* with electrical length, on the physical grounds that
+radiation loss accumulates along a wire, makes the peak worse: at a power
+of 0.5 the peak ratio goes from 1.85 to 3.19 and the overall error from
+x1.11 to x1.17.
+
+The measurement says the other direction.  Inverting NEC's peaks for the
+`alpha_lam` each one would need gives a monotone *fall*:
+
+| l/lambda | 0.5 | 1.0 | 1.5 | 2.0 | 2.5 | 3.0 | 3.5 |
+|---|---|---|---|---|---|---|---|
+| implied `alpha_lam` | 0.160 | 0.096 | 0.073 | 0.062 | 0.055 | 0.051 | 0.048 |
+
+Fitted per group with `alpha_lam * (l/lambda) ** -p`, `p` comes out at
+0.60 across 200 groups, with a tenth to ninetieth of 0.09 to 0.69 and
+only seven groups in a hundred wanting none of it, and it helps where the
+argument above says it should -- in the tail:
+
+| per group, own coefficients | median | 90th | 99th | miscall at 9:1 into 3:1 |
+|---|---|---|---|---|
+| constant `alpha` | x1.106 | x1.349 | x2.056 | 17.0% |
+| falling, `p` per group | x1.091 | x1.290 | x1.605 | 14.4% |
+| falling, one shared `p` | x1.098 | x1.310 | x1.661 | 15.2% |
+
+**And none of it survives the table.**  Shipped as one constant and put
+through the real pipeline -- fit per group, weighted median onto the
+nodes, joint refinement, interpolate -- the decision metric gets worse
+almost everywhere: 9:1 into a 3:1 tuner improves from 21.9 to 20.9
+percent on a flat top while every looser tuner degrades, the sloper goes
+from 14.5 to 16.1, and the rate at which good lengths are called bad
+climbs from 36 to 57 percent at 1:1.  The per-length 99th improves
+(x2.23 to x1.88) and the decision does not.
+
+The reading is that the length term makes each group fit better and makes
+the *surface* of coefficients less smooth across `h/lambda` and
+`z/lambda`, so the tabulation and interpolation give back more than the
+form wins.  Which says the next form to try is not merely one that fits a
+group better, but one whose coefficients vary smoothly over the axes the
+table indexes -- a property nothing here has ever measured.
+`nec/alpha_length_check.py` is the experiment; reverted, not shipped.
 
 So the peaks want something structurally different -- a term that bites
 only at resonance, or a modal representation instead of one line -- not
