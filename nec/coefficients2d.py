@@ -18,7 +18,7 @@ built from coordinate-wise medians can sit outside the joint feasible
 set -- each entry sensible, the vector not a fit of anything.
 
     uv run python coefficients2d.py                    # the flat top
-    uv run python coefficients2d.py --sweep nec4_sloper_sweep.npz
+    uv run python coefficients2d.py --sweep nec4_table_sloper_sweep.npz
 """
 
 import argparse
@@ -135,7 +135,7 @@ def slices(data, si, geometry, min_points=1):
             drops_from_m = float(drops_from_m[0])
         else:
             # A sloper sweep written before that column, which is only right
-            # if it never raised the balun.  nec4_domain_sloper_sweep.npz did.
+            # if it never raised the balun, which the retired domain sweep did.
             warnings.warn(
                 "sloper sweep has no balun_m column: assuming the drop is "
                 f"from {feed_m} m, which is wrong wherever it was raised",
@@ -542,7 +542,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--sweep",
         nargs="+",
-        default=["nec4_return_height_sweep.npz"],
+        default=["nec4_table_sweep.npz"],
         help="one or more sweeps of the same geometry, read as one grid",
     )
     parser.add_argument("--max-nfev", type=int, default=600)

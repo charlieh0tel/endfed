@@ -57,11 +57,8 @@ binary.  `pipeline_check.py` covers the fitting code without one.
 
 What ships comes from one chain, and only this chain:
 
-    nec4_return_height_sweep.py |
-    nec4_node_fill_sweep.py     |  ->  fit.py  ->  table2d.py
-    nec4_domain_sweep.py        |        ->  coefficients2d.py  ->  the page
-    nec4_sloper_sweep.py        |
-    nec4_domain_sloper_sweep    |
+    nec4_table_sweep.py  ->  fit.py  ->  table2d.py
+                                 ->  coefficients2d.py  ->  the page
 
 - `table_spec.py` -- what is tabulated, over what nodes, within what
   bounds.  The specification the other three are built to.

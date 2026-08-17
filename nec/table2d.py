@@ -39,7 +39,7 @@ from table_spec import MIN_H_OVER_LAMBDA, NODES, SOURCE_INDEX, TABLE_PARAMS, VF_
 from fit import fit_group, model_zin
 from nec_model import C
 
-SWEEP = "nec4_return_height_sweep.npz"
+SWEEP = "nec4_table_sweep.npz"
 
 #: Nodes for the counterpoise axis, one per decade-ish over the span the
 #: sweep covers.  Held flat outside, as the h/lambda axis is.
