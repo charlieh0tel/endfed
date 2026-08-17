@@ -1246,6 +1246,29 @@
     /** Map length used when no band is selected and there is nothing to scale to. */
     const EMPTY_MAP_LEN_M = 30;
 
+    /** Headroom past the longest published length, so its marker and click
+        target sit inside the plot rather than on its edge. */
+    const MAP_SPAN_HEADROOM = 1.02;
+
+    /**
+     * The map's span: one full wavelength at the lowest selected band, which
+     * is the longest wire worth considering for that band -- and never
+     * shorter than the longest published length, which the table scores and
+     * the map must therefore have room to show.
+     *
+     * @param {Band[]} selected
+     * @param {SegmentKey} segment
+     * @param {number} vf
+     * @returns {Meters}
+     */
+    const mapSpanM = (selected, segment, vf) => {
+      if (selected.length === 0) return EMPTY_MAP_LEN_M;
+      const lowestHz = Math.min(...selected.map(b => bandEdgesHz(b, segment)[0]));
+      return Math.max(
+        2 * halfWaveM(lowestHz, vf),
+        fromDisplay(Math.max(...PUBLISHED_FT), 'ft') * MAP_SPAN_HEADROOM);
+    };
+
     /**
      * Roundings tried inside a usable span, coarsest first, in whatever unit
      * the user is reading.  Roundness is a property of the number on screen,
@@ -3140,14 +3163,10 @@
        */
       const displayVf = mode === 'impedance' ? MODEL_VF_A : velocityFactor;
 
-      // Map spans one full wavelength at the lowest selected band, which is the
-      // longest wire worth considering for that band.
-      const maxLenM = useMemo(() => {
-        const selected = bandsIn(region).filter(b => bands.includes(b.m));
-        if (selected.length === 0) return EMPTY_MAP_LEN_M;
-        const lowestHz = Math.min(...selected.map(b => bandEdgesHz(b, segment)[0]));
-        return 2 * halfWaveM(lowestHz, displayVf);
-      }, [region, bands, segment, displayVf]);
+      const maxLenM = useMemo(
+        () => mapSpanM(bandsIn(region).filter(b => bands.includes(b.m)),
+                       segment, displayVf),
+        [region, bands, segment, displayVf]);
 
       /**
        * A quarter wave at the lowest selected band, which is the counterpoise

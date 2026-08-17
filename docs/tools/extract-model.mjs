@@ -72,6 +72,7 @@ const EXPORTS = [
   'LEGACY_RETURN_KEY',
   'URL_KEYS', 'DEFAULTS', 'LEGACY_LEN_FT_KEY',
   // classical internals worth exercising directly
+  'mapSpanM',
   'pickInSpan', 'mergeIntervals', 'usableIntervals', 'bestFeasibleMargin',
   'nearestClearLength', 'PICK_STEPS', 'MARGIN_PCT_RANGE',
   'roundToUnit',

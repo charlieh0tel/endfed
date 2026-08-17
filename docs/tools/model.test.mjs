@@ -1386,3 +1386,18 @@ test('a sloper hatches everything shorter than its rise', () => {
   assert.ok(!flatOut.shortLabel.includes('rise'), 'and the plain label');
 });
 
+
+test('the map always has room for every published length', () => {
+  // With 40 m as the lowest band, one wavelength is about 137 ft and the
+  // published table scores out to 203 ft; a scored row must have a place
+  // on the map.
+  const bands = m.bandsIn('us').filter(b => [40, 20].includes(b.m));
+  const spanM = m.mapSpanM(bands, 'full', m.MODEL_VF_A);
+  const longestM = m.fromDisplay(Math.max(...m.PUBLISHED_FT), 'ft');
+  assert.ok(spanM > longestM, 'the longest published length fits');
+
+  // On 160 m one wavelength alone is far past the table, and governs.
+  const topBand = m.bandsIn('us').filter(b => b.m === 160);
+  assert.ok(m.mapSpanM(topBand, 'full', m.MODEL_VF_A) > spanM,
+    'a low band still stretches the map beyond the table');
+});
