@@ -514,12 +514,26 @@ exactly where the unusable data ends: with a 0.02 floor some 327
 non-physical points survive into the fit, 23 percent of one group at
 1.9 MHz over poor ground, while at 0.05 there are none.
 
-**The bound survives conductor gauge.**  The main sweep ran entirely at
-#14, so `a/lambda` was the one planned axis never executed and the
-coefficients had seen a single diameter.  `gauge_sweep.py` and
-`gauge_check.py` closed that: 22896 further solves over #12, #14, #18 and
-#22, a factor of 3.2 in diameter.  The sweep is still here; the checking
-script retired with the 1-D fit it used.
+**The bound survives conductor gauge.**  The sweeps run entirely at #14,
+so `a/lambda` is the one planned axis never executed and the coefficients
+have seen a single diameter.  `nec4_gauge_sweep.py` and
+`nec4_gauge_check.py` close that: 22896 further NEC-4.2 solves over #12,
+#14, #18 and #22, a factor of 3.2 in diameter, evaluated against the
+shipped table at each gauge's own radius -- which the model responds to
+through Schelkunoff's `Z0` without being fitted per gauge.
+
+| gauge | radius mm | median | 90th | worst |
+|---|---|---|---|---|
+| #12 | 2.053 | x1.230 | x1.386 | x1.440 |
+| #14 | 1.628 | x1.235 | x1.382 | x1.451 |
+| #18 | 1.024 | x1.242 | x1.377 | x1.487 |
+| #22 | 0.644 | x1.247 | x1.377 | x1.523 |
+
+#14 is the control: the table is fitted there, so it should land on the
+table's own x1.247 / x1.335, and it does.  The other three are
+indistinguishable from it, so the page's #12 to #22 holds.  The earlier
+answer to this question came from a NEC-2 grid and a checking script that
+retired with the 1-D fit; both are now the solver the tables use.
 
 Agreement, which is the question the page cares about -- the shipped
 #14 table used unchanged against each gauge:

@@ -367,10 +367,31 @@ Tooling: `nec/`, Python + PyNEC, `uv`-managed.
 From the three-way review of 14 Aug 2026 (two Claude passes and a codex
 pass; the fixes that shipped that day are in the git log).
 
-**Open, and next.**  Coefficients in `coefficients2d.json` sit exactly on
-their refinement bounds: `flat_top.kr` has 3 entries at 0.4000 and 3 at
-1.6000, `alpha_r_lam` 4 at the 0.0500 floor and the sloper 2 more,
-`vf_r` 10 at 1.0000.  A parameter held at its constraint is the bound,
+**Open, and next.**  Measure how smoothly the fitted coefficients vary
+across `h/lambda` and `z/lambda`, which nothing here has ever looked at.
+
+It came out of the length-dependent loss experiment (`MODEL.md`, "The
+peaks are too sharp"): letting `alpha` fall with electrical length is
+what the data asks for and improves every per-group figure -- the 99th
+per-length error from x2.06 to x1.66, the miscall rate from 17.0 to 14.4
+percent -- and then loses all of it through the table.  Fit per group,
+weighted median onto the nodes, refine, interpolate, and the decision
+metric comes out worse almost everywhere.
+
+So a form that fits each group better is not the thing to look for.  The
+thing to look for is a form whose coefficients make a smooth surface over
+the two axes the table indexes, because that is what the tabulation can
+carry.  The fits already on disk are enough to measure it: per-group
+coefficients against `h/lambda` and `z/lambda`, how much a node's value
+differs from its neighbours', and how much of the per-length error is
+interpolation rather than form.  No solver time.
+
+**Open.**  Coefficients in `coefficients2d.json` sit exactly on
+their refinement bounds.  Of 1440 values per geometry, after the 16 Aug
+refit: the flat top has `vf_r` at its 1.0 ceiling 41 times,
+`alpha_r_lam` on its 0.05 floor 14 times, `alpha_a_lam` at its 0.4
+ceiling 11; the sloper has `alpha_a_lam` at that ceiling 22 times.
+A parameter held at its constraint is the bound,
 not a measurement -- the "compensating for the model rather than fitting
 the antenna" case `table_spec.py` says the bounds exist to prevent.
 *Decided:* investigate before refitting.  Find which (h/lambda, z/lambda,
