@@ -423,43 +423,19 @@ model deficiency want different answers.
 `out.x` while discarding `out.status` and `out.success`, so a run that
 stopped at `max_nfev` is indistinguishable from a converged one after
 the fact.  `fit.py` raises on `status <= 0`; this does not.  Nothing in
-the json records nfev, status or the `--max-nfev` used.
+the json records nfev, status or the `--max-nfev` used, nor which
+parameters were held out of the refinement and which came back on a
+bound -- both are printed once and then lost, and both are what a reader
+needs to know how much of a cell is measurement.  `scipy` is also
+unpinned, which for a table that takes hours of NEC time to reproduce is
+the same hazard `uv.lock` exists to close.
 
-**Open, and the biggest gap left.**  Nothing about this table has ever
-been measured out of sample.  Everything in `MODEL.md` and on the page --
-the per-length x1.14 and x1.43, the 21.9 percent miscall rate -- is
-fitted and measured on the same sweeps, so all of it is optimistic by
-construction and by an unknown amount.
-
-The cheap test needs no solver time: leave one frequency out.  Drop
-7.15 or 14.175 MHz, which are interior and where the `h/lambda` coverage
-is redundant, refit, and measure the miscall rate at the frequency that
-was held back.  About fifteen minutes of fitting.  Frequency is also the
-axis that matters, because the table has no frequency index at all while
-the page serves ten bands and the sweeps carry six.
-
-If it comes back near 21.9 percent, the model generalises and the page
-can say so for the first time.  If it comes back far worse, the claims
-need another pass.  Until it is run, nobody knows which.
-
-An out-of-band holdout against fresh NEC solves is the stronger version
-and wants machine time; the gauge check that was the other half of this
-item is done, on NEC-4.2, and the claim held.
-
-**Decided, not yet built.**  The page must not ask the model outside the
-domain it was fitted over.  `coefficients2d.json` now carries that domain
-beside the table -- the h/lambda floor, the counterpoise floor and ceiling
--- so the definition travels with the numbers instead of being restated in
-the page.  What is missing is the page acting on it: `interpCoeff`/
-`interpCoeff2` hold the table flat outside its nodes and answer anyway.
-Measured over the page's own controls, 3 percent of (height, frequency)
-combinations fall below the h/lambda floor and 2 percent above the top
-node; a 5 m wire on 160 m is h/lambda 0.032 against a floor of 0.05, and
-the page reports an SWR for it with no more hedging than usual.
-
-Wanted: the page reads the domain from the generated block, a test holds
-its constants to it, and a length whose band puts it outside says so --
-the way an unbuildable sloper does -- rather than quietly extrapolating.
+**Open.**  Every figure the page quotes is still in sample in every axis
+but frequency.  `holdout_check.py` covers frequency, and `MODEL.md`
+records what it cost: 1.9 points of miscall rate.  The stronger version
+is an out-of-band holdout against fresh NEC solves -- a height, a
+counterpoise or a soil the sweeps never carried -- and it wants machine
+time rather than the fifteen minutes a refit takes.
 
 **Open.**  `nec_model._wires` segments the flat top's drop by the wire
 height rather than by the drop's own length, so a counterpoise well up
@@ -468,6 +444,23 @@ gets a finer drop than intended -- 49 segments where 25 are asked for, at
 segments its drop correctly.  Finer is not wrong, and every shipped
 table was fitted with it, so correcting it means a re-sweep before the
 tables can be reproduced from source.
+
+**Open.**  The unun is not in the model.  NEC measures the feedpoint and
+the page divides by the ratio, so an ideal, lossless, frequency-flat
+transformer is assumed at the one place in the system least likely to be
+any of those: a 9:1 on a wire that swings 130 to 3500 ohms is far from
+its design load over most of that range.  Whatever it costs is charged
+to the model's error budget, where it cannot be told apart from the
+table's own.
+
+**Open.**  `sweep_grid.py` says every sweep imports it "so that two grids
+cannot drift apart and be read as one", and three no longer do:
+`gauge_sweep.py`, `ground_contact.py` and `nec4_gauge_sweep.py` each
+redeclare `FREQS_HZ`, and `nec4_table_sweep.py` adds two frequencies of
+its own on top of it.  Either the claim goes or the imports come back.
+`segmentation_check.py` has the same kind of drift in its head: it
+reasons about NEC-2's junction assumption and solves with PyNEC, while
+every shipped table is now NEC-4.2.
 
 **Decided, not yet built.**  The NEC exports sweep one 201-point linear
 span, so a selected 60 m or 30 m can receive no sample at all: one `FR`
