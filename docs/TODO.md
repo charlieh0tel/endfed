@@ -473,11 +473,7 @@ tables can be reproduced from source.
 span, so a selected 60 m or 30 m can receive no sample at all: one `FR`
 card per selected band instead.
 
-**Decided, not yet built.**  Accessibility, all from the same review:
-unselected band and segment buttons at 4.22:1 and the map's axis and
-gridlines at 2.53:1, both below AA; the two number inputs replacing the
-focus ring with a border colour; `role="radio"` groups with no arrow-key
-handling or roving tabindex; and the length map, which is mouse-only
+**Decided, not yet built.**  Accessibility: the length map is mouse-only,
 with no role, name or live region.
 
 ## Considered and declined

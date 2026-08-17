@@ -428,6 +428,76 @@ test.describe('layout and legibility', () => {
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
+  test('an unselected option is still readable', async ({ page }) => {
+    // The existing sweep above walks text nodes, so it never saw a button's
+    // label; these were 4.22:1 against #111, under the 4.5 AA wants, and
+    // being dim is what marks them unselected, so it is the state most
+    // likely to be left that way.
+    await open(page);
+    for (const [legend, selector] of [
+      ['Tuner', 'button[role="radio"][aria-checked="false"]'],
+      ['Unun ratio', 'button[role="radio"][aria-checked="false"]'],
+    ]) {
+      const option = group(page, legend).locator(selector).first();
+      const [color, background] = await option.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return [style.color, style.backgroundColor];
+      });
+      expect(
+        contrast(color, background),
+        `${legend}, unselected: ${color} on ${background}`,
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  test('the map\'s own lines are visible against it', async ({ page }) => {
+    // A graphical object rather than text, so the bar is 3.0.  The SWR
+    // reference lines are the only quantitative scale on the score curve,
+    // and they are drawn *over* the usable band's fill, which is lighter
+    // than the panel -- so that is the background they have to clear, not
+    // the one behind the map.  The geometry diagrams are not included: they
+    // carry aria-hidden and the controls they sit above name themselves.
+    await open(page);
+    const worst = await page.locator('svg.map-svg').evaluate((svg) => {
+      const rgb = (value) => value.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
+      const luminance = (value) => {
+        const channel = (v) => {
+          const s = v / 255;
+          return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+        };
+        const [r, g, b] = rgb(value);
+        return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      };
+      const ratio = (a, b) => {
+        const [x, y] = [luminance(a), luminance(b)];
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+      };
+      // Every filled rectangle the lines can cross, plus the panel itself.
+      // A hatched fill reads as url(#pattern) rather than a colour, and a
+      // rect inside <defs> is a swatch of one rather than a surface.
+      const isColour = (value) => /^rgba?\(/.test(value || '');
+      const surfaces = [...svg.querySelectorAll('rect')]
+        .filter((rect) => !rect.closest('defs'))
+        .map((rect) => getComputedStyle(rect).fill)
+        .filter(isColour);
+      surfaces.push(getComputedStyle(svg.parentElement).backgroundColor);
+      let lowest = Infinity;
+      // Only the SWR rules: they span the plot and cross every band fill,
+      // where a marker or a curve sits inside one region and comparing it
+      // against the others would measure nothing.
+      for (const line of svg.querySelectorAll('line.map-rule')) {
+        const stroke = getComputedStyle(line).stroke;
+        if (!isColour(stroke)) continue;
+        for (const surface of surfaces) {
+          lowest = Math.min(lowest, ratio(stroke, surface));
+        }
+      }
+      return lowest === Infinity ? 0 : lowest;
+    });
+    expect(worst, 'the dimmest map line against the lightest thing it crosses')
+      .toBeGreaterThanOrEqual(3.0);
+  });
+
   test('small print stays readable against its background', async ({ page }) => {
     await open(page);
     const failures = await page.evaluate(() => {

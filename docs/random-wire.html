@@ -189,7 +189,7 @@
       padding: 8px 6px;
       background: #111;
       border: 1px solid #333;
-      color: #777;
+      color: #808080;
       font-size: 12px;
       line-height: 1.4;
       text-align: center;
@@ -225,7 +225,7 @@
       flex: 1;
       padding: 6px 10px;
       background: transparent;
-      color: #777;
+      color: #808080;
       font-size: 11px;
     }
 
@@ -1276,7 +1276,10 @@
       usable: '#12403a',
       usableEdge: '#009e73', // bluish green
       marker: '#f0e442',     // yellow
-      axis: '#555',
+      // Light enough for 3:1 against every surface it crosses, which is the
+      // usable band's own fill (#12403a) rather than the panel: the SWR
+      // reference lines are drawn over it.
+      axis: '#8a8a8a',
       label: '#888',
     });
 
@@ -2873,7 +2876,8 @@
                       height={plotHeight} fill="url(#hatch-short)" opacity="0.5" />
                 {[2, 5, 10].map(swr => (
                   <g key={swr}>
-                    <line x1={MAP.left} y1={yOfSwr(swr)} x2={MAP.width - MAP.right}
+                    <line className="map-rule"
+                          x1={MAP.left} y1={yOfSwr(swr)} x2={MAP.width - MAP.right}
                           y2={yOfSwr(swr)} stroke={COLORS.axis} strokeWidth="0.5"
                           strokeDasharray="3 3" />
                     <text x={MAP.left + 6} y={yOfSwr(swr) - 4} fill={COLORS.label}
