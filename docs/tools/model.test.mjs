@@ -1401,3 +1401,16 @@ test('the map always has room for every published length', () => {
   assert.ok(m.mapSpanM(topBand, 'full', m.MODEL_VF_A) > spanM,
     'a low band still stretches the map beyond the table');
 });
+
+test('refinement bisects rough spans and leaves smooth ones alone', () => {
+  const flat = [{ lenM: 10, swr: 2.0 }, { lenM: 12, swr: 2.2 },
+                { lenM: 14, swr: 2.0 }];
+  assert.deepEqual(m.refineGapsM(flat, 0.1), [], 'smooth stays as sampled');
+
+  const cliff = [{ lenM: 10, swr: 2.0 }, { lenM: 12, swr: 40.0 },
+                 { lenM: 14, swr: 2.0 }];
+  assert.deepEqual(m.refineGapsM(cliff, 0.1), [11, 13],
+    'both flanks of a peak get midpoints');
+  assert.deepEqual(m.refineGapsM(cliff, 1.5), [],
+    'but never below the finest grid worth solving');
+});

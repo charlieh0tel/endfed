@@ -287,8 +287,10 @@ Remaining:
 
       The button solves the configured antenna at every selected band
       -- the model curve's own frequency grid at every other point --
-      across up to 97 lengths, left to right, in a small worker pool
-      with a Stop button.  The overlay draws the same
+      across 97 lengths, left to right, in a small worker pool with a
+      Stop button, then solves the midpoint of any span whose neighbors
+      disagree by more than 1.5x until the rough spans are smooth or at
+      the model curve's own grid.  The overlay draws the same
       statistic as the model curve (geometric mean SWR at the radio)
       and is keyed to every input it depends on, so any change clears
       it.  What it disagrees with is the model, up to 2x near a half

@@ -2537,6 +2537,40 @@
     };
 
     /**
+     * Neighbors whose SWRs disagree by more than this factor mark a span
+     * the sweep undersampled; the check then solves its midpoint.  High
+     * half-wave multiples of the upper bands are one or two feet wide,
+     * against a first-pass grid of a couple of feet.
+     */
+    const NEC_REFINE_FACTOR = 1.5;
+
+    /**
+     * Midpoints of every span the sweep drew too coarsely: wider than
+     * `minGapM` and steeper than NEC_REFINE_FACTOR between neighbors.
+     * Applied repeatedly this halves rough spans until they are smooth or
+     * at `minGapM`, and leaves smooth spans alone.
+     *
+     * @param {{lenM: Meters, swr: number}[]} points  sorted by length
+     * @param {Meters} minGapM  the finest grid worth solving
+     * @returns {Meters[]}
+     */
+    const refineGapsM = (points, minGapM) => {
+      /** @type {Meters[]} */
+      const midpoints = [];
+      for (let i = 1; i < points.length; i++) {
+        const left = points[i - 1];
+        const right = points[i];
+        if (right.lenM - left.lenM < 2 * minGapM) continue;
+        const contrast = Math.max(left.swr, right.swr)
+          / Math.min(left.swr, right.swr);
+        if (contrast > NEC_REFINE_FACTOR) {
+          midpoints.push((left.lenM + right.lenM) / 2);
+        }
+      }
+      return midpoints;
+    };
+
+    /**
      * Everything the check's numbers depend on, as one string.  The overlay
      * is drawn only while this matches the live state, so any change that
      * would make it stale clears it with no imperative path to forget.
@@ -3311,10 +3345,32 @@
             ? snapshot('error', error)
             : snapshot('done', null));
         };
+        // The finest grid refinement reaches: the model curve's own, which
+        // is also the natural cap on how many lengths a run may grow to.
+        const minGapM = maxLenM / (SCORE_SAMPLES - 1);
+        // A solve that fails leaves its gap standing, so an unguarded pass
+        // would offer the same midpoint forever.
+        const scheduled = new Set(lengths);
         const feed = (/** @type {Worker} */ worker) => {
           if (nextLength >= lengths.length) {
-            if (pending === 0) conclude(null);
-            return;
+            if (pending > 0) return;
+            // Every worker is idle, so the pass is complete: solve the
+            // midpoint of any span it drew too coarsely, and only then
+            // call the run done.
+            const sorted = [...results].sort((a, b) => a.lenM - b.lenM);
+            const more = refineGapsM(sorted, minGapM)
+              .filter(lenM => riseShortfallM(site, lenM) === null
+                && !scheduled.has(lenM))
+              .slice(0, Math.max(0, SCORE_SAMPLES - lengths.length));
+            if (more.length === 0) {
+              conclude(null);
+              return;
+            }
+            more.forEach(lenM => scheduled.add(lenM));
+            lengths.push(...more);
+            workers.forEach(idle => {
+              if (idle !== worker) feed(idle);
+            });
           }
           const lenM = lengths[nextLength++];
           pending++;
