@@ -443,7 +443,29 @@ over a group hides that group's own tail.  The page quotes the flat top's
 per-length figures, and a test holds it to `coefficients2d.json` so a
 refit cannot leave the claim behind.
 
-Both are in sample.  There is no holdout for this table.
+Both are in sample -- fitted and measured on the same sweeps -- but how
+much that flatters them has now been measured rather than assumed.
+
+`nec/holdout_check.py` drops one frequency, refits the whole pipeline on
+what is left, and measures at the frequency held back.  14.175 MHz, which
+is interior, so this tests interpolation in frequency rather than
+extrapolation past the ends:
+
+| at 14.175 MHz | median | 90th | 99th | miscall at 9:1 into 3:1 |
+|---|---|---|---|---|
+| the table that saw it | x1.154 | x1.497 | x2.363 | 25.3% |
+| a table fitted without it | x1.170 | x1.547 | x2.491 | 27.2% |
+
+Removing a fifth of the data costs 1.9 points of miscall and 3 percent on
+the per-length 90th.  So the figures above are optimistic, and not by
+much.
+
+That is a stronger result than it looks, because the table has no
+frequency index at all: five coefficients against `h/lambda` and
+`z/lambda`, nothing else.  Indexing that way asserts that the problem
+scales with wavelength, and holding out a frequency removes exactly the
+geometries only that frequency reaches.  The assertion is the one this
+whole design rests on and it had never been tested.  It holds.
 
 Three sets of figures, and only the last says anything about what a user
 will see.

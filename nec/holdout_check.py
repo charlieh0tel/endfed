@@ -33,7 +33,6 @@ from coefficients2d import (
     support,
 )
 from fit import model_zin
-from nec_model import C
 from table_spec import VF_A, Z_NODES
 from table2d import build, look_up
 
