@@ -386,6 +386,27 @@ coefficients against `h/lambda` and `z/lambda`, how much a node's value
 differs from its neighbours', and how much of the per-length error is
 interpolation rather than form.  No solver time.
 
+**Open, and a project rather than a task.**  Chasing the model form
+itself.  The peaks read x1.86 high because one `alpha` sets the loss at
+every length, and the measurement says it should fall as `(l/lambda)`
+to about -0.6.  Per group that is worth taking the 99th per-length error
+from x2.06 to x1.66 and the miscall rate from 17.0 to 14.4 percent.  It
+does not survive the table, which is the finding above.
+
+What that leaves, in rough order of how much it would have to change:
+
+- a length-resolved line, integrating Schelkunoff's local `Z0` along the
+  wire rather than scaling one average, which subsumes both the falling
+  loss and the height-dependent `Z0` experiment already recorded here;
+- a term that bites only near resonance, which is what the peaks
+  actually want and what the current form cannot express;
+- tabulating the exponent as a seventh coefficient, the obvious move and
+  the one most likely to lose again to interpolation.
+
+None of these is worth starting before the smoothness measurement above,
+because that says whether a richer form can be carried by a table at
+all.
+
 **Open.**  Coefficients in `coefficients2d.json` sit exactly on
 their refinement bounds.  Of 1440 values per geometry, after the 16 Aug
 refit: the flat top has `vf_r` at its 1.0 ceiling 41 times,
@@ -404,15 +425,26 @@ stopped at `max_nfev` is indistinguishable from a converged one after
 the fact.  `fit.py` raises on `status <= 0`; this does not.  Nothing in
 the json records nfev, status or the `--max-nfev` used.
 
-**Open, before any refit.**  Two instruments retired with the 1-D fit
-covered claims the page still makes, and want rewriting against the
-shipped 2-D table rather than restoring:
+**Open, and the biggest gap left.**  Nothing about this table has ever
+been measured out of sample.  Everything in `MODEL.md` and on the page --
+the per-length x1.14 and x1.43, the 21.9 percent miscall rate -- is
+fitted and measured on the same sweeps, so all of it is optimistic by
+construction and by an unknown amount.
 
-- a gauge check, for "the fit holds from #12 to #22" on the page.
-  `gauge_sweep.npz` is still here.
-- an out-of-band holdout, fresh NEC solves at frequencies the sweep
-  never used.  Every error figure now in `MODEL.md` is in-sample and
-  optimistic by construction.
+The cheap test needs no solver time: leave one frequency out.  Drop
+7.15 or 14.175 MHz, which are interior and where the `h/lambda` coverage
+is redundant, refit, and measure the miscall rate at the frequency that
+was held back.  About fifteen minutes of fitting.  Frequency is also the
+axis that matters, because the table has no frequency index at all while
+the page serves ten bands and the sweeps carry six.
+
+If it comes back near 21.9 percent, the model generalises and the page
+can say so for the first time.  If it comes back far worse, the claims
+need another pass.  Until it is run, nobody knows which.
+
+An out-of-band holdout against fresh NEC solves is the stronger version
+and wants machine time; the gauge check that was the other half of this
+item is done, on NEC-4.2, and the claim held.
 
 **Decided, not yet built.**  The page must not ask the model outside the
 domain it was fitted over.  `coefficients2d.json` now carries that domain
