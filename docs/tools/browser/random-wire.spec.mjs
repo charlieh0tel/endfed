@@ -320,6 +320,50 @@ test.describe('the fit\'s domain', () => {
   });
 });
 
+test.describe('keyboard, in the control groups', () => {
+  test('arrow keys move the selection, and wrap', async ({ page }) => {
+    await open(page);
+    const tuner = group(page, 'Tuner');
+    const first = tuner.locator('button[role="radio"]').first();
+    await first.click();
+    const before = await selected(page, 'Tuner');
+
+    await page.keyboard.press('ArrowRight');
+    const after = await selected(page, 'Tuner');
+    expect(after, 'right moves on').not.toBe(before);
+
+    await page.keyboard.press('ArrowLeft');
+    expect(await selected(page, 'Tuner'), 'left comes back').toBe(before);
+
+    // The ends are not walls: the pattern wraps.
+    await page.keyboard.press('ArrowLeft');
+    const wrapped = await selected(page, 'Tuner');
+    expect(wrapped, 'left from the first wraps to the last').not.toBe(before);
+    await page.keyboard.press('End');
+    expect(await selected(page, 'Tuner'), 'End is the last').toBe(wrapped);
+    await page.keyboard.press('Home');
+    expect(await selected(page, 'Tuner'), 'Home is the first').toBe(before);
+  });
+
+  test('a group is one tab stop, not one per option', async ({ page }) => {
+    await open(page);
+    const stops = await group(page, 'Tuner')
+      .locator('button[role="radio"][tabindex="0"]').count();
+    expect(stops, 'only the selected option is tabbable').toBe(1);
+  });
+
+  test('the length field shows a focus ring', async ({ page }) => {
+    await open(page);
+    await lengthField(page).focus();
+    const outline = await lengthField(page).evaluate((el) => {
+      const style = getComputedStyle(el);
+      return `${style.outlineStyle} ${style.outlineWidth}`;
+    });
+    expect(outline, 'focus is visible on the input, as on the buttons')
+      .not.toMatch(/none|0px/);
+  });
+});
+
 test.describe('the length field', () => {
   test('a typed length survives a change of display units', async ({ page }) => {
     await open(page);

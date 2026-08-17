@@ -304,7 +304,11 @@
       font-size: 12px;
     }
 
-    .num-input:focus { outline: none; border-color: #555; }
+    .num-input:focus { border-color: #555; }
+    .num-input:focus-visible {
+      outline: 2px solid #4dabf7;
+      outline-offset: 2px;
+    }
 
     .len-input {
       width: 100px;
@@ -2942,6 +2946,38 @@
       );
     }
 
+    /**
+     * Arrow keys within a group of role="radio" buttons.
+     *
+     * A screen reader announces "radio button, 1 of 5" and the user reaches
+     * for the arrows, so the group has to answer them: the pattern is not
+     * optional decoration on the role.  Reading the buttons out of the event
+     * target rather than holding refs keeps this one handler for all eight
+     * groups, and clicking the next one reuses whatever that option already
+     * does rather than duplicating it here.
+     *
+     * @param {React.KeyboardEvent<HTMLElement>} event
+     */
+    const onRadioKeys = (event) => {
+      const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+      const isEnd = event.key === 'Home' || event.key === 'End';
+      const delta = isKeyOf(step, event.key) ? step[event.key] : 0;
+      if (delta === 0 && !isEnd) return;
+      const options = /** @type {HTMLElement[]} */ ([
+        ...event.currentTarget.querySelectorAll('[role="radio"]:not([disabled])'),
+      ]);
+      if (options.length === 0) return;
+      const from = options.findIndex(
+        (option) => option === document.activeElement);
+      const at = isEnd
+        ? (event.key === 'Home' ? 0 : options.length - 1)
+        // Wrapping, per the radio group pattern: the ends are not walls.
+        : (from + delta + options.length) % options.length;
+      event.preventDefault();
+      options[at].focus();
+      options[at].click();
+    };
+
     function RandomWire() {
       const [p, setP] = useState(getUrlParams);
 
@@ -3258,11 +3294,13 @@
             <div className="column">
               <div className="panel">
                 <div className="panel-header">Method</div>
-                <div className="segment-toggle" role="radiogroup" aria-label="Method">
+                <div className="segment-toggle" role="radiogroup" aria-label="Method"
+                     onKeyDown={onRadioKeys}>
                   {entriesOf(MODES).map(([key, def]) => (
                     <button key={key}
                             className={`btn segment-btn ${mode === key ? 'active' : ''}`}
                             role="radio" aria-checked={mode === key}
+                            tabIndex={mode === key ? 0 : -1}
                             onClick={() => set({ mode: key })}>
                       {def.label}
                     </button>
@@ -3273,11 +3311,13 @@
 
               <div className="panel">
                 <div className="panel-header">Band plan</div>
-                <div className="presets" role="radiogroup" aria-label="Band plan">
+                <div className="presets" role="radiogroup" aria-label="Band plan"
+                     onKeyDown={onRadioKeys}>
                   {entriesOf(REGIONS).map(([key, def]) => (
                     <button key={key}
                             className={`btn preset-btn ${region === key ? 'active' : ''}`}
                             role="radio" aria-checked={region === key}
+                            tabIndex={region === key ? 0 : -1}
                             onClick={() => setRegion(key)}>
                       {def.label}
                     </button>
@@ -3296,11 +3336,13 @@
                     </button>
                   ))}
                 </div>
-                <div className="segment-toggle" role="radiogroup" aria-label="Segment">
+                <div className="segment-toggle" role="radiogroup" aria-label="Segment"
+                     onKeyDown={onRadioKeys}>
                   {entriesOf(SEGMENTS).map(([key, def]) => (
                     <button key={key}
                             className={`btn segment-btn ${segment === key ? 'active' : ''}`}
                             role="radio" aria-checked={segment === key}
+                            tabIndex={segment === key ? 0 : -1}
                             onClick={() => set({ segment: key })}>
                       {def.label}
                     </button>
@@ -3325,12 +3367,14 @@
 
               <div className="panel">
                 <div className="panel-header">Display</div>
-                <fieldset className="control-group" role="radiogroup">
+                <fieldset className="control-group" role="radiogroup"
+                            onKeyDown={onRadioKeys}>
                   <legend>Units</legend>
                   {entriesOf(UNITS).map(([key, def]) => (
                     <button key={key}
                             className={`btn preset-btn ${units === key ? 'active' : ''}`}
                             role="radio" aria-checked={units === key}
+                            tabIndex={units === key ? 0 : -1}
                             onClick={() => set({ units: key })}>
                       {def.label}
                     </button>
@@ -3341,11 +3385,12 @@
               {mode === 'impedance' && (
                 <div className="panel">
                   <div className="panel-header">Geometry</div>
-                  <div className="geometry-row" role="radiogroup"
+                  <div className="geometry-row" role="radiogroup" onKeyDown={onRadioKeys}
                        aria-label="Geometry">
                     {Object.entries(GEOMETRIES).map(([key, def]) => (
                       <button key={key} type="button" role="radio"
                               aria-checked={geometry === key}
+                              tabIndex={geometry === key ? 0 : -1}
                               className={'geometry-btn'
                                 + (geometry === key ? ' active' : '')}
                               onClick={() => set({
@@ -3480,12 +3525,14 @@
                   </label>
                 )}
                 {mode === 'impedance' && (
-                  <fieldset className="control-group" role="radiogroup">
+                  <fieldset className="control-group" role="radiogroup"
+                            onKeyDown={onRadioKeys}>
                     <legend>Ground</legend>
                     {entriesOf(SOILS).map(([key, def]) => (
                       <button key={key}
                               className={`btn preset-btn ${soil === key ? 'active' : ''}`}
                               role="radio" aria-checked={soil === key}
+                              tabIndex={soil === key ? 0 : -1}
                               onClick={() => set({ soil: key })}>
                         {def.label}
                       </button>
@@ -3498,12 +3545,14 @@
                   </fieldset>
                 )}
                 {mode === 'impedance' && (
-                  <fieldset className="control-group" role="radiogroup">
+                  <fieldset className="control-group" role="radiogroup"
+                            onKeyDown={onRadioKeys}>
                     <legend>Tuner</legend>
                     {entriesOf(TUNERS).map(([key, def]) => (
                       <button key={key}
                               className={`btn preset-btn ${tuner === key ? 'active' : ''}`}
                               role="radio" aria-checked={tuner === key}
+                              tabIndex={tuner === key ? 0 : -1}
                               onClick={() => set({ tuner: key })}>
                         {def.limit}:1
                       </button>
@@ -3516,12 +3565,14 @@
                   </fieldset>
                 )}
                 {mode === 'impedance' && (
-                  <fieldset className="control-group" role="radiogroup">
+                  <fieldset className="control-group" role="radiogroup"
+                            onKeyDown={onRadioKeys}>
                     <legend>Unun ratio</legend>
                     {UNUN_RATIOS.map(ratio => (
                       <button key={ratio}
                               className={`btn preset-btn ${ununRatio === ratio ? 'active' : ''}`}
                               role="radio" aria-checked={ununRatio === ratio}
+                              tabIndex={ununRatio === ratio ? 0 : -1}
                               onClick={() => set({ ununRatio: ratio })}>
                         {ratio}:1
                       </button>
