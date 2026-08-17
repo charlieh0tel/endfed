@@ -4,11 +4,9 @@
   Copyright (C) 2016-2026 Christopher Hoover <ch@murgatroid.com>
 
   This file is licensed under the GNU General Public License version 3 or
-  later, as is the rest of this repository.  It is intended to load
-  nec2c-wasm on demand to check a chosen length against NEC, and nec2c is
-  Neoklis Kyriazis's GPL translation of NEC-2, so a page that combines
-  with it must be GPL too.  That runtime path is not built yet; the
-  license was settled first so it could not arrive by accident.
+  later, as is the rest of this repository.  It loads nec2c-wasm on demand
+  to check the length map against NEC, and nec2c is Neoklis Kyriazis's GPL
+  translation of NEC-2, so a page that combines with it must be GPL too.
 
   This program is free software: you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the Free
@@ -164,6 +162,16 @@
       flex-wrap: wrap;
       margin-bottom: 10px;
     }
+
+    /* The NEC check's one row: a button, then whatever it has to say. */
+    .nec-check {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 2px 0 10px;
+    }
+    .nec-check .control-hint { margin-top: 0; }
 
     .preset-btn {
       padding: 6px 12px;
@@ -1176,8 +1184,12 @@
     /** Lengths sampled across the map when drawing the score curve. */
     const SCORE_SAMPLES = 600;
 
-    /** Top of the SWR axis on the score curve; plotted logarithmically. */
-    const SWR_PLOT_MAX = 20;
+    /**
+     * Top of the SWR axis on the score curve; plotted logarithmically.
+     * High enough that a NEC half-wave peak (tens to one) draws as a peak
+     * rather than clipping into a plateau at the top of the plot.
+     */
+    const SWR_PLOT_MAX = 100;
 
     /**
      * Thresholds a length has to beat to be called good.
@@ -1254,8 +1266,12 @@
       width: 1000, height: 150,
       left: 8, right: 8, top: 10,
       barHeight: 62,
-      // The score curve needs the vertical room that a flat bar does not.
-      curveHeight: 96,
+      // The score curve needs real vertical room: two curves and three
+      // reference rules live in it, where the flat bar is a ribbon.  The
+      // viewBox grows with it (see LengthMap); `height` is the bar mode's.
+      curveHeight: 240,
+      // Room under the plot for the tick labels and the axis label.
+      footer: 44,
       tickFontSize: 18,
       axisFontSize: 16,
     });
@@ -1275,6 +1291,7 @@
       short: '#8c8c88',      // neutral gray, hatched: shorter than lambda/4 (see note)
       usable: '#12403a',
       usableEdge: '#009e73', // bluish green
+      nec: '#ffb000',        // bright amber, for the measured curve
       marker: '#f0e442',     // yellow
       // Light enough for 3:1 against every surface it crosses, which is the
       // usable band's own fill (#12403a) rather than the panel: the SWR
@@ -2176,15 +2193,24 @@
      * @param {Meters} maxLenM
      * @param {UnitKey} units
      * @returns {{bands: Band[], curve: ScorePoint[], suggestions: ScorePoint[],
-     *            shortLimit: Meters}}
+     *            shortLimit: Meters, shortLabel: string}}
      */
     const solveImpedance = (region, bandsM, segment, site, radiusM,
                             ununRatio, maxLenM, units) => {
       const bands = bandsIn(region).filter(b => bandsM.includes(b.m));
       // The impedance mode does not take a velocity factor; the fitted model
-      // carries its own, so the short limit uses the same one.
-      const shortLimit = tooShortM(bands, segment, MODEL_VF_A);
-      if (bands.length === 0) return { bands, curve: [], suggestions: [], shortLimit };
+      // carries its own, so the short limit uses the same one.  A sloper
+      // cannot be built shorter than its own rise, so its too-short zone
+      // covers whichever floor is higher, and the legend says which.
+      const buildFloorM = riseShortfallM(site, 0) ?? 0;
+      const shortLimit = Math.max(tooShortM(bands, segment, MODEL_VF_A),
+                                  buildFloorM);
+      const shortLabel = buildFloorM >= shortLimit && buildFloorM > 0
+        ? 'shorter than \u03bb/4 or the rise'
+        : 'shorter than \u03bb/4';
+      if (bands.length === 0) {
+        return { bands, curve: [], suggestions: [], shortLimit, shortLabel };
+      }
 
       const step = maxLenM / (SCORE_SAMPLES - 1);
       /** @type {ScorePoint[]} */
@@ -2224,7 +2250,7 @@
       const suggestions = [...byLength.values()]
         .sort((a, b) => a.swr - b.swr)
         .slice(0, MAX_SUGGESTIONS);
-      return { bands, curve, suggestions, shortLimit };
+      return { bands, curve, suggestions, shortLimit, shortLabel };
     };
 
     // ============================================================
@@ -2252,14 +2278,6 @@
     const DECK_MIN_SEGMENTS = 9;
     const DECK_MAX_SEGMENTS = 199;
 
-    /**
-     * Frequencies in the swept FR card.  A NEC-2 FR card sweeps linearly, so
-     * one card cannot follow the selected bands and skip the gaps; the deck
-     * spans from the lowest selected band edge to the highest and lets the
-     * user read the bands off the result.  201 is the most a swept FR card is
-     * usually given, and readers that cap the count cap it there.
-     */
-    const DECK_SWEEP_POINTS = 201;
 
     /** Decimals used for meters, radii and megahertz in a card. */
     const DECK_LEN_DIGITS = 4;
@@ -2280,25 +2298,6 @@
       return bounded % 2 === 0 ? bounded - 1 : bounded;
     };
 
-    /**
-     * The linear frequency sweep covering every selected band.
-     *
-     * @param {Band[]} bands
-     * @param {SegmentKey} segment
-     * @returns {?{startHz: Hertz, stepHz: Hertz, points: number}}
-     */
-    const deckSweep = (bands, segment) => {
-      if (bands.length === 0) return null;
-      const edges = bands.map(band => bandEdgesHz(band, segment));
-      const startHz = Math.min(...edges.map(([lo]) => lo));
-      const stopHz = Math.max(...edges.map(([, hi]) => hi));
-      if (stopHz <= startHz) return { startHz, stepHz: 0, points: 1 };
-      return {
-        startHz,
-        stepHz: (stopHz - startHz) / (DECK_SWEEP_POINTS - 1),
-        points: DECK_SWEEP_POINTS,
-      };
-    };
 
     /**
      * @typedef {Object} DeckWire  one NEC wire, meters throughout
@@ -2378,42 +2377,29 @@
       C_SPEED / (sweep.startHz + sweep.stepHz * (sweep.points - 1));
 
     /**
-     * A NEC-2 input deck for the installation on screen, as card text.
-     *
-     * The source sits on the first segment of the antenna wire, at the
-     * junction with the return, which is where a real unun goes.  Ground is
-     * GN 2, the Sommerfeld-Norton solution, with the soil's own constants:
-     * GN 1 is a perfect plane and would answer a different question.
-     *
-     * Cards are free format, which every NEC-2 reader accepts.
+     * The cards of one probe deck.  The source sits on the first segment
+     * of the antenna wire, at the junction with the return, which is where
+     * a real unun goes.  Ground is GN 2, the Sommerfeld-Norton solution,
+     * with the soil's own constants: GN 1 is a perfect plane and would
+     * answer a different question.  Cards are free format, which every
+     * NEC-2 reader accepts.
      *
      * @param {Meters} lenM
-     * @param {Band[]} bands
-     * @param {SegmentKey} segment
      * @param {Site} site
      * @param {Meters} radiusM
-     * @returns {?string}  null when there is nothing to sweep
+     * @param {{startHz: Hertz, stepHz: Hertz, points: number}} sweep
+     * @param {string[]} comments  CM card bodies
+     * @returns {string}
      */
-    const buildNecDeck = (lenM, bands, segment, site, radiusM) => {
-      const sweep = deckSweep(bands, segment);
-      if (sweep === null || lenM <= 0) return null;
-
-      const soil = SOILS[site.soil];
+    const deckCards = (lenM, site, radiusM, sweep, comments) => {
       const wires = deckWires(lenM, site, radiusM, sweepShortestWaveM(sweep));
+      const soil = SOILS[site.soil];
 
       const len = (/** @type {Meters} */ value) => value.toFixed(DECK_LEN_DIGITS);
       const mhz = (/** @type {Hertz} */ freqHz) =>
         (freqHz / 1e6).toFixed(DECK_MHZ_DIGITS);
 
-      const cards = [
-        `CM Random wire ${len(lenM)} m at ${len(site.heightM)} m,`
-          + ` ${len(returnConductorM(site))} m return`
-          + ` over ${soil.label.toLowerCase()} soil`,
-        'CM Generated by random-wire.html.  Geometry per',
-        'CM nec/nec_model.py: tag 1 antenna, tag 2 drop, tag 3 return run.',
-        'CM The result is the feedpoint impedance, ahead of any unun.',
-        'CE',
-      ];
+      const cards = [...comments.map(body => `CM ${body}`), 'CE'];
       for (const wire of wires) {
         cards.push(`GW ${wire.tag} ${wire.segments} ${len(wire.x1)} ${len(wire.y1)}`
           + ` ${len(wire.z1)} ${len(wire.x2)} ${len(wire.y2)} ${len(wire.z2)}`
@@ -2437,82 +2423,141 @@
       return `${cards.join('\n')}\n`;
     };
 
-    /**
-     * AntennaSim project format: schema version, and the extension its Open
-     * dialog accepts.
-     *
-     * Written because its .nec importer reads the ground card's type and
-     * discards the constants, so an imported deck always simulates medium
-     * soil however the page was set.  A project file carries them, and this
-     * page's whole subject is what the ground does to the match.
-     *
-     * This is somebody else's format and nothing here can test it: the
-     * version is theirs, the field names are theirs, and a schema change
-     * upstream is a broken file with no warning from any check we run.  It is
-     * written at version 2 deliberately -- their loader rejects a file
-     * claiming to be newer than it understands, and accepts an older one.
-     */
-    const ANTENNASIM_SCHEMA_VERSION = 2;
-    const ANTENNASIM_EXTENSION = 'antennasim';
+    // ============================================================
+    // In-page NEC check, the pure half
+    // ============================================================
 
     /**
-     * The installation as an AntennaSim editor project.
+     * Length samples the check solves, left to right so the curve grows
+     * the way it reads.  The model curve draws SCORE_SAMPLES points; NEC
+     * solves cost real time, so the check takes a coarser grid.
+     */
+    const NEC_LENGTH_SAMPLES = 97;
+
+    /**
+     * Frequencies the check samples: the model curve's grid
+     * (SWR_SAMPLES_PER_BAND per band) at every other point, endpoints
+     * included, so the two curves are compared at shared frequencies.  Half
+     * the solves buys twice the lengths, and length is the axis with the
+     * sharp structure.
      *
-     * Same wires as the deck, plus the two things the deck cannot carry
-     * across their importer: the soil constants, and the sweep as a range
-     * rather than an FR card.
-     *
-     * `createdAt` is a parameter rather than read from the clock here, which
-     * keeps this half of the page free of anything the tests cannot pin.
+     * @param {Band[]} bands
+     * @param {SegmentKey} segment
+     * @returns {Hertz[]}
+     */
+    const necSampleFreqsHz = (bands, segment) => {
+      /** @type {Hertz[]} */
+      const freqs = [];
+      for (const band of bands) {
+        const [loHz, hiHz] = bandEdgesHz(band, segment);
+        for (let i = 0; i < SWR_SAMPLES_PER_BAND; i += 2) {
+          freqs.push(loHz + (hiHz - loHz) * i / (SWR_SAMPLES_PER_BAND - 1));
+        }
+      }
+      return freqs;
+    };
+
+    /**
+     * A single-frequency deck for one probe solve: the exported deck's
+     * geometry and ground, segmented for this frequency exactly as the
+     * fitting sweeps were.
      *
      * @param {Meters} lenM
+     * @param {Hertz} freqHz
+     * @param {Site} site
+     * @param {Meters} radiusM
+     * @returns {string}
+     */
+    const buildProbeDeck = (lenM, freqHz, site, radiusM) =>
+      deckCards(lenM, site, radiusM, { startHz: freqHz, stepHz: 0, points: 1 },
+                ['random-wire.html check probe']);
+
+    /**
+     * The source impedance in one nec2c output.  The first data row under
+     * ANTENNA INPUT PARAMETERS is the source segment; its columns are tag,
+     * segment, voltage, current, impedance, admittance, power, so the
+     * impedance is fields six and seven.
+     *
+     * @param {string} output
+     * @returns {?Complex}
+     */
+    const parseNecZ = (output) => {
+      const at = output.indexOf('ANTENNA INPUT PARAMETERS');
+      if (at < 0) return null;
+      for (const line of output.slice(at).split('\n').slice(1)) {
+        const fields = line.trim().split(/\s+/);
+        if (fields.length < 8 || !/^\d+$/.test(fields[0])) continue;
+        const re = Number(fields[6]);
+        const im = Number(fields[7]);
+        return Number.isFinite(re) && Number.isFinite(im) ? cpx(re, im) : null;
+      }
+      return null;
+    };
+
+    /**
+     * The model curve's statistic over measured impedances: the geometric
+     * mean of the SWR at the radio, as scoreLength takes it.
+     *
+     * @param {Complex[]} zs
+     * @param {number} ununRatio
+     * @returns {?number}
+     */
+    const geometricMeanSwr = (zs, ununRatio) => {
+      if (zs.length === 0) return null;
+      let logSum = 0;
+      for (const z of zs) {
+        const swr = swrAtRadio(z, ununRatio);
+        if (!Number.isFinite(swr)) return null;
+        logSum += Math.log(swr);
+      }
+      return Math.exp(logSum / zs.length);
+    };
+
+    /**
+     * Everything the check's numbers depend on, as one string.  The overlay
+     * is drawn only while this matches the live state, so any change that
+     * would make it stale clears it with no imperative path to forget.
+     *
      * @param {Band[]} bands
      * @param {SegmentKey} segment
      * @param {Site} site
-     * @param {Meters} radiusM
-     * @param {string} createdAt  ISO 8601
-     * @returns {?string}  JSON, or null when there is nothing to sweep
+     * @param {number} ununRatio
+     * @param {Meters} maxLenM
+     * @returns {string}
      */
-    const buildAntennaSimProject = (lenM, bands, segment, site, radiusM,
-                                    createdAt) => {
-      const sweep = deckSweep(bands, segment);
-      if (sweep === null || lenM <= 0) return null;
+    const necOverlayKey = (bands, segment, site, ununRatio, maxLenM) =>
+      JSON.stringify([
+        bands.map(band => bandEdgesHz(band, segment)),
+        site.geometry, site.heightM, site.balunM, site.counterpoiseM,
+        site.counterpoiseZM, site.soil, ununRatio, maxLenM,
+      ]);
 
-      const soil = SOILS[site.soil];
-      const stopHz = sweep.startHz + sweep.stepHz * (sweep.points - 1);
-      const wires = deckWires(lenM, site, radiusM, C_SPEED / stopHz);
-      // The pattern is drawn at one frequency, and the lowest selected band is
-      // where a random wire is shortest against a wavelength and the ground
-      // does the most to it.
-      const designHz = (sweep.startHz + bandEdgesHz(
-        bands.reduce((a, b) => (a.m > b.m ? a : b)), segment)[1]) / 2;
+    /**
+     * Fed-element height in wavelengths below which NEC-2's Sommerfeld
+     * ground goes wrong -- the method's own failure, not a port's.
+     * Measured at the conductivity limit in nec/sommerfeld_report.html:
+     * every NEC-2 descendant is exact at 0.05 wavelengths and +92 percent
+     * by 0.02.  A low *counterpoise* is the mild case and is not flagged:
+     * there nec2c tracks NEC-4.2 to 1 percent down to a centimeter.
+     */
+    const NEC2_FEED_MIN_LAMBDA = 0.05;
 
-      return `${JSON.stringify({
-        version: ANTENNASIM_SCHEMA_VERSION,
-        app_version: 'random-wire.html',
-        created_at: createdAt,
-        mode: 'editor',
-        editor: {
-          wires,
-          excitations: [{ wire_tag: 1, segment: 1, voltage_real: 1,
-                          voltage_imag: 0 }],
-          loads: [],
-          transmissionLines: [],
-          junctions: [],
-          ground: {
-            type: 'custom',
-            custom_permittivity: soil.epsR,
-            custom_conductivity: soil.sigmaSm,
-          },
-          frequencyRange: {
-            start_mhz: sweep.startHz / 1e6,
-            stop_mhz: stopHz / 1e6,
-            steps: sweep.points,
-          },
-          designFrequencyMhz: designHz / 1e6,
-        },
-      }, null, 2)}\n`;
-    };
+    /**
+     * Bands where the check's own solver is suspect: the feedpoint sits
+     * under NEC2_FEED_MIN_LAMBDA at the band's low edge, where the
+     * wavelength within the band is longest.
+     *
+     * @param {Band[]} bands
+     * @param {SegmentKey} segment
+     * @param {Site} site
+     * @returns {Band[]}
+     */
+    const necSuspectBands = (bands, segment, site) =>
+      bands.filter(band => {
+        const [loHz] = bandEdgesHz(band, segment);
+        return feedHeightM(site) / (C_SPEED / loHz) < NEC2_FEED_MIN_LAMBDA;
+      });
+
 
     // ============================================================
     // Formatting
@@ -2624,6 +2669,50 @@
     // the URL parsing, takes what it needs as an argument, so the legacy
     // ?len= guarantee can be tested rather than trusted.
 
+    // ============================================================
+    // In-page NEC check, the workers
+    // ============================================================
+
+    /**
+     * The solver, pinned.  The inline build carries the wasm inside the one
+     * module, so a worker needs a single cross-origin import and nothing to
+     * locate.  nec2c rather than nec2++ because the shipped tables are
+     * fitted to NEC-4.2 and nec2c tracks it to 1 percent in this geometry
+     * all the way down to a counterpoise at 1 cm, where nec2++ reads half;
+     * see docs/MODEL.md, "Where NEC-2 is bad, and where it is not".
+     */
+    const NEC_WASM_URL =
+      'https://unpkg.com/nec2c-wasm@0.1.3/src/runner-inline.mjs';
+
+    /**
+     * Module worker body: load the solver once, then answer each message --
+     * one length, its decks -- with the output texts in deck order.  Parsing
+     * stays on the main thread, in the pure half, where the tests can see it.
+     */
+    const NEC_WORKER_SOURCE = [
+      `import { runNec } from ${JSON.stringify(NEC_WASM_URL)};`,
+      'onmessage = async (event) => {',
+      '  const { lenM, decks } = event.data;',
+      '  try {',
+      '    const outputs = [];',
+      '    for (const deck of decks) outputs.push(await runNec(deck));',
+      '    postMessage({ lenM, outputs });',
+      '  } catch (error) {',
+      '    postMessage({ lenM, error: String(error) });',
+      '  }',
+      '};',
+    ].join('\n');
+
+    /**
+     * Workers for one check: solves are independent, so the pool is sized to
+     * the machine, capped where more workers stop paying, one kept back for
+     * the page itself.
+     */
+    const NEC_WORKERS_MAX = 8;
+    const necWorkerCount = () => Math.min(
+      NEC_WORKERS_MAX,
+      Math.max(1, (navigator.hardwareConcurrency || NEC_WORKERS_MAX) - 1));
+
     /**
      * A picture of each arrangement, because the difference between them is
      * geometric and a paragraph describing a shape is a poor substitute for
@@ -2671,33 +2760,6 @@
         </svg>
       );
     };
-
-    /**
-     * Save text to a file, by way of a link the page clicks for itself.
-     *
-     * @param {string} text
-     * @param {string} filename
-     */
-    const saveTextFile = (text, filename) => {
-      const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.click();
-      URL.revokeObjectURL(url);
-    };
-
-    /**
-     * File name for a deck, in meters regardless of the display unit: the
-     * name is a file on disk rather than something being read off the page,
-     * and one unit keeps a directory of them sortable.
-     *
-     * @param {Meters} lenM
-     * @param {string} extension
-     * @returns {string}
-     */
-    const deckFilename = (lenM, extension) =>
-      `random-wire-${lenM.toFixed(2)}m.${extension}`;
 
     const getUrlParams = () => {
       const params = new URLSearchParams(window.location.search);
@@ -2784,10 +2846,12 @@
     /**
      * @param {{solution: ReturnType<typeof solve>,
      *          score: ?ReturnType<typeof solveImpedance>,
+     *          necPoints: ?{lenM: Meters, swr: number}[],
      *          maxLenM: Meters, units: UnitKey,
      *          wireLenM: Meters, onPick: (lenM: Meters) => void}} props
      */
-    function LengthMap({ solution, score, maxLenM, units, wireLenM, onPick }) {
+    function LengthMap({ solution, score, necPoints, maxLenM, units, wireLenM,
+                         onPick }) {
       const [hoverM, setHoverM] = useState(/** @type {?Meters} */ (null));
 
       const plotWidth = MAP.width - MAP.left - MAP.right;
@@ -2823,12 +2887,25 @@
 
       const plotHeight = score === null ? MAP.barHeight : MAP.curveHeight;
       const barBottom = MAP.top + plotHeight;
+      // The viewBox follows the plot, so curve mode gets its room and bar
+      // mode keeps its ribbon rather than a field of empty units.
+      const svgHeight = score === null ? MAP.height : barBottom + MAP.footer;
 
       /** SWR plotted logarithmically: it is a ratio, and the range is wide. */
       const yOfSwr = (/** @type {number} */ swr) => barBottom - plotHeight
         * Math.min(1, Math.max(0, Math.log(swr) / Math.log(SWR_PLOT_MAX)));
 
       const curvePath = score === null ? '' : score.curve
+        .map((point, i) => `${i === 0 ? 'M' : 'L'} ${xOf(point.lenM).toFixed(2)} `
+          + `${yOfSwr(point.swr).toFixed(2)}`)
+        .join(' ');
+
+      // What NEC measured, on the same statistic and the same axes.  Drawn
+      // under the model curve and wider, so agreement reads as an amber
+      // edging on the green line and disagreement as amber standing alone;
+      // on top of it, two matching curves merged into one ambiguous one.
+      const necPath = (score === null || necPoints === null
+                       || necPoints.length < 2) ? '' : necPoints
         .map((point, i) => `${i === 0 ? 'M' : 'L'} ${xOf(point.lenM).toFixed(2)} `
           + `${yOfSwr(point.swr).toFixed(2)}`)
         .join(' ');
@@ -2841,7 +2918,7 @@
 
       return (
         <div className="map-container">
-          <svg className="map-svg" viewBox={`0 0 ${MAP.width} ${MAP.height}`}
+          <svg className="map-svg" viewBox={`0 0 ${MAP.width} ${svgHeight}`}
                onMouseMove={handleMove} onMouseLeave={() => setHoverM(null)}
                onClick={(event) => onPick(lenAtEvent(event))}>
             <defs>
@@ -2874,7 +2951,7 @@
                 <rect x={MAP.left} y={MAP.top}
                       width={Math.max(MIN_BAND_WIDTH, xOf(Math.min(score.shortLimit, maxLenM)) - MAP.left)}
                       height={plotHeight} fill="url(#hatch-short)" opacity="0.5" />
-                {[2, 5, 10].map(swr => (
+                {[2, 5, 10, 30].map(swr => (
                   <g key={swr}>
                     <line className="map-rule"
                           x1={MAP.left} y1={yOfSwr(swr)} x2={MAP.width - MAP.right}
@@ -2885,6 +2962,15 @@
                           fontFamily="monospace">{swr}:1</text>
                   </g>
                 ))}
+                {necPath !== '' && (
+                  <g className="nec-curve">
+                    <path d={necPath} fill="none" stroke={COLORS.nec}
+                          strokeWidth="4" strokeOpacity="0.85" />
+                    <text x={MAP.width - MAP.right - 6} y={MAP.top + 12}
+                          fill={COLORS.nec} fontSize={MAP.tickFontSize}
+                          textAnchor="end" fontFamily="monospace">NEC-2</text>
+                  </g>
+                )}
                 <path d={curvePath} fill="none" stroke={COLORS.usableEdge}
                       strokeWidth="1.5" />
               </g>
@@ -2903,7 +2989,7 @@
                 </g>
               );
             })}
-            <text x={MAP.width / 2} y={MAP.height - 4} fill={COLORS.label} fontSize={MAP.axisFontSize}
+            <text x={MAP.width / 2} y={svgHeight - 4} fill={COLORS.label} fontSize={MAP.axisFontSize}
                   textAnchor="middle" fontFamily="monospace">
               wire length ({UNITS[units].axisLabel})
             </text>
@@ -2940,7 +3026,7 @@
                 <span><span className="swatch" style={{ background: COLORS.usableEdge }}></span>
                   modeled SWR at the radio, lower is better</span>
                 <span><span className="swatch swatch-hatch"></span>
-                  shorter than λ/4</span>
+                  {score.shortLabel}</span>
               </>
             )}
             <span><span className="swatch" style={{ background: COLORS.marker }}></span>
@@ -3134,32 +3220,128 @@
         [mode, wireLenM, solution, segment, site, ununRatio]);
 
       /**
-       * The deck for the length in hand.  Impedance mode only: the geometry
-       * it describes is the height, return path and soil, and those controls
-       * only exist in that mode, so a deck offered beside the classical rule
-       * would be built from numbers the user was never shown.
+       * @typedef {Object} NecRun  one check, live or finished
+       * @property {string} key       necOverlayKey at launch
+       * @property {'running'|'done'|'error'} status
+       * @property {{lenM: Meters, swr: number}[]} points  sorted by length
+       * @property {number} solved    lengths with a point on the map
+       * @property {number} scheduled lengths handed to a worker
+       * @property {number} total     lengths the grid holds
+       * @property {?string} note     what went wrong, when status is error
        */
-      const deck = useMemo(
-        () => (mode === 'impedance'
-          ? buildNecDeck(wireLenM, solution.bands, segment, site, WIRE_RADIUS_M)
+      const [necRun, setNecRun] = useState(/** @type {?NecRun} */ (null));
+      const necControl = useRef(
+        /** @type {?{stop: () => void}} */ (null));
+
+      /** What a check of the current state would depend on. */
+      const necKey = useMemo(
+        () => (mode === 'impedance' && score !== null && score.bands.length > 0
+          ? necOverlayKey(score.bands, segment, site, ununRatio, maxLenM)
           : null),
-        [mode, wireLenM, solution, segment, site]);
+        [mode, score, segment, site, ununRatio, maxLenM]);
 
-      const saveDeck = () => {
-        if (deck !== null) saveTextFile(deck, deckFilename(wireLenM, 'nec'));
-      };
+      /** Bands where the check's own solver is suspect, for the caveat. */
+      const necSuspect = useMemo(
+        () => (score !== null
+          ? necSuspectBands(score.bands, segment, site)
+          : []),
+        [score, segment, site]);
 
-      // Built on click rather than in a memo: it carries a timestamp, and one
-      // that ages with the render would make the file differ from itself.
-      const saveAntennaSimProject = () => {
-        if (deck === null) return;
-        const project = buildAntennaSimProject(
-          wireLenM, solution.bands, segment, site, WIRE_RADIUS_M,
-          new Date().toISOString());
-        if (project !== null) {
-          saveTextFile(project, deckFilename(wireLenM, ANTENNASIM_EXTENSION));
+      // A stale overlay is never drawn (the render checks the key), and a
+      // stale run is not worth finishing either.
+      useEffect(() => {
+        if (necRun !== null && necRun.key !== necKey) {
+          if (necControl.current !== null) necControl.current.stop();
+          setNecRun(null);
         }
+      }, [necRun, necKey]);
+
+      const startNecCheck = () => {
+        if (score === null || necKey === null || necControl.current !== null) {
+          return;
+        }
+        const key = necKey;
+        const freqs = necSampleFreqsHz(score.bands, segment);
+        const step = maxLenM / (NEC_LENGTH_SAMPLES - 1);
+        const lengths = Array.from({ length: NEC_LENGTH_SAMPLES },
+          (_, i) => Math.max(step, i * step))
+          .filter(lenM => riseShortfallM(site, lenM) === null);
+        const blobUrl = URL.createObjectURL(
+          new Blob([NEC_WORKER_SOURCE], { type: 'text/javascript' }));
+        /** @type {Worker[]} */
+        const workers = [];
+        let nextLength = 0;
+        let pending = 0;
+        let solved = 0;
+        let concluded = false;
+        /** @type {{lenM: Meters, swr: number}[]} */
+        const results = [];
+
+        const snapshot = (/** @type {NecRun['status']} */ status,
+                          /** @type {?string} */ note) => ({
+          key, status, points: [...results].sort((a, b) => a.lenM - b.lenM),
+          solved, scheduled: nextLength, total: lengths.length, note,
+        });
+        const conclude = (/** @type {?string} */ error) => {
+          if (concluded) return;
+          concluded = true;
+          workers.forEach(worker => worker.terminate());
+          URL.revokeObjectURL(blobUrl);
+          necControl.current = null;
+          setNecRun(error !== null && results.length === 0
+            ? snapshot('error', error)
+            : snapshot('done', null));
+        };
+        const feed = (/** @type {Worker} */ worker) => {
+          if (nextLength >= lengths.length) {
+            if (pending === 0) conclude(null);
+            return;
+          }
+          const lenM = lengths[nextLength++];
+          pending++;
+          worker.postMessage({
+            lenM,
+            decks: freqs.map(
+              freqHz => buildProbeDeck(lenM, freqHz, site, WIRE_RADIUS_M)),
+          });
+        };
+        const onReply = (
+          /** @type {Worker} */ worker,
+          /** @type {{lenM: Meters, outputs?: string[], error?: string}} */
+          data) => {
+          if (concluded) return;
+          pending--;
+          if (data.error !== undefined || data.outputs === undefined) {
+            conclude(data.error ?? 'the solver returned nothing');
+            return;
+          }
+          const zs = data.outputs.map(parseNecZ);
+          if (zs.every(z => z !== null)) {
+            const swr = geometricMeanSwr(
+              /** @type {Complex[]} */ (zs), ununRatio);
+            if (swr !== null) {
+              results.push({ lenM: data.lenM, swr });
+              solved++;
+            }
+          }
+          setNecRun(snapshot('running', null));
+          feed(worker);
+        };
+
+        for (let i = 0; i < necWorkerCount(); i++) {
+          const worker = new Worker(blobUrl, { type: 'module' });
+          worker.onmessage = (event) => onReply(worker, event.data);
+          worker.onerror = () => {
+            pending = Math.max(0, pending - 1);
+            conclude('the solver failed to load');
+          };
+          workers.push(worker);
+        }
+        necControl.current = { stop: () => conclude(null) };
+        setNecRun(snapshot('running', null));
+        workers.forEach(feed);
       };
+
 
       // Only searched when the asked-for margin leaves nothing.
       const fallback = useMemo(
@@ -3709,8 +3891,72 @@
                   Select at least one band.
                 </div></div>
               ) : (
-                <LengthMap solution={solution} score={score} maxLenM={maxLenM}
+                <LengthMap solution={solution} score={score}
+                           necPoints={necRun !== null && necRun.key === necKey
+                             ? necRun.points : null}
+                           maxLenM={maxLenM}
                            units={units} wireLenM={wireLenM} onPick={setWireLen} />
+              )}
+
+              {!noBands && necKey !== null && necSuspect.length > 0 && (
+                <div className="control-hint deck-warning">
+                  The feedpoint sits under{' '}
+                  {NEC2_FEED_MIN_LAMBDA} wavelengths on{' '}
+                  {necSuspect.map(b => b.label).join(', ')}, where NEC-2&apos;s
+                  own ground treatment goes wrong: there a check measures the
+                  solver rather than the model.
+                  {score !== null && necSuspect.length < score.bands.length
+                    && ' Deselect those bands to check the rest.'}
+                  {' '}See the{' '}
+                  <a href={MODEL_NOTE_URL} target="_blank"
+                     rel="noopener">modeling note</a>.
+                </div>
+              )}
+
+              {!noBands && necKey !== null && (
+                <div className="nec-check">
+                  {necRun === null ? (
+                    <>
+                      <button className="btn preset-btn" onClick={startNecCheck}>
+                        {necSuspect.length > 0
+                          ? 'Run it anyway'
+                          : 'Check this map against NEC-2'}
+                      </button>
+                      <span className="control-hint">
+                        Solves the installation at every band you picked;
+                        a dozen seconds or so.
+                      </span>
+                    </>
+                  ) : necRun.status === 'running' ? (
+                    <>
+                      <button className="btn preset-btn"
+                              onClick={() => {
+                                if (necControl.current !== null) {
+                                  necControl.current.stop();
+                                }
+                              }}>
+                        Stop
+                      </button>
+                      <span className="control-hint" role="status">
+                        NEC-2: {necRun.solved} of {necRun.total} lengths
+                      </span>
+                    </>
+                  ) : necRun.status === 'error' ? (
+                    <span className="control-hint" role="status">
+                      The NEC-2 check failed: {necRun.note}
+                    </span>
+                  ) : (
+                    <span className="control-hint" role="status">
+                      NEC-2 (nec2c): same geometry, ground and {ununRatio}:1
+                      arithmetic as the model curve.
+                      {necSuspect.length === 0
+                        && ' Where the curves part, that is the model\'s error.'}
+                      {necRun.scheduled < necRun.total
+                        && ` Stopped at ${necRun.solved} of `
+                           + `${necRun.total} lengths.`}
+                    </span>
+                  )}
+                </div>
               )}
 
               {!noBands && (
@@ -3876,38 +4122,6 @@
                 </div>
               )}
 
-              {deck !== null && (
-                <div className="panel">
-                  <div className="panel-header">NEC deck</div>
-                  <div className="presets">
-                    <button className="btn preset-btn" onClick={saveDeck}>
-                      .nec for NEC-2
-                    </button>
-                    <button className="btn preset-btn"
-                            onClick={saveAntennaSimProject}>
-                      .antennasim for AntennaSim
-                    </button>
-                  </div>
-                  <div className="control-hint deck-warning">
-                    Expect a solver to disagree with this page, by up to about
-                    2x near a half wave and on wires much shorter than one.
-                    That is this model, not the deck: its peaks are too sharp,
-                    and it is fitted at a coarser segmentation than the deck
-                    asks for. See the{' '}
-                    <a href={MODEL_NOTE_URL} target="_blank"
-                       rel="noopener">modeling note</a>.
-                  </div>
-                  <div className="control-hint">
-                    This installation, swept across the bands you picked.
-                    Neither carries the {ununRatio}:1, so both report the bare
-                    feedpoint. Give{' '}
-                    <a href="https://ea1fuo.github.io/AntennaSim/"
-                       target="_blank" rel="noopener">AntennaSim</a> the
-                    project rather than the deck: its .nec importer drops the
-                    soil constants and simulates medium soil instead.
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 

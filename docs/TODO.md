@@ -277,28 +277,26 @@ Remaining:
       good ground, which differ by 11 percent, so a port that ignores
       soil constants fails too.
 
-- [ ] **Decide what the browser check runs on.**  Unblocked, and by a
-      measurement that overturns the reason it was blocked.
+- [x] **The browser check.**  Built, on `nec2c-wasm`.  Chosen over
+      `necpp-wasm` because the shipped tables are NEC-4.2's and nec2c
+      tracks NEC-4.2 to 1 percent in this geometry down to a
+      counterpoise at 1 cm, where nec2++ reads half; the page's default
+      standoff lives inside that zone, so the abstractly better NEC-2
+      is the wrong one here.  See MODEL.md, "Where NEC-2 is bad, and
+      where it is not", and `nec/sommerfeld_report.html`.
 
-      It was held because `nec2c-wasm` would supposedly read about 30
-      percent high in exactly the configuration the page assumes.  It
-      does not.  In this geometry -- feedpoint 0.22 wavelengths up, only
-      the counterpoise near the ground -- nec2c agrees with NEC-4.2 to
-      within 1 percent at every counterpoise height down to a
-      centimeter, on average and good soil alike.  NEC-2's Sommerfeld
-      failure needs the *fed element* near the interface, which this
-      antenna does not have.
-
-      So `nec2c-wasm` is a usable solver for the button, and the license
-      question it raises is already settled: the page is
-      GPL-3.0-or-later for this reason.  `necpp-wasm` also now exists
-      and is reported in good shape, so either would do; nec2c-wasm is
-      the one already packaged and inlined.
-
-      What the button would still disagree with is the model rather than
-      the solver -- up to 2x near a half wave, and segmentation -- which
-      is the honest thing for it to show, since that is the model's real
-      error and a user comparing the two would be seeing it.
+      The button solves the configured antenna at every selected band
+      -- the model curve's own frequency grid at every other point --
+      across up to 97 lengths, left to right, in a small worker pool
+      with a Stop button.  The overlay draws the same
+      statistic as the model curve (geometric mean SWR at the radio)
+      and is keyed to every input it depends on, so any change clears
+      it.  What it disagrees with is the model, up to 2x near a half
+      wave, which is the honest thing for it to show.  With the
+      feedpoint under 0.05 wavelengths on a selected band -- NEC-2's own
+      failure regime, a sloper fed low or a low wire on a long band --
+      the check warns first and runs only on request, so a measurement
+      of the solver is never passed off as one of the model.
 
 - [ ] **Model the counterpoise in contact with the ground.**  Most
       people let the coax lie on the dirt.  The model holds it 5 cm up
@@ -462,9 +460,6 @@ its own on top of it.  Either the claim goes or the imports come back.
 reasons about NEC-2's junction assumption and solves with PyNEC, while
 every shipped table is now NEC-4.2.
 
-**Decided, not yet built.**  The NEC exports sweep one 201-point linear
-span, so a selected 60 m or 30 m can receive no sample at all: one `FR`
-card per selected band instead.
 
 **Decided, not yet built.**  Accessibility: the length map is mouse-only,
 with no role, name or live region.

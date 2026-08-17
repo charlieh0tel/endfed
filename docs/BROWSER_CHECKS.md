@@ -33,6 +33,11 @@ npm --prefix docs/tools run serve
 - [ ] **Is the EXPERIMENTAL ribbon saying the right thing?**  The suite
       checks that it scrolls away rather than pinning.  Whether the page
       still deserves the ribbon is a judgment about the model.
+- [ ] **Does the NEC overlay tell a fair story?**  The suite proves the
+      check runs, draws and clears; it cannot judge whether the two
+      curves part where the caveat says they will -- near the half-wave
+      peaks -- or whether the orange NEC-2 trace reads as the
+      measurement and the green as the model, rather than as clutter.
 - [ ] **Does anything look wrong that no assertion covers?**  Spacing
       that has drifted, a panel in an order that reads oddly, a control
       that is technically reachable but awkward to use.

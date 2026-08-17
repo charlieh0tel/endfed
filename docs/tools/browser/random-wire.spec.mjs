@@ -571,3 +571,21 @@ test.describe('keyboard', () => {
     expect(hasRing, JSON.stringify(ring)).toBe(true);
   });
 });
+
+test.describe('the NEC check', () => {
+  test('draws a measured curve and clears it when anything changes',
+    async ({ page }) => {
+      // Loads the solver from the CDN, so this is the one test with the
+      // network in the loop beyond the page's own script tags.
+      await open(page);
+      await page.getByRole('button', { name: /check this map against nec-2/i })
+        .click();
+      const overlay = page.locator('svg.map-svg .nec-curve');
+      // Drawn as soon as two lengths have solved, well before the run ends.
+      await expect(overlay).toBeVisible({ timeout: 60000 });
+      // Any input the numbers depend on drops the overlay -- soil is one.
+      await group(page, 'Ground').locator('button[aria-checked="false"]')
+        .first().click();
+      await expect(overlay).toHaveCount(0);
+    });
+});

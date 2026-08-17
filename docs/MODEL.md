@@ -1662,6 +1662,37 @@ half at a centimeter.  So **nec2++ is the one to avoid for this antenna**,
 which is the reverse of what the limit test alone would suggest, and the
 reverse of what this note said before the geometries were separated.
 
+### The sloper closes the question
+
+A sloper puts the fed element itself near the ground, and no
+implementation carve survives it.  A 67.97 m sloper -- apex 16.5 m,
+balun 0.61 m, counterpoise 7.62 m at 3 cm, average soil -- solved at 25
+frequencies across 80 through 10 m, SWR through a 9:1, per band:
+
+| band | feed h/lambda | NEC-4.2 | nec2++ | nec2c |
+|---|---|---|---|---|
+| 80 m | 0.007 | 3.0-4.5 | agrees | agrees |
+| 40 m | 0.014 | 3.1-4.6 | ~10% high | garbage |
+| 20 m | 0.029 | 3.3-3.5 | **1.4-1.5** | **1.1-1.2** |
+| 15 m | 0.043 | 1.6-1.9 | close | 3.9-4.9 |
+| 10 m | 0.058 | 1.8-4.1 | erratic | erratic |
+
+The failures are not monotone in feed height -- 80 m agrees, 20 m is
+broken, 15 m splits the two -- so no h/lambda threshold rescues a band.
+And 20 m is the failure mode that matters: both NEC-2s report a
+plausible near-match where NEC-4.2 reads 3.5, silently.  An exploding
+answer indicts itself; this one does not.  So the in-page check warns
+below 0.05 wavelengths of feedpoint height and runs only on request,
+and a sloper's real confirmation is NEC-4.
+
+The same solve answers the other question, because the model was run
+beside the solvers: at this length the model reads a geometric mean of
+2.8 and a worst of 4.4 against NEC-4.2's 2.9 and 4.6, and on 80 and
+40 m it matches NEC-4.2 to a tenth of an SWR unit at every frequency.
+**Fitted to NEC-4.2, the model carries that solver's ground into the
+regime no browser-runnable NEC-2 can reach, and tracks it better there
+than either NEC-2 does.**
+
 ## References
 
 Sources for the published length tables this page is measured against,

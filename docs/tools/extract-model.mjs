@@ -57,9 +57,13 @@ const EXPORTS = [
   'MODEL_Z_NODES', 'MODEL_DOMAIN', 'outOfDomainBands', 'lineZ', 'endFedZin', 'swrAtRadio', 'scoreLength',
   'solveImpedance', 'worstSuggestedSwr',
   // NEC deck
-  'buildNecDeck', 'buildAntennaSimProject', 'deckWires', 'deckSweep',
-  'deckSegments', 'ANTENNASIM_SCHEMA_VERSION',
-  'DECK_SWEEP_POINTS', 'DECK_MAX_SEGMENTS', 'DECK_SEGMENTS_PER_WAVELENGTH',
+  'deckWires', 'deckSegments',
+  'DECK_MAX_SEGMENTS', 'DECK_SEGMENTS_PER_WAVELENGTH',
+  // in-page NEC check
+  'NEC_LENGTH_SAMPLES', 'NEC2_FEED_MIN_LAMBDA', 'SWR_SAMPLES_PER_BAND',
+  'necSuspectBands',
+  'necSampleFreqsHz', 'buildProbeDeck', 'parseNecZ', 'geometricMeanSwr',
+  'necOverlayKey',
   // display
   'toDisplay', 'fromDisplay', 'fmtLen', 'fmtBandEdges', 'tickStep',
   // URL and state helpers

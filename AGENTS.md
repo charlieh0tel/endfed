@@ -220,7 +220,8 @@ must pass before committing and before pushing.
 - **Respect the single-file architecture**: Do not split the page into
   multiple files unless the user requests it. The single-file design is
   intentional for GitHub Pages simplicity.
-- **External dependencies are loaded from CDN** (React, ReactDOM, Babel).
+- **External dependencies are loaded from CDN** (React, ReactDOM, Babel,
+  and nec2c-wasm on demand for the NEC check).
 - **Browser compatibility**: The page uses modern JS features transpiled
   by Babel. Ensure nothing relies on bleeding-edge APIs without checking
   browser support.

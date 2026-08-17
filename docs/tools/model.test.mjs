@@ -916,9 +916,8 @@ const cardsOf = (deck, name) => deck.split('\n')
 const defaultDeck = () => {
   const site = { geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
     soil: m.DEFAULT_SOIL };
-  const bands = m.bandsIn('us').filter(b => m.DEFAULTS.bands.includes(b.m));
-  return m.buildNecDeck(m.fromDisplay(71, 'ft'), bands, 'full', site,
-                        m.WIRE_RADIUS_M);
+  return m.buildProbeDeck(m.fromDisplay(71, 'ft'), 14.175e6, site,
+                          m.WIRE_RADIUS_M);
 };
 
 test('the deck describes the geometry the model was fitted at', async () => {
@@ -936,7 +935,6 @@ test('the deck describes the geometry the model was fitted at', async () => {
   assert.equal(m.DECK_SEGMENTS_PER_WAVELENGTH, fixture.segments_per_wavelength,
     'segmentation rule');
 
-  const bands = m.bandsIn('us').filter(b => [40, 20, 15, 10].includes(b.m));
   for (const kase of fixture.cases) {
     const heightM = m.fromDisplay(kase.height_ft, 'ft');
     const runM = m.fromDisplay(kase.return_ft, 'ft');
@@ -944,7 +942,7 @@ test('the deck describes the geometry the model was fitted at', async () => {
     const site = { geometry: 'flatTop', heightM, balunM: m.DEFAULT_BALUN_M,
                    counterpoiseM: runM, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M,
                    soil: kase.soil };
-    const deck = m.buildNecDeck(lenM, bands, 'full', site, m.WIRE_RADIUS_M);
+    const deck = m.buildProbeDeck(lenM, 14.175e6, site, m.WIRE_RADIUS_M);
 
     const [antenna, drop, run] = cardsOf(deck, 'GW');
     const at = (card, i) => Number(card[i]);
@@ -986,40 +984,15 @@ test('the soil constants are the ones the fit was run at', async () => {
   }
 });
 
-test('the deck sweeps every selected band and nothing outside them', () => {
-  const bands = m.bandsIn('us').filter(b => [40, 20, 15, 10].includes(b.m));
-  const sweep = m.deckSweep(bands, 'full');
-  const edges = bands.map(b => m.bandEdgesHz(b, 'full'));
-  const lowest = Math.min(...edges.map(([lo]) => lo));
-  const highest = Math.max(...edges.map(([, hi]) => hi));
-  close(sweep.startHz, lowest, 1, 'the sweep starts at the lowest band edge');
-  close(sweep.startHz + sweep.stepHz * (sweep.points - 1), highest, 1,
-    'and ends at the highest');
-
-  const [frequency] = cardsOf(defaultDeck(), 'FR');
-  assert.equal(Number(frequency[2]), sweep.points, 'FR carries the point count');
-  close(Number(frequency[5]) * 1e6, sweep.startHz, 1e3, 'FR starts in MHz');
-  close(Number(frequency[6]) * 1e6, sweep.stepHz, 1e3, 'FR steps in MHz');
-});
-
-test('a one-band selection sweeps that band alone', () => {
-  const bands = m.bandsIn('us').filter(b => b.m === 20);
-  const sweep = m.deckSweep(bands, 'full');
-  const [lo, hi] = m.bandEdgesHz(bands[0], 'full');
-  close(sweep.startHz, lo, 1, 'starts at the band edge');
-  close(sweep.startHz + sweep.stepHz * (sweep.points - 1), hi, 1, 'ends at it');
-});
-
 test('segments are odd, bounded, and short against the shortest wave', () => {
   // Odd so a center segment exists, and dense enough at the top of the sweep,
   // where segments are electrically longest.  The source sits on segment 1 of
   // tag 1, so a wire described by too few segments moves the feedpoint.
-  const bands = m.bandsIn('us').filter(b => [40, 10].includes(b.m));
   const site = { geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
     soil: m.DEFAULT_SOIL };
-  const deck = m.buildNecDeck(m.fromDisplay(203, 'ft'), bands, 'full', site,
-                              m.WIRE_RADIUS_M);
-  const topHz = Math.max(...bands.map(b => m.bandEdgesHz(b, 'full')[1]));
+  const topHz = 29.7e6;
+  const deck = m.buildProbeDeck(m.fromDisplay(203, 'ft'), topHz, site,
+                                m.WIRE_RADIUS_M);
   const wavelengthM = m.C_SPEED / topHz;
   for (const wire of cardsOf(deck, 'GW')) {
     const segments = Number(wire[2]);
@@ -1048,104 +1021,6 @@ test('the deck feeds the end of the antenna wire and ends properly', () => {
   assert.ok(deck.includes('\nXQ\n'), 'something tells NEC to run');
   assert.ok(deck.endsWith('EN\n'), 'and the deck ends');
 });
-
-test('a deck needs a length and a band', () => {
-  const site = { geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
-    soil: m.DEFAULT_SOIL };
-  const bands = m.bandsIn('us').filter(b => b.m === 20);
-  assert.equal(m.buildNecDeck(0, bands, 'full', site, m.WIRE_RADIUS_M), null,
-    'no wire, no deck');
-  assert.equal(m.buildNecDeck(20, [], 'full', site, m.WIRE_RADIUS_M), null,
-    'no band, no sweep');
-  assert.equal(m.deckSweep([], 'full'), null, 'and no sweep to describe');
-});
-
-test('the AntennaSim project describes the same antenna as the deck', () => {
-  // Two exports, one geometry.  They share deckWires precisely so this can
-  // never drift, and this is what says so.
-  const site = { geometry: 'flatTop', heightM: m.DEFAULT_HEIGHT_M, balunM: m.DEFAULT_BALUN_M,
-    counterpoiseM: m.DEFAULT_COUNTERPOISE_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M,
-    soil: 'poor' };
-  const bands = m.bandsIn('us').filter(b => [40, 20, 15, 10].includes(b.m));
-  const lenM = m.fromDisplay(71, 'ft');
-  const project = JSON.parse(m.buildAntennaSimProject(
-    lenM, bands, 'full', site, m.WIRE_RADIUS_M, '2026-01-01T00:00:00.000Z'));
-  const deck = m.buildNecDeck(lenM, bands, 'full', site, m.WIRE_RADIUS_M);
-
-  const wires = cardsOf(deck, 'GW');
-  assert.equal(project.editor.wires.length, wires.length, 'same wire count');
-  for (const [i, wire] of project.editor.wires.entries()) {
-    const card = wires[i];
-    assert.equal(wire.tag, Number(card[1]), `wire ${i}: tag`);
-    assert.equal(wire.segments, Number(card[2]), `wire ${i}: segments`);
-    const coordinates = [wire.x1, wire.y1, wire.z1, wire.x2, wire.y2, wire.z2];
-    for (const [j, value] of coordinates.entries()) {
-      close(value, Number(card[3 + j]), 5e-4, `wire ${i}: coordinate ${j}`);
-    }
-    close(wire.radius, Number(card[9]), 5e-7, `wire ${i}: radius`);
-  }
-
-  // The soil is the whole reason this format is written: their .nec importer
-  // reads the ground card's type and drops its constants.
-  assert.equal(project.editor.ground.type, 'custom', 'custom ground');
-  close(project.editor.ground.custom_permittivity, m.SOILS.poor.epsR, 1e-9,
-    'permittivity survives');
-  close(project.editor.ground.custom_conductivity, m.SOILS.poor.sigmaSm, 1e-9,
-    'conductivity survives');
-
-  const sweep = m.deckSweep(bands, 'full');
-  close(project.editor.frequencyRange.start_mhz, sweep.startHz / 1e6, 1e-6,
-    'sweep start');
-  close(project.editor.frequencyRange.stop_mhz,
-    (sweep.startHz + sweep.stepHz * (sweep.points - 1)) / 1e6, 1e-6,
-    'sweep stop');
-  assert.equal(project.editor.frequencyRange.steps, sweep.points, 'sweep steps');
-
-  const [lowLo, lowHi] = m.bandEdgesHz(
-    bands.reduce((a, b) => (a.m > b.m ? a : b)), 'full');
-  close(project.editor.designFrequencyMhz * 1e6, (lowLo + lowHi) / 2, 1,
-    'the design frequency is the center of the lowest band');
-});
-
-test('the AntennaSim project carries the fields its loader demands', () => {
-  // Their format, their rules: an editor project needs a version their loader
-  // will not reject, mode "editor", at least one wire, and a junctions array.
-  // Nothing here can catch a schema change upstream -- see the note in the
-  // page -- but a field dropped on this side is caught.
-  const site = { geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
-    soil: m.DEFAULT_SOIL };
-  const bands = m.bandsIn('us').filter(b => b.m === 20);
-  const project = JSON.parse(m.buildAntennaSimProject(
-    m.fromDisplay(71, 'ft'), bands, 'full', site, m.WIRE_RADIUS_M,
-    '2026-01-01T00:00:00.000Z'));
-
-  assert.equal(project.version, m.ANTENNASIM_SCHEMA_VERSION, 'schema version');
-  assert.equal(project.mode, 'editor', 'an editor project, not a template');
-  assert.equal(typeof project.app_version, 'string', 'app_version is a string');
-  assert.equal(project.created_at, '2026-01-01T00:00:00.000Z', 'timestamp');
-  assert.ok(Array.isArray(project.editor.junctions), 'junctions array');
-  assert.ok(project.editor.wires.length > 0, 'at least one wire');
-  assert.deepEqual(project.editor.excitations,
-    [{ wire_tag: 1, segment: 1, voltage_real: 1, voltage_imag: 0 }],
-    'fed at the end of the antenna wire');
-  assert.deepEqual(project.editor.loads, [], 'no loads');
-  assert.deepEqual(project.editor.transmissionLines, [], 'no lines');
-});
-
-test('the project file needs a length and a band, as the deck does', () => {
-  const site = { geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M, counterpoiseM: m.DEFAULT_COUNTERPOISE_M,
-    soil: m.DEFAULT_SOIL };
-  const bands = m.bandsIn('us').filter(b => b.m === 20);
-  const at = '2026-01-01T00:00:00.000Z';
-  assert.equal(
-    m.buildAntennaSimProject(0, bands, 'full', site, m.WIRE_RADIUS_M, at), null,
-    'no wire, no project');
-  assert.equal(
-    m.buildAntennaSimProject(20, [], 'full', site, m.WIRE_RADIUS_M, at), null,
-    'no band, no sweep');
-});
-
-// The sloper impedance path, which the flat-top defaults never exercise.
 
 test('the counterpoise ceiling follows the geometry it hangs from', () => {
   const flat = { geometry: 'flatTop', heightM: 9.144, balunM: 0.61 };
@@ -1364,3 +1239,150 @@ test('the shipped tables are fitted from NEC-4.2 alone', async () => {
     }
   }
 });
+
+// ------------------------------------------------------------
+// In-page NEC check, the pure half
+// ------------------------------------------------------------
+
+const defaultSite = () => ({
+  geometry: 'flatTop', balunM: m.DEFAULT_BALUN_M,
+  counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, heightM: m.DEFAULT_HEIGHT_M,
+  counterpoiseM: m.DEFAULT_COUNTERPOISE_M, soil: m.DEFAULT_SOIL,
+});
+
+test('the check samples the model curve at shared frequencies', () => {
+  const bands = m.bandsIn('us').filter(b => [40, 20].includes(b.m));
+  const freqs = m.necSampleFreqsHz(bands, 'full');
+  assert.equal(freqs.length, bands.length * Math.ceil(m.SWR_SAMPLES_PER_BAND / 2),
+    'every other point of the model grid, endpoints included');
+  for (const band of bands) {
+    const [loHz, hiHz] = m.bandEdgesHz(band, 'full');
+    assert.ok(freqs.includes(loHz), `${band.m} m low edge sampled`);
+    assert.ok(freqs.includes(hiHz), `${band.m} m high edge sampled`);
+    // Each sample sits on the model curve's own grid, so the two curves are
+    // compared at the same frequencies rather than near them.
+    for (const freqHz of freqs.filter(f => f >= loHz && f <= hiHz)) {
+      const grid = (freqHz - loHz) / (hiHz - loHz) * (m.SWR_SAMPLES_PER_BAND - 1);
+      close(grid, Math.round(grid), 1e-6, `${freqHz} Hz on the model grid`);
+    }
+  }
+});
+
+test('a probe deck is the exported geometry at one frequency', () => {
+  const site = defaultSite();
+  const lenM = m.fromDisplay(71, 'ft');
+  const freqHz = 14.175e6;
+  const deck = m.buildProbeDeck(lenM, freqHz, site, m.WIRE_RADIUS_M);
+
+  const [fr] = cardsOf(deck, 'FR');
+  assert.equal(fr[2], '1', 'one frequency');
+  close(Number(fr[5]), freqHz / 1e6, 1e-6, 'the frequency asked for');
+
+  // Same wires as the export builds for a sweep ending at this frequency,
+  // segmented for this frequency exactly as the fitting sweeps were.
+  const wires = m.deckWires(lenM, site, m.WIRE_RADIUS_M, m.C_SPEED / freqHz);
+  const gw = cardsOf(deck, 'GW');
+  assert.equal(gw.length, wires.length, 'wire for wire');
+  for (let i = 0; i < wires.length; i++) {
+    assert.equal(Number(gw[i][2]), wires[i].segments,
+      `wire ${i + 1} segmented for the probe frequency`);
+  }
+  assert.equal(cardsOf(deck, 'GN')[0][1], '2', 'Sommerfeld ground');
+  assert.equal(cardsOf(deck, 'EX')[0][2], '1', 'fed at the feedpoint wire');
+});
+
+test('the parser reads the source impedance out of nec2c output', () => {
+  // Verbatim from nec2c-wasm 0.1.3 over a probe deck, trimmed to the block
+  // the parser hunts for.
+  const output = [
+    '                        --------- ANTENNA INPUT PARAMETERS ---------',
+    '  TAG   SEG       VOLTAGE (VOLTS)         CURRENT (AMPS)         IMPEDANCE (OHMS)        ADMITTANCE (MHOS)     POWER',
+    '  No:   No:     REAL      IMAGINARY     REAL      IMAGINARY     REAL      IMAGINARY    REAL       IMAGINARY   (WATTS)',
+    '    1     1  1.0000E+00  0.0000E+00  3.0909E-04 -4.0143E-04  1.2042E+03  1.5639E+03  3.0909E-04 -4.0143E-04  1.5455E-04',
+    '',
+  ].join('\n');
+  const z = m.parseNecZ(output);
+  assert.ok(z !== null, 'found the source row');
+  close(z.re, 1204.2, 1e-6, 'resistance');
+  close(z.im, 1563.9, 1e-6, 'reactance');
+
+  assert.equal(m.parseNecZ('RUN TIME = 0'), null, 'no parameters, no number');
+  assert.equal(m.parseNecZ('ANTENNA INPUT PARAMETERS\nnothing here'), null,
+    'a block with no data row');
+});
+
+test('the geometric mean SWR matches the model curve statistic', () => {
+  const ratio = m.DEFAULT_UNUN_RATIO;
+  const matched = { re: m.Z_SYSTEM_OHMS * ratio, im: 0 };
+  close(m.geometricMeanSwr([matched], ratio), 1, 1e-9, 'a matched load');
+  const z = { re: 1204.2, im: 1563.9 };
+  close(m.geometricMeanSwr([z, matched], ratio),
+    Math.sqrt(m.swrAtRadio(z, ratio)), 1e-9,
+    'two samples multiply under the root');
+  assert.equal(m.geometricMeanSwr([], ratio), null, 'nothing measured');
+  assert.equal(m.geometricMeanSwr([{ re: NaN, im: 0 }], ratio), null,
+    'a solve the model cannot score declines');
+});
+
+test('the overlay key moves with every input the check depends on', () => {
+  const site = defaultSite();
+  const bands = m.bandsIn('us').filter(b => [40, 20].includes(b.m));
+  const key = () => m.necOverlayKey(bands, 'full', site, 9, 60);
+  const base = key();
+  assert.equal(key(), base, 'stable while nothing changes');
+
+  assert.notEqual(m.necOverlayKey(bands, 'cw', site, 9, 60), base, 'segment');
+  assert.notEqual(m.necOverlayKey(bands.slice(0, 1), 'full', site, 9, 60),
+    base, 'bands');
+  assert.notEqual(m.necOverlayKey(bands, 'full', site, 4, 60), base, 'unun');
+  assert.notEqual(m.necOverlayKey(bands, 'full', site, 9, 45), base,
+    'map range');
+  for (const [field, value] of [['geometry', 'sloper'], ['heightM', 10],
+    ['balunM', 1], ['counterpoiseM', 5], ['counterpoiseZM', 1],
+    ['soil', 'poor']]) {
+    assert.notEqual(
+      m.necOverlayKey(bands, 'full', { ...site, [field]: value }, 9, 60),
+      base, field);
+  }
+});
+
+test('the check flags bands whose feedpoint is low in wavelengths', () => {
+  // The threshold is nec/sommerfeld_report.html's: every NEC-2 descendant
+  // is exact with the fed element at 0.05 wavelengths and +92 percent by
+  // 0.02.  A default-height flat top on 160 m sits just above it; drop the
+  // wire and 160 m goes suspect while 40 m stays clean.
+  const bands = m.bandsIn('us').filter(b => [160, 40].includes(b.m));
+  const high = defaultSite();
+  assert.deepEqual(m.necSuspectBands(bands, 'full', high).map(b => b.m), [],
+    `${high.heightM} m up is above the threshold on every band`);
+
+  const low = { ...high, heightM: 5 };
+  assert.deepEqual(m.necSuspectBands(bands, 'full', low).map(b => b.m), [160],
+    'a 5 m wire is under 0.05 wavelengths on 160 m and fine on 40 m');
+
+  // A sloper is fed at the balun, near the ground, so long bands go
+  // suspect no matter how high the far end reaches.
+  const sloper = { ...high, geometry: 'sloper', balunM: 1, heightM: 15 };
+  assert.deepEqual(m.necSuspectBands(bands, 'full', sloper).map(b => b.m),
+    [160, 40], 'a sloper fed 1 m up is suspect on both');
+});
+
+test('a sloper hatches everything shorter than its rise', () => {
+  // The check already refused to solve unbuildable lengths; the map now
+  // says why, by growing the too-short zone to the rise and labeling it.
+  const site = { geometry: 'sloper', balunM: 0.85, heightM: 17,
+    counterpoiseM: 7.62, counterpoiseZM: 0.25, soil: m.DEFAULT_SOIL };
+  const out = m.solveImpedance('us', [20, 15, 10], 'full', site,
+    m.WIRE_RADIUS_M, 9, 21.3, 'ft');
+  const riseFloor = (17 - 0.85) * m.SLOPER_REACH_MARGIN;
+  close(out.shortLimit, riseFloor, 1e-9, 'the rise governs on high bands');
+  assert.ok(out.shortLabel.includes('rise'), 'and the legend says so');
+
+  const flat = { ...site, geometry: 'flatTop' };
+  const flatOut = m.solveImpedance('us', [20, 15, 10], 'full', flat,
+    m.WIRE_RADIUS_M, 9, 21.3, 'ft');
+  close(flatOut.shortLimit, m.tooShortM(flatOut.bands, 'full', m.MODEL_VF_A),
+    1e-9, 'a flat top keeps the quarter-wave floor');
+  assert.ok(!flatOut.shortLabel.includes('rise'), 'and the plain label');
+});
+
