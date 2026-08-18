@@ -1749,6 +1749,47 @@ counterpoise can read several times high -- some of what the overlay
 paints as model error there is the checker.  The model's own error
 figures are unaffected: they are measured against NEC-4.2 directly.
 
+## NEC-5 arrives: the ground stands, the density does not
+
+NEC-5 (`nec5cl`) passed the conductivity limit on arrival, matching
+NEC-4.2 nearly digit for digit -- +0.04 percent at 0.02 wavelengths,
++0.34 at 0.01 -- so its Sommerfeld is sound where correctness is
+decidable.  On the reference cases it then disagreed with NEC-4.2 by
+x1.3-1.6, worst x1.98, which looked like the better ground model
+talking.  It was not.  A convergence ladder (1x to 8x the fitting
+density) showed both solvers approaching the same answers from
+opposite sides, and a 144-geometry slice across the table's axes
+settled it:
+
+| | median | 90th | worst |
+|---|---|---|---|
+| NEC-4.2, its 1x against its 8x | x1.17 | x1.49 | x1.88 |
+| NEC-5, its 1x against its 8x | x1.52 | x2.38 | x4.54 |
+| NEC-4.2 vs NEC-5, both 8x | x1.03 | x1.07 | x1.12 |
+
+**Converged, the two ground treatments agree** -- confirmed
+independently on the Sommerfeld path in a separate comparison.  What
+does not stand is the fitting density: at the 20 segments per
+wavelength every shipped sweep used, NEC-4.2 sits x1.17 median and
+x1.49 at the 90th percentile off its own converged answers --
+statistically indistinguishable from the model's entire quoted error
+budget (x1.14, x1.43).  Some unknown share of what this note books as
+model error is measurement error in the fit data.  The worst density
+errors cluster at 1.45 wavelengths, between the resonance peaks, so
+the inter-peak valley-floor finding above is itself partly suspect:
+the reference it was measured against is least converged exactly
+there.
+
+Consequences.  A re-sweep is justified -- for density, not for
+solver: either solver serves once converged, and NEC-4.2's tooling
+exists.  Naively converged (8x) costs roughly 100x per solve, so a
+density-requirement study -- where 2x or 4x suffices per regime --
+prices the campaign before anyone approves it.  On 80 m NEC-5 is
+converged at 1x where NEC-4.2 needs 8x, and the reverse on 40 m, so
+mixed strategies exist.  Practical note: `nec5cl` clobbers a
+fixed-name scratch file under parallelism and must run in per-job
+directories, as `nec4_table_sweep.py` already does for NEC-4.2.
+
 ## References
 
 Sources for the published length tables this page is measured against,

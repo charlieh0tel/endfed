@@ -486,12 +486,14 @@ at 1.0 and everything was measured bare).  The insulation number is a
 differential -- insulated against bare in the same solver -- so it does
 not wait on the which-reference question, and the two tracks decouple:
 
-- **A, first.**  Gate the NEC-5 install: reference_cases.json and the
-  conductivity-limit decks.  Adds the NEC-5 column to the sommerfeld
-  table.
-- **B1, after A.**  The ground delta, NEC-5 vs NEC-4.2: standoff table,
-  ground contact, low counterpoise, a thin slice of the table grid.
-  Decides whether the shipped constants' reference stands.
+- **A, done.**  NEC-5 passes the conductivity limit beside NEC-4.2.
+- **B1, done, with a twist.**  The ground delta vanishes at
+  convergence (x1.03 median, x1.12 worst over a 144-geometry slice);
+  what it exposed instead is that the shipped fitting density of 20
+  segments per wavelength carries x1.17 median / x1.49 90th error
+  against converged answers -- the size of the model's whole quoted
+  budget.  See MODEL.md, "NEC-5 arrives".  D is re-scoped accordingly:
+  a converged re-sweep priced by a density-requirement study first.
 - **B2, after A, parallel with B1.**  The insulation differential in
   both solvers: bare vs a typical jacket (epsR ~3, 0.4 mm on #14) at a
   few heights and frequencies.  Robust to B1's outcome; NEC-5 breaks a
