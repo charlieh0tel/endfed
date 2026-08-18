@@ -302,6 +302,14 @@ Remaining:
       the check warns first and runs only on request, so a measurement
       of the solver is never passed off as one of the model.
 
+      Open: nec2c has a second failure the gate does not cover.  Past a
+      half-wave peak at a low counterpoise it invents a second
+      resonance, up to x14 against NEC-4.2, where nec2++ tracks the
+      same region within about 10 percent -- and the two fail in
+      different places (MODEL.md, "Neither browser NEC-2 survives").
+      Candidate fix: run both wasm solvers and draw only where they
+      agree, marking a split as uncheckable in a browser.
+
 - [ ] **Model the counterpoise in contact with the ground.**  Most
       people let the coax lie on the dirt.  The model holds it 5 cm up
       because NEC-2 must: a wire bonded to the ground plane shorts the
