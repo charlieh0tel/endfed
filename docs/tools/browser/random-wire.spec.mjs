@@ -609,5 +609,10 @@ test.describe('the NEC check refines', () => {
       });
       expect(points, 'refined midpoints survive to the drawn curve')
         .toBeGreaterThan(97);
+      // The coda measured the offered lengths: the table grew a NEC-2
+      // column and the verdict speaks in measured terms.
+      await expect(page.locator('th', { hasText: 'NEC-2' })).toHaveCount(1);
+      await expect(page.locator('.verdict-detail'))
+        .toContainText('NEC-2 measures');
     });
 });

@@ -63,7 +63,7 @@ const EXPORTS = [
   'NEC_LENGTH_SAMPLES', 'NEC2_FEED_MIN_LAMBDA', 'SWR_SAMPLES_PER_BAND',
   'necSuspectBands',
   'necSampleFreqsHz', 'buildProbeDeck', 'parseNecZ', 'geometricMeanSwr',
-  'refineGapsM',
+  'refineGapsM', 'necCheckFreqs', 'measuredScore',
   'necOverlayKey',
   // display
   'toDisplay', 'fromDisplay', 'fmtLen', 'fmtBandEdges', 'tickStep',

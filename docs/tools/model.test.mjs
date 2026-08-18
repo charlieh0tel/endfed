@@ -1414,3 +1414,36 @@ test('refinement bisects rough spans and leaves smooth ones alone', () => {
   assert.deepEqual(m.refineGapsM(cliff, 1.5), [],
     'but never below the finest grid worth solving');
 });
+
+test('the coda samples exactly the grid scoreLength scores on', () => {
+  const bands = m.bandsIn('us').filter(b => [40, 20].includes(b.m));
+  const grid = m.necCheckFreqs(bands, 'full');
+  assert.equal(grid.length, bands.length * m.SWR_SAMPLES_PER_BAND,
+    'every sample of every band');
+  for (const band of bands) {
+    const [loHz, hiHz] = m.bandEdgesHz(band, 'full');
+    const own = grid.filter(g => g.band === band);
+    close(own[0].freqHz, loHz, 1e-6, `${band.m} m starts at the low edge`);
+    close(own[own.length - 1].freqHz, hiHz, 1e-6, 'and ends at the high');
+  }
+});
+
+test('a measured score matches the model statistic on the same grid', () => {
+  const bands = m.bandsIn('us').filter(b => b.m === 20);
+  const grid = m.necCheckFreqs(bands, 'full');
+  const ratio = 9;
+  // Synthetic impedances, one per grid point, with an obvious worst.
+  const zs = grid.map((g, i) => ({ re: 450 + 60 * i, im: 40 * i }));
+  const scored = m.measuredScore(zs, grid, ratio);
+  assert.ok(scored !== null);
+  const swrs = zs.map(z => m.swrAtRadio(z, ratio));
+  close(scored.swr,
+    Math.exp(swrs.reduce((s, x) => s + Math.log(x), 0) / swrs.length),
+    1e-9, 'geometric mean, as scoreLength takes it');
+  close(scored.worst.swr, Math.max(...swrs), 1e-9, 'the worst sample');
+  assert.equal(scored.worst.band.m, 20, 'attributed to its band');
+
+  assert.equal(m.measuredScore([], grid, ratio), null, 'nothing measured');
+  assert.equal(m.measuredScore(zs.slice(1), grid, ratio), null,
+    'a short answer does not silently misalign');
+});

@@ -290,10 +290,12 @@ Remaining:
       across 97 lengths, left to right, in a small worker pool with a
       Stop button, then solves the midpoint of any span whose neighbors
       disagree by more than 1.3x until the rough spans are smooth or at
-      the model curve's own grid.  The overlay draws the same
-      statistic as the model curve (geometric mean SWR at the radio)
-      and is keyed to every input it depends on, so any change clears
-      it.  What it disagrees with is the model, up to 2x near a half
+      the model curve's own grid, then measures the wire in hand and
+      every offered length at scoreLength's full grid, so the verdict
+      and the Best lengths table show a measured figure beside each
+      modeled one.  The overlay draws the same statistic as the model
+      curve (geometric mean SWR at the radio) and is keyed to every
+      input it depends on, so any change clears it.  What it disagrees with is the model, up to 2x near a half
       wave, which is the honest thing for it to show.  With the
       feedpoint under 0.05 wavelengths on a selected band -- NEC-2's own
       failure regime, a sloper fed low or a low wire on a long band --
