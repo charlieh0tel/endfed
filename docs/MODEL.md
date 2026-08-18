@@ -1693,6 +1693,62 @@ beside the solvers: at this length the model reads a geometric mean of
 regime no browser-runnable NEC-2 can reach, and tracks it better there
 than either NEC-2 does.**
 
+### The length offset that wasn't
+
+The in-page check's overlay can look shifted in length against the
+model curve, as if the resonances sat at different wire lengths.
+Measured, they do not.  Peak positions of |Z| against length on a
+default flat top, in half-waves at that frequency:
+
+| freq | NEC peaks | model peaks |
+|---|---|---|
+| 14 MHz | 1.04 2.03 3.01 3.99 5.03 | 0.98 1.96 3.01 3.99 4.97 |
+| 21 MHz | 1.01 2.03 ... 8.01 | same, within one sample |
+| 28 MHz | 0.98 ... 11.05 | same, within one sample |
+
+Every difference is inside the 2 percent measurement grid, out to
+eleven half-waves: `vf_a = 1.0` puts the walls where NEC puts them.
+The apparent shift is composite skew.  A bump in the multi-band
+geometric mean is the interference of several bands' structure, and
+when per-band amplitudes differ -- the model's median x1.4 optimism on
+a many-band whole-band set -- the composite bump moves sideways with
+no band's comb moving at all.
+
+What is real underneath, from a fine scan at 7 MHz between the second
+and third peaks (NEC-4.2 and nec2c agreeing within 1 percent there):
+the model's inter-peak valley floor reads 1.2-1.3x low.  Not a missing
+resonance -- a broad elevation the two-line series model has no term
+for, presumably the return system that a series Za + Zr cannot couple.
+That is the same model-form gap the falling-alpha experiment
+approached, and no refit of the present form can produce it.
+
+### Neither browser NEC-2 survives the region past a peak
+
+The fine scan also broke the claim that nec2c tracks NEC-4.2 to 1
+percent at low counterpoise.  It does at 1.5 half-waves, where that
+table was measured.  Just past the second half-wave peak it comes
+apart, at every counterpoise height tried -- |Z| against NEC-4.2 at
+7 MHz:
+
+| halves | z = 5 cm, nec2c | z = 25 cm, nec2c | z = 5 cm, nec2++ | z = 25 cm, nec2++ |
+|---|---|---|---|---|
+| 2.00 | x1.34 | x1.17 | x0.90 | x0.98 |
+| 2.05 | x4.79 | x2.31 | x0.94 | x0.99 |
+| 2.10 | x5.41 | x2.97 | x0.95 | x1.00 |
+| 2.25 | x8.51 | x14.41 | x0.68 | x0.89 |
+| 2.45 | x0.93 | x2.38 | x0.72 | x0.92 |
+
+nec2c invents a second peak after the real one, up to x14; nec2++
+tracks NEC-4.2 through the same region within about 10 percent -- the
+reverse of the low-counterpoise ranking at 1.5 half-waves, where
+nec2++ reads half and nec2c is exact.  **Each browser-runnable NEC-2
+fails somewhere the other does not, and everywhere sampled, when the
+two agree they also sit near NEC-4.2.**  The in-page check runs nec2c
+alone, so its overlay near and past half-wave peaks at a low
+counterpoise can read several times high -- some of what the overlay
+paints as model error there is the checker.  The model's own error
+figures are unaffected: they are measured against NEC-4.2 directly.
+
 ## References
 
 Sources for the published length tables this page is measured against,
