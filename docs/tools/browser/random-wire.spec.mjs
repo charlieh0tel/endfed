@@ -589,3 +589,25 @@ test.describe('the NEC check', () => {
       await expect(overlay).toHaveCount(0);
     });
 });
+
+test.describe('the NEC check refines', () => {
+  test('a run keeps its midpoints when a round offers fewer than the pool',
+    async ({ page }) => {
+      // This configuration's first refinement round offers 7 midpoints
+      // against a pool of up to 8 workers, which once dispatched a length
+      // past the end of the queue and tore the run down mid-flight.
+      await open(page, '?region=us&bands=40%2C20%2C15%2C10&seg=full'
+        + '&mode=impedance&unun=9&h_m=9.144&geom=flatTop&cp_m=7.62'
+        + '&cpz_m=0.01&soil=average&u=ft&len_m=24.079');
+      await page.getByRole('button', { name: /check this map against nec-2/i })
+        .click();
+      await page.locator('.nec-check span', { hasText: 'same geometry' })
+        .waitFor({ timeout: 300000 });
+      const points = await page.evaluate(() => {
+        const path = document.querySelector('svg.map-svg .nec-curve path');
+        return path ? path.getAttribute('d').split('L').length : 0;
+      });
+      expect(points, 'refined midpoints survive to the drawn curve')
+        .toBeGreaterThan(97);
+    });
+});

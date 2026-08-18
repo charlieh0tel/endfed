@@ -3368,9 +3368,11 @@
             }
             more.forEach(lenM => scheduled.add(lenM));
             lengths.push(...more);
-            workers.forEach(idle => {
-              if (idle !== worker) feed(idle);
-            });
+            // Through the guarded path for every worker, this one included:
+            // falling through here took a length past the end of the queue
+            // whenever a round offered fewer midpoints than workers.
+            workers.forEach(idle => feed(idle));
+            return;
           }
           const lenM = lengths[nextLength++];
           pending++;
