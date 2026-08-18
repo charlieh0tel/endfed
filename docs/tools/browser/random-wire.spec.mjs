@@ -575,6 +575,9 @@ test.describe('keyboard', () => {
 test.describe('the NEC check', () => {
   test('draws a measured curve and clears it when anything changes',
     async ({ page }) => {
+      // CI runners solve at a fraction of a desktop's rate: the pool is
+      // sized to their two cores, so give the solver real time.
+      test.setTimeout(240_000);
       // Loads the solver from the CDN, so this is the one test with the
       // network in the loop beyond the page's own script tags.
       await open(page);
@@ -593,6 +596,8 @@ test.describe('the NEC check', () => {
 test.describe('the NEC check refines', () => {
   test('a run keeps its midpoints when a round offers fewer than the pool',
     async ({ page }) => {
+      // A full run to completion: minutes on a two-core CI runner.
+      test.setTimeout(480_000);
       // This configuration's first refinement round offers 7 midpoints
       // against a pool of up to 8 workers, which once dispatched a length
       // past the end of the queue and tore the run down mid-flight.
