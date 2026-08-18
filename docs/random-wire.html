@@ -2587,6 +2587,27 @@
     };
 
     /**
+     * How far the measured curve sits from the modeled one: the median,
+     * over every measured length, of NEC's SWR against the model's at the
+     * nearest scored length.  One number for the statement the overlay
+     * makes with its shape.
+     *
+     * @param {{lenM: Meters, swr: number}[]} necPoints
+     * @param {ScorePoint[]} curve
+     * @returns {?number}
+     */
+    const medianOverlayRatio = (necPoints, curve) => {
+      if (necPoints.length === 0 || curve.length === 0) return null;
+      const ratios = necPoints.map(point => {
+        const nearest = curve.reduce((best, sample) =>
+          Math.abs(sample.lenM - point.lenM) < Math.abs(best.lenM - point.lenM)
+            ? sample : best, curve[0]);
+        return point.swr / nearest.swr;
+      }).sort((a, b) => a - b);
+      return ratios[Math.floor(ratios.length / 2)];
+    };
+
+    /**
      * Neighbors whose SWRs disagree by more than this factor mark a span
      * the sweep undersampled; the check then solves its midpoint.  High
      * half-wave multiples of the upper bands are one or two feet wide,
@@ -3358,6 +3379,13 @@
           ? necOverlayKey(score.bands, segment, site, ununRatio, maxLenM)
           : null),
         [mode, score, segment, site, ununRatio, maxLenM]);
+
+      /** The run's one-line self-assessment, for the finished status. */
+      const necFactor = useMemo(
+        () => (necRun !== null && necRun.key === necKey && score !== null
+          ? medianOverlayRatio(necRun.points, score.curve)
+          : null),
+        [necRun, necKey, score]);
 
       /** The finished run's measured picks, empty while stale or absent. */
       const necChecks = (necRun !== null && necRun.key === necKey)
@@ -4142,6 +4170,9 @@
                     <span className="control-hint" role="status">
                       NEC-2 (nec2c): same geometry, ground and {ununRatio}:1
                       arithmetic as the model curve.
+                      {necFactor !== null
+                        && ` Across this map NEC-2 reads x${necFactor.toFixed(1)} `
+                           + 'the model\'s SWR at the median length.'}
                       {necSuspect.length === 0
                         && ' Where the curves part, that is the model\'s error.'}
                       {necRun.scheduled < necRun.total

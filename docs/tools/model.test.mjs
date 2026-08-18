@@ -1447,3 +1447,14 @@ test('a measured score matches the model statistic on the same grid', () => {
   assert.equal(m.measuredScore(zs.slice(1), grid, ratio), null,
     'a short answer does not silently misalign');
 });
+
+test('the overlay states its median offset from the model', () => {
+  const curve = [{ lenM: 10, swr: 2.0 }, { lenM: 20, swr: 2.0 },
+                 { lenM: 30, swr: 4.0 }];
+  const nec = [{ lenM: 10, swr: 3.0 }, { lenM: 19.9, swr: 3.0 },
+               { lenM: 30, swr: 4.0 }];
+  close(m.medianOverlayRatio(nec, curve), 1.5, 1e-9,
+    'median of per-length ratios against the nearest scored length');
+  assert.equal(m.medianOverlayRatio([], curve), null, 'no run, no claim');
+  assert.equal(m.medianOverlayRatio(nec, []), null, 'no curve either');
+});
