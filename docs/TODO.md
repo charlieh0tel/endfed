@@ -476,6 +476,34 @@ every shipped table is now NEC-4.2.
 **Decided, not yet built.**  Accessibility: the length map is mouse-only,
 with no role, name or live region.
 
+## NEC-5 and insulation: the plan
+
+NEC-5 is coming up locally.  Insulation is likely the largest unmodeled
+effect the user controls: a jacket lowers the wire's velocity factor by
+a few percent, which moves every resonance in length -- the axis the
+page picks on -- and the modeled mode cannot express it (vf_a is pinned
+at 1.0 and everything was measured bare).  The insulation number is a
+differential -- insulated against bare in the same solver -- so it does
+not wait on the which-reference question, and the two tracks decouple:
+
+- **A, first.**  Gate the NEC-5 install: reference_cases.json and the
+  conductivity-limit decks.  Adds the NEC-5 column to the sommerfeld
+  table.
+- **B1, after A.**  The ground delta, NEC-5 vs NEC-4.2: standoff table,
+  ground contact, low counterpoise, a thin slice of the table grid.
+  Decides whether the shipped constants' reference stands.
+- **B2, after A, parallel with B1.**  The insulation differential in
+  both solvers: bare vs a typical jacket (epsR ~3, 0.4 mm on #14) at a
+  few heights and frequencies.  Robust to B1's outcome; NEC-5 breaks a
+  tie; confirms a scalar on vf_a rather than an h/lambda dependence.
+  Falls back to NEC-4.2's IS card alone if NEC-5 stalls.
+- **C, after B2.**  Page-only wire control, bare/insulated, scaling the
+  antenna line's beta by the measured factor, with caveat text.  No
+  refit, no waiting on B1.
+- **D, only if B1 is material in-domain.**  One combined campaign:
+  model-form fix, NEC-5 as sweep target, insulation folded in.  Never a
+  NEC-4.2 re-sweep in the meantime; never sweeping twice.
+
 ## Considered and declined
 
 - Refitting the coefficients against NEC-4.2.  Measured rather than
