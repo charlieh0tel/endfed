@@ -1456,20 +1456,24 @@
     const SLOPER_REACH_MARGIN = 1.02;
 
     /**
-     * Wire types the model can describe.  A dielectric jacket raises the
-     * wire's distributed capacitance and slows it: measured with NEC-4.2's
-     * IS card over this page's whole domain as vf 0.974-0.990 depending on
-     * wall thickness, near-constant in frequency and height, so one scale
-     * per jacket suffices (docs/MODEL.md, "Insulation is a scalar").  The
-     * scale applies to both fitted lines' velocity factors.
+     * Wire types the model can describe.  `lengthScale` is not a velocity
+     * factor: it is the measured ratio of resonant lengths, jacketed
+     * against bare -- a dielectric jacket raises the wire's distributed
+     * capacitance, so the same resonance lands on a wire about 2 percent
+     * shorter.  Measured with NEC-4.2's IS card over this page's whole
+     * domain as 0.974-0.990 depending on wall thickness, near-constant in
+     * frequency and height, so one number per jacket suffices
+     * (docs/MODEL.md, "Insulation is a scalar").  It multiplies both
+     * fitted lines' vf phase parameters, which is the one knob that
+     * rescales the model's length axis.
      *
      * `sheathRadiusM`/`epsR` describe the jacket the scale was measured
      * for -- about 0.5 mm of PVC over #14 -- and feed the check's
      * equivalent wire (see deckCards).
      */
     const WIRES = Object.freeze({
-      bare: { label: 'Bare', vfScale: 1.0, sheathRadiusM: 0, epsR: 1.0 },
-      insulated: { label: 'Insulated', vfScale: 0.98,
+      bare: { label: 'Bare', lengthScale: 1.0, sheathRadiusM: 0, epsR: 1.0 },
+      insulated: { label: 'Insulated', lengthScale: 0.98,
                    sheathRadiusM: 0.0013, epsR: 3.0 },
     });
     /** @typedef {keyof typeof WIRES} WireKey */
@@ -2121,18 +2125,19 @@
       const hOverLam = site.heightM / wavelengthM;
       const zOverLam = site.counterpoiseZM / wavelengthM;
       const returnM = returnConductorM(site);
-      // Insulation slows both conductors alike: the tables are fitted bare
-      // and the measured jacket factor scales their velocity.
-      const vfScale = wireOf(site).vfScale;
+      // Insulation shortens every resonance on both conductors alike: the
+      // tables are fitted bare, and the measured length ratio rescales
+      // their phase parameters.
+      const lengthScale = wireOf(site).lengthScale;
       const za = lineZ(lenM, wavelengthM, radiusM,
                        interpCoeff(coeffs.alphaA, hOverLam),
-                       MODEL_VF_A * vfScale,
+                       MODEL_VF_A * lengthScale,
                        interpCoeff(coeffs.kA, hOverLam));
       // The return line is the one that cares how high the counterpoise is,
       // which is why only its three coefficients carry that axis.
       const zr = lineZ(returnM, wavelengthM, radiusM,
                        interpCoeff2(coeffs.alphaR, hOverLam, zOverLam),
-                       interpCoeff2(coeffs.vfR, hOverLam, zOverLam) * vfScale,
+                       interpCoeff2(coeffs.vfR, hOverLam, zOverLam) * lengthScale,
                        interpCoeff2(coeffs.kR, hOverLam, zOverLam));
       return cAdd(za, zr);
     };
@@ -2256,7 +2261,7 @@
       // covers whichever floor is higher, and the legend says which.
       const buildFloorM = riseShortfallM(site, 0) ?? 0;
       const shortLimit = Math.max(
-        tooShortM(bands, segment, MODEL_VF_A * wireOf(site).vfScale),
+        tooShortM(bands, segment, MODEL_VF_A * wireOf(site).lengthScale),
         buildFloorM);
       const shortLabel = buildFloorM >= shortLimit && buildFloorM > 0
         ? 'shorter than \u03bb/4 or the rise'

@@ -1475,9 +1475,9 @@ test('an insulated wire slows the model by the measured factor', () => {
     }
     return best.lenM;
   };
-  close(peakOf(insulated) / peakOf(bare), m.WIRES.insulated.vfScale, 0.002,
-    'the peak moves by vfScale');
-  assert.equal(m.wireOf(bare).vfScale, 1.0, 'bare is the fitted wire');
+  close(peakOf(insulated) / peakOf(bare), m.WIRES.insulated.lengthScale, 0.002,
+    'the peak moves by lengthScale');
+  assert.equal(m.wireOf(bare).lengthScale, 1.0, 'bare is the fitted wire');
 });
 
 test('an insulated probe deck carries the K6OIK equivalent wire', () => {
