@@ -1406,7 +1406,7 @@
       marginPct: 'margin', units: 'u', wireLenM: 'len_m', mode: 'mode',
       ununRatio: 'unun', heightM: 'h_m', soil: 'soil', tuner: 'tuner',
       geometry: 'geom', balunM: 'balun_m', counterpoiseM: 'cp_m',
-      counterpoiseZM: 'cpz_m',
+      counterpoiseZM: 'cpz_m', wire: 'wire',
     });
 
     /**
@@ -1456,6 +1456,29 @@
     const SLOPER_REACH_MARGIN = 1.02;
 
     /**
+     * Wire types the model can describe.  A dielectric jacket raises the
+     * wire's distributed capacitance and slows it: measured with NEC-4.2's
+     * IS card over this page's whole domain as vf 0.974-0.990 depending on
+     * wall thickness, near-constant in frequency and height, so one scale
+     * per jacket suffices (docs/MODEL.md, "Insulation is a scalar").  The
+     * scale applies to both fitted lines' velocity factors.
+     *
+     * `sheathRadiusM`/`epsR` describe the jacket the scale was measured
+     * for -- about 0.5 mm of PVC over #14 -- and feed the check's
+     * equivalent wire (see deckCards).
+     */
+    const WIRES = Object.freeze({
+      bare: { label: 'Bare', vfScale: 1.0, sheathRadiusM: 0, epsR: 1.0 },
+      insulated: { label: 'Insulated', vfScale: 0.98,
+                   sheathRadiusM: 0.0013, epsR: 3.0 },
+    });
+    /** @typedef {keyof typeof WIRES} WireKey */
+    const DEFAULT_WIRE = 'bare';
+
+    /** @param {Site} site @returns {(typeof WIRES)[WireKey]} */
+    const wireOf = (site) => WIRES[site.wire ?? DEFAULT_WIRE];
+
+    /**
      * The installation the impedance model is asked about: how the wire is
      * hung, how high, how much counterpoise there is and how high that sits.
      *
@@ -1471,6 +1494,7 @@
      * @property {Meters} counterpoiseM  the run on the ground, beyond the drop
      * @property {Meters} counterpoiseZM  how high that run sits
      * @property {SoilKey} soil
+     * @property {WireKey} [wire]  bare when absent
      */
 
     /**
@@ -1580,6 +1604,7 @@
       counterpoiseM: DEFAULT_COUNTERPOISE_M,
       counterpoiseZM: DEFAULT_COUNTERPOISE_Z_M,
       soil: DEFAULT_SOIL,
+      wire: DEFAULT_WIRE,
       tuner: DEFAULT_TUNER,
     });
 
@@ -2096,14 +2121,18 @@
       const hOverLam = site.heightM / wavelengthM;
       const zOverLam = site.counterpoiseZM / wavelengthM;
       const returnM = returnConductorM(site);
+      // Insulation slows both conductors alike: the tables are fitted bare
+      // and the measured jacket factor scales their velocity.
+      const vfScale = wireOf(site).vfScale;
       const za = lineZ(lenM, wavelengthM, radiusM,
-                       interpCoeff(coeffs.alphaA, hOverLam), MODEL_VF_A,
+                       interpCoeff(coeffs.alphaA, hOverLam),
+                       MODEL_VF_A * vfScale,
                        interpCoeff(coeffs.kA, hOverLam));
       // The return line is the one that cares how high the counterpoise is,
       // which is why only its three coefficients carry that axis.
       const zr = lineZ(returnM, wavelengthM, radiusM,
                        interpCoeff2(coeffs.alphaR, hOverLam, zOverLam),
-                       interpCoeff2(coeffs.vfR, hOverLam, zOverLam),
+                       interpCoeff2(coeffs.vfR, hOverLam, zOverLam) * vfScale,
                        interpCoeff2(coeffs.kR, hOverLam, zOverLam));
       return cAdd(za, zr);
     };
@@ -2226,8 +2255,9 @@
       // cannot be built shorter than its own rise, so its too-short zone
       // covers whichever floor is higher, and the legend says which.
       const buildFloorM = riseShortfallM(site, 0) ?? 0;
-      const shortLimit = Math.max(tooShortM(bands, segment, MODEL_VF_A),
-                                  buildFloorM);
+      const shortLimit = Math.max(
+        tooShortM(bands, segment, MODEL_VF_A * wireOf(site).vfScale),
+        buildFloorM);
       const shortLabel = buildFloorM >= shortLimit && buildFloorM > 0
         ? 'shorter than \u03bb/4 or the rise'
         : 'shorter than \u03bb/4';
@@ -2415,7 +2445,27 @@
      * @returns {string}
      */
     const deckCards = (lenM, site, radiusM, sweep, comments) => {
-      const wires = deckWires(lenM, site, radiusM, sweepShortestWaveM(sweep));
+      // Insulation, by K6OIK's equivalent wire (S. Stearns, "Modeling
+      // Insulated Wire", ARRL/Pacificon): an uninsulated wire of radius
+      // a' = a (b/a)^(1 - 1/epsr) with distributed series inductance
+      // L' = (mu0/2pi)(1 - 1/epsr) ln(b/a) per meter.  Exact in the
+      // quasi-static limit, and within 0.02 percent of NEC-4.2's IS card
+      // on this page's wire; see docs/MODEL.md.  His conductivity
+      // correction is moot here: these decks leave the wire perfect.
+      const jacket = wireOf(site);
+      const insulated = jacket.sheathRadiusM > radiusM;
+      const overA = jacket.sheathRadiusM / radiusM;
+      const deckRadiusM = insulated
+        ? radiusM * overA ** (1 - 1 / jacket.epsR)
+        : radiusM;
+      /** mu0 / 2pi, henries per meter */
+      const MU0_OVER_2PI = 2e-7;
+      const henriesPerM = insulated
+        ? MU0_OVER_2PI * (1 - 1 / jacket.epsR) * Math.log(overA)
+        : 0;
+
+      const wires = deckWires(lenM, site, deckRadiusM,
+                              sweepShortestWaveM(sweep));
       const soil = SOILS[site.soil];
 
       const len = (/** @type {Meters} */ value) => value.toFixed(DECK_LEN_DIGITS);
@@ -2432,6 +2482,14 @@
         // GE 1: geometry complete, with a ground plane present.
         'GE 1',
         `GN 2 0 0 0 ${soil.epsR} ${soil.sigmaSm}`,
+        // The jacket's inductance, lumped per segment along each wire.
+        ...(insulated ? wires.map(wire => {
+          const wireLenM = Math.hypot(wire.x2 - wire.x1, wire.y2 - wire.y1,
+                                      wire.z2 - wire.z1);
+          const perSegment = henriesPerM * wireLenM / wire.segments;
+          return `LD 0 ${wire.tag} 1 ${wire.segments} 0`
+            + ` ${perSegment.toExponential(6)} 0`;
+        }) : []),
         // EX 0: voltage source, 1 V on tag 1 segment 1, the feedpoint.
         'EX 0 1 1 0 1 0',
         `FR 0 ${sweep.points} 0 0 ${mhz(sweep.startHz)} ${mhz(sweep.stepHz)}`,
@@ -2657,7 +2715,8 @@
       JSON.stringify([
         bands.map(band => bandEdgesHz(band, segment)),
         site.geometry, site.heightM, site.balunM, site.counterpoiseM,
-        site.counterpoiseZM, site.soil, ununRatio, maxLenM,
+        site.counterpoiseZM, site.soil, site.wire ?? DEFAULT_WIRE,
+        ununRatio, maxLenM,
       ]);
 
     /**
@@ -2902,6 +2961,7 @@
       const mode = params.get(URL_KEYS.mode);
       const ununRatio = parseNum(params.get(URL_KEYS.ununRatio), DEFAULTS.ununRatio);
       const soil = params.get(URL_KEYS.soil);
+      const wire = params.get(URL_KEYS.wire);
       const tuner = params.get(URL_KEYS.tuner);
       const geometry = params.get(URL_KEYS.geometry);
       const heightM = clamp(
@@ -2930,6 +2990,7 @@
           parseNum(params.get(URL_KEYS.counterpoiseZM), DEFAULTS.counterpoiseZM),
           COUNTERPOISE_Z_RANGE_M),
         soil: isKeyOf(SOILS, soil) ? soil : DEFAULTS.soil,
+        wire: isKeyOf(WIRES, wire) ? wire : DEFAULTS.wire,
         tuner: isKeyOf(TUNERS, tuner) ? tuner : DEFAULTS.tuner,
       };
       // A link can name a counterpoise higher than its geometry allows, or a
@@ -2961,6 +3022,7 @@
       state.counterpoiseM === DEFAULTS.counterpoiseM &&
       state.counterpoiseZM === DEFAULTS.counterpoiseZM &&
       state.soil === DEFAULTS.soil &&
+      state.wire === DEFAULTS.wire &&
       state.tuner === DEFAULTS.tuner &&
       (state.wireLenM === DEFAULTS.wireLenM || state.wireLenM === autoLenM) &&
       state.bands.length === DEFAULTS.bands.length &&
@@ -3227,7 +3289,7 @@
         []);
 
       const { region, bands, segment, velocityFactor, marginPct, units, wireLenM,
-              mode, ununRatio, heightM, soil, tuner, geometry, balunM,
+              mode, ununRatio, heightM, soil, wire, tuner, geometry, balunM,
               counterpoiseM, counterpoiseZM } = p;
 
       /** @type {Meters} */
@@ -3235,8 +3297,9 @@
 
       /** @type {Site} */
       const site = useMemo(
-        () => ({ geometry, heightM, balunM, counterpoiseM, counterpoiseZM, soil }),
-        [geometry, heightM, balunM, counterpoiseM, counterpoiseZM, soil]);
+        () => ({ geometry, heightM, balunM, counterpoiseM, counterpoiseZM,
+                 soil, wire }),
+        [geometry, heightM, balunM, counterpoiseM, counterpoiseZM, soil, wire]);
 
       /**
        * A sloper whose wire cannot reach its support, and the length that
@@ -3641,6 +3704,7 @@
         params.set(URL_KEYS.counterpoiseM, String(p.counterpoiseM));
         params.set(URL_KEYS.counterpoiseZM, String(p.counterpoiseZM));
         params.set(URL_KEYS.soil, p.soil);
+        params.set(URL_KEYS.wire, p.wire);
         params.set(URL_KEYS.tuner, p.tuner);
         params.set(URL_KEYS.marginPct, String(p.marginPct));
         params.set(URL_KEYS.units, p.units);
@@ -3948,6 +4012,27 @@
                 {mode === 'impedance' && (
                   <fieldset className="control-group" role="radiogroup"
                             onKeyDown={onRadioKeys}>
+                    <legend>Wire</legend>
+                    {entriesOf(WIRES).map(([key, def]) => (
+                      <button key={key}
+                              className={`btn preset-btn ${wire === key ? 'active' : ''}`}
+                              role="radio" aria-checked={wire === key}
+                              tabIndex={wire === key ? 0 : -1}
+                              onClick={() => set({ wire: key })}>
+                        {def.label}
+                      </button>
+                    ))}
+                    <div className="control-hint">
+                      A jacket slows the wire about 2%, moving every resonance
+                      to a shorter length. Measured, not assumed; see the{' '}
+                      <a href={MODEL_NOTE_URL} target="_blank"
+                         rel="noopener">modeling note</a>.
+                    </div>
+                  </fieldset>
+                )}
+                {mode === 'impedance' && (
+                  <fieldset className="control-group" role="radiogroup"
+                            onKeyDown={onRadioKeys}>
                     <legend>Tuner</legend>
                     {entriesOf(TUNERS).map(([key, def]) => (
                       <button key={key}
@@ -4022,10 +4107,12 @@
                            velocityFactor: clamp(Number(e.target.value),
                                                  VELOCITY_FACTOR_RANGE) })} />
                   <div className="control-hint">
-                    0.95 gives the classic λ/2 = 468 / f(MHz) feet. The impedance
-                    mode does not ask: fitted against NEC the wire runs at 1.0, and
-                    the shortening this stands for is the return path and Z0, which
-                    that model carries directly.
+                    0.95 gives the classic λ/2 = 468 / f(MHz) feet; insulated
+                    wire runs another 2% or so slower. The impedance mode does
+                    not ask: fitted against NEC the wire runs at 1.0, and the
+                    shortening this stands for is the return path and Z0, which
+                    that model carries directly, with a Wire control for the
+                    jacket.
                   </div>
                 </label>
                 )}

@@ -111,7 +111,7 @@ test.describe('loading', () => {
 test.describe('control groups', () => {
   // A <label> wrapping a group of buttons activates the first of them, so
   // these are fieldsets with legends instead.  A legend activates nothing.
-  for (const legend of ['Ground', 'Tuner', 'Unun ratio']) {
+  for (const legend of ['Ground', 'Wire', 'Tuner', 'Unun ratio']) {
     test(`clicking the ${legend} legend selects nothing`, async ({ page }) => {
       await open(page);
       const before = await selected(page, legend);
@@ -122,7 +122,7 @@ test.describe('control groups', () => {
 
   test('each group has exactly one selection', async ({ page }) => {
     await open(page);
-    for (const legend of ['Units', 'Ground', 'Tuner', 'Unun ratio']) {
+    for (const legend of ['Units', 'Ground', 'Wire', 'Tuner', 'Unun ratio']) {
       await expect(
         group(page, legend).locator('button[aria-checked="true"]'),
       ).toHaveCount(1);
@@ -619,5 +619,21 @@ test.describe('the NEC check refines', () => {
       await expect(page.locator('th', { hasText: 'NEC-2' })).toHaveCount(1);
       await expect(page.locator('.verdict-detail'))
         .toContainText('NEC-2 measures');
+    });
+});
+
+test.describe('the wire control', () => {
+  test('a jacket shortens the recommended lengths and rides the URL',
+    async ({ page }) => {
+      await open(page);
+      const firstPick = () => page.locator('.pick-btn').first().textContent();
+      const bare = await firstPick();
+      await option(page, 'Wire', 'Insulated').click();
+      await expect(option(page, 'Wire', 'Insulated'))
+        .toHaveAttribute('aria-checked', 'true');
+      expect(page.url()).toContain('wire=insulated');
+      // The best lengths move: a slowed wire resonates shorter, so at
+      // least the top pick's number changes.
+      await expect(page.locator('.pick-btn').first()).not.toHaveText(bare);
     });
 });

@@ -1816,6 +1816,20 @@ Provenance is NEC-4.2 alone: this NEC-5 console build parses the IS
 card but its storage is stubbed out in the source (RSETIS counts and
 discards), so insulated wires are not in that distribution.
 
+The page carries this as a Wire control scaling both fitted lines'
+velocity factors by 0.98.  The in-page check keeps working for
+insulated wire because NEC-2 -- which has no insulation -- can carry
+the jacket as an equivalent uninsulated wire, by K6OIK's method
+(S. Stearns, "Modeling Insulated Wire", ARRL): radius
+a' = a (b/a)^(1 - 1/epsr) plus distributed series inductance
+(mu0/2pi)(1 - 1/epsr) ln(b/a) per meter.  Measured against the IS
+card's answer on this page's wire, that lands within 0.02 percent of
+the true insulated resonance -- better than the Cebik/4nec2 curve fit
+(0.1 percent when calibrated) and far better than the inductance alone
+(a fifth of the shift missing) -- identically in nec2c and nec2++.
+His conductivity correction is moot here: the probe decks leave the
+wire perfect.
+
 ## References
 
 Sources for the published length tables this page is measured against,

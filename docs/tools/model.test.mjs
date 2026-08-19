@@ -1458,3 +1458,66 @@ test('the overlay states its median offset from the model', () => {
   assert.equal(m.medianOverlayRatio([], curve), null, 'no run, no claim');
   assert.equal(m.medianOverlayRatio(nec, []), null, 'no curve either');
 });
+
+test('an insulated wire slows the model by the measured factor', () => {
+  // The jacket factor was measured with NEC-4.2's IS card (MODEL.md,
+  // "Insulation is a scalar"); the model applies it to both lines, so a
+  // resonance peak moves to a shorter length by exactly that scale.
+  const bare = defaultSite();
+  const insulated = { ...bare, wire: 'insulated' };
+  const freqHz = 7.15e6;
+  const peakOf = (site) => {
+    let best = { lenM: 0, mag: 0 };
+    for (let lenM = 19; lenM <= 23; lenM += 0.01) {
+      const z = m.endFedZin(lenM, freqHz, site, m.WIRE_RADIUS_M);
+      const mag = Math.hypot(z.re, z.im);
+      if (mag > best.mag) best = { lenM, mag };
+    }
+    return best.lenM;
+  };
+  close(peakOf(insulated) / peakOf(bare), m.WIRES.insulated.vfScale, 0.002,
+    'the peak moves by vfScale');
+  assert.equal(m.wireOf(bare).vfScale, 1.0, 'bare is the fitted wire');
+});
+
+test('an insulated probe deck carries the K6OIK equivalent wire', () => {
+  // Radius a(b/a)^(1-1/epsr) plus distributed inductance
+  // (mu0/2pi)(1-1/epsr)ln(b/a): S. Stearns, K6OIK, "Modeling Insulated
+  // Wire", validated against NEC-4.2's IS card in MODEL.md.
+  const site = { ...defaultSite(), wire: 'insulated' };
+  const lenM = m.fromDisplay(71, 'ft');
+  const deck = m.buildProbeDeck(lenM, 14.175e6, site, m.WIRE_RADIUS_M);
+  const spec = m.WIRES.insulated;
+  const exponent = 1 - 1 / spec.epsR;
+  const aPrime = m.WIRE_RADIUS_M
+    * (spec.sheathRadiusM / m.WIRE_RADIUS_M) ** exponent;
+  const gw = cardsOf(deck, 'GW');
+  const lds = cardsOf(deck, 'LD');
+  assert.equal(lds.length, gw.length, 'one loading card per wire');
+  const henriesPerM = 2e-7 * exponent
+    * Math.log(spec.sheathRadiusM / m.WIRE_RADIUS_M);
+  for (let i = 0; i < gw.length; i++) {
+    close(Number(gw[i][9]), aPrime, 5e-7, `wire ${i + 1} radius is a'`);
+    const wireLenM = Math.hypot(
+      Number(gw[i][6]) - Number(gw[i][3]),
+      Number(gw[i][7]) - Number(gw[i][4]),
+      Number(gw[i][8]) - Number(gw[i][5]));
+    close(Number(lds[i][6]) * Number(gw[i][2]), henriesPerM * wireLenM,
+      henriesPerM * wireLenM * 1e-4,
+      `wire ${i + 1} carries the jacket's whole inductance`);
+  }
+  const bareDeck = m.buildProbeDeck(lenM, 14.175e6, defaultSite(),
+    m.WIRE_RADIUS_M);
+  assert.equal(cardsOf(bareDeck, 'LD').length, 0, 'bare decks stay bare');
+});
+
+test('the overlay key and the URL carry the wire type', () => {
+  const site = defaultSite();
+  const bands = m.bandsIn('us').filter(b => [40, 20].includes(b.m));
+  assert.notEqual(
+    m.necOverlayKey(bands, 'full', { ...site, wire: 'insulated' }, 9, 60),
+    m.necOverlayKey(bands, 'full', site, 9, 60),
+    'a different jacket is a different check');
+  assert.equal(m.DEFAULTS.wire, 'bare', 'bare by default');
+  assert.equal(m.URL_KEYS.wire, 'wire', 'and linkable');
+});

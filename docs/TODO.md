@@ -499,9 +499,12 @@ not wait on the which-reference question, and the two tracks decouple:
   2-20 m of height.  NEC-4.2's IS card alone -- this NEC-5 build has
   insulation stubbed out (RSETIS stores nothing).  See MODEL.md,
   "Insulation is a scalar".
-- **C, after B2.**  Page-only wire control, bare/insulated, scaling the
-  antenna line's beta by the measured factor, with caveat text.  No
-  refit, no waiting on B1.
+- **C, done.**  A Wire control, bare/insulated, scaling both fitted
+  lines' velocity factors by the measured 0.98, riding the URL as
+  `wire=`.  The check's probe decks carry the jacket as K6OIK's
+  equivalent wire, validated against the IS card to 0.02 percent, so
+  the overlay stays a real check for insulated wire in both wasm
+  solvers.  See MODEL.md, "Insulation is a scalar".
 - **D, only if B1 is material in-domain.**  One combined campaign:
   model-form fix, NEC-5 as sweep target, insulation folded in.  Never a
   NEC-4.2 re-sweep in the meantime; never sweeping twice.
