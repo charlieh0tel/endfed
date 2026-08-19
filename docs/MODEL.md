@@ -1790,6 +1790,32 @@ mixed strategies exist.  Practical note: `nec5cl` clobbers a
 fixed-name scratch file under parallelism and must run in per-job
 directories, as `nec4_table_sweep.py` already does for NEC-4.2.
 
+## Insulation is a scalar
+
+A jacket slows the wire.  Measured with NEC-4.2's IS card on the real
+end-fed geometry -- all three conductors sheathed, epsr 3, at twice the
+fitting density, peak positions extracted by parabola -- the velocity
+factor against bare wire:
+
+| regime | 0.3 mm wall | 0.6 mm wall |
+|---|---|---|
+| 1.9 MHz, 9.1 m up | 0.990 | 0.981 |
+| 7.15 MHz, 9.1 m | 0.988 | 0.979 |
+| 28.85 MHz, 9.1 m | 0.986 | 0.974 |
+| 7.15 MHz, 2 m | 0.988 | 0.978 |
+| 7.15 MHz, 20 m | 0.989 | 0.980 |
+
+Across a 15x frequency span and h/lambda from 0.013 to 0.48 the factor
+moves a few tenths of a percent while the effect is one to two and a
+half: **one number per jacket covers the page's domain**, about 0.98
+for a typical PVC jacket on #14, with no new table axis.  The page can
+carry it as a wire-type control scaling the fitted lines' velocity
+factors.
+
+Provenance is NEC-4.2 alone: this NEC-5 console build parses the IS
+card but its storage is stubbed out in the source (RSETIS counts and
+discards), so insulated wires are not in that distribution.
+
 ## References
 
 Sources for the published length tables this page is measured against,

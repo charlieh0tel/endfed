@@ -494,11 +494,11 @@ not wait on the which-reference question, and the two tracks decouple:
   against converged answers -- the size of the model's whole quoted
   budget.  See MODEL.md, "NEC-5 arrives".  D is re-scoped accordingly:
   a converged re-sweep priced by a density-requirement study first.
-- **B2, after A, parallel with B1.**  The insulation differential in
-  both solvers: bare vs a typical jacket (epsR ~3, 0.4 mm on #14) at a
-  few heights and frequencies.  Robust to B1's outcome; NEC-5 breaks a
-  tie; confirms a scalar on vf_a rather than an h/lambda dependence.
-  Falls back to NEC-4.2's IS card alone if NEC-5 stalls.
+- **B2, done.**  A scalar, as hoped: vf 0.986-0.990 for a 0.3 mm wall
+  and 0.974-0.981 for 0.6 mm, near-constant over 1.9-28.85 MHz and
+  2-20 m of height.  NEC-4.2's IS card alone -- this NEC-5 build has
+  insulation stubbed out (RSETIS stores nothing).  See MODEL.md,
+  "Insulation is a scalar".
 - **C, after B2.**  Page-only wire control, bare/insulated, scaling the
   antenna line's beta by the measured factor, with caveat text.  No
   refit, no waiting on B1.
