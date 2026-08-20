@@ -65,6 +65,7 @@ const EXPORTS = [
   'necSuspectBands',
   'necSampleFreqsHz', 'buildProbeDeck', 'parseNecZ', 'geometricMeanSwr',
   'refineGapsM', 'necCheckFreqs', 'measuredScore', 'medianOverlayRatio',
+  'bandSweep', 'BAND_SWEEP_POINTS',
   'necOverlayKey',
   // display
   'toDisplay', 'fromDisplay', 'fmtLen', 'fmtBandEdges', 'tickStep',

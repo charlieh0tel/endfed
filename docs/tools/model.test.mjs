@@ -1521,3 +1521,19 @@ test('the overlay key and the URL carry the wire type', () => {
   assert.equal(m.DEFAULTS.wire, 'bare', 'bare by default');
   assert.equal(m.URL_KEYS.wire, 'wire', 'and linkable');
 });
+
+test('a band sweep spans the band and agrees with the score samples', () => {
+  const site = defaultSite();
+  const band = m.bandsIn('us').find(b => b.m === 40);
+  const lenM = m.fromDisplay(71, 'ft');
+  const sweep = m.bandSweep(lenM, band, 'full', site, m.WIRE_RADIUS_M, 9);
+  assert.equal(sweep.length, m.BAND_SWEEP_POINTS, 'every point scored');
+  const [loHz, hiHz] = m.bandEdgesHz(band, 'full');
+  close(sweep[0].freqHz, loHz, 1, 'starts at the low edge');
+  close(sweep[sweep.length - 1].freqHz, hiHz, 1, 'ends at the high edge');
+  // The same statistic scoreLength samples: at a shared frequency the two
+  // must agree exactly.
+  const swrAt = m.swrAtRadio(
+    m.endFedZin(lenM, loHz, site, m.WIRE_RADIUS_M), 9);
+  close(sweep[0].swr, swrAt, 1e-12, 'the same model, the same number');
+});

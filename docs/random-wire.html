@@ -163,6 +163,9 @@
       margin-bottom: 10px;
     }
 
+    /* An openable panel header: the browser draws the disclosure marker. */
+    .sweep-summary { cursor: pointer; }
+
     /* The NEC check's one row: a button, then whatever it has to say. */
     .nec-check {
       display: flex;
@@ -2670,6 +2673,36 @@
       return ratios[Math.floor(ratios.length / 2)];
     };
 
+    /** Points the band sweep view draws across one band. */
+    const BAND_SWEEP_POINTS = 33;
+
+    /**
+     * Modeled SWR across one band for the wire in hand: the analyzer's
+     * view, frequency on the x axis, where the map fixes frequency and
+     * sweeps length.
+     *
+     * @param {Meters} lenM
+     * @param {Band} band
+     * @param {SegmentKey} segment
+     * @param {Site} site
+     * @param {Meters} radiusM
+     * @param {number} ununRatio
+     * @returns {{freqHz: Hertz, swr: number}[]}  empty when unscorable
+     */
+    const bandSweep = (lenM, band, segment, site, radiusM, ununRatio) => {
+      const [loHz, hiHz] = bandEdgesHz(band, segment);
+      /** @type {{freqHz: Hertz, swr: number}[]} */
+      const points = [];
+      for (let i = 0; i < BAND_SWEEP_POINTS; i++) {
+        const freqHz = loHz + (hiHz - loHz) * i / (BAND_SWEEP_POINTS - 1);
+        const swr = swrAtRadio(endFedZin(lenM, freqHz, site, radiusM),
+                               ununRatio);
+        if (!Number.isFinite(swr)) return [];
+        points.push({ freqHz, swr });
+      }
+      return points;
+    };
+
     /**
      * Neighbors whose SWRs disagree by more than this factor mark a span
      * the sweep undersampled; the check then solves its midpoint.  High
@@ -2901,6 +2934,13 @@
      * the page itself.
      */
     const NEC_WORKERS_MAX = 8;
+
+    /**
+     * How long a changed wire length sits still before the follow solve
+     * measures it: long enough to skip every intermediate value of a drag
+     * or a spinner, short enough to feel attached.
+     */
+    const NEC_FOLLOW_DELAY_MS = 400;
     const necWorkerCount = () => Math.min(
       NEC_WORKERS_MAX,
       Math.max(1, (navigator.hardwareConcurrency || NEC_WORKERS_MAX) - 1));
@@ -3036,6 +3076,116 @@
     // ============================================================
     // Components
     // ============================================================
+
+    /**
+     * SWR against frequency across one band, for a fixed wire: the view an
+     * antenna analyzer gives, where the length map fixes frequency and
+     * sweeps length.  Shares the map's log SWR axis and colors.
+     *
+     * @param {{points: {freqHz: Hertz, swr: number}[],
+     *          band: Band, segment: SegmentKey, limit: number,
+     *          measured: {m: number, freqHz: Hertz, swr: number}[]}} props
+     */
+    function BandSweep({ points, band, segment, limit, measured }) {
+      const width = 1000;
+      const height = 240;
+      const top = 10;
+      // The SWR labels live in a left margin so the plot starts clear of
+      // them rather than running underneath.
+      const left = 64;
+      const right = 8;
+      const plotHeight = height - 54;
+      const bottom = top + plotHeight;
+      const [loHz, hiHz] = bandEdgesHz(band, segment);
+      /** @param {Hertz} freqHz @returns {number} SVG x */
+      const xOf = (freqHz) =>
+        left + (freqHz - loHz) / (hiHz - loHz) * (width - left - right);
+      // A band sweep lives in a narrower range than the length map: its
+      // own ceiling keeps the region the tuner argument happens in tall.
+      // Anything above it is drawn as an arrow at the top edge.
+      const SWEEP_PLOT_MAX = 15;
+      /** @param {number} swr @returns {number} SVG y */
+      const yOf = (swr) => top + plotHeight - plotHeight
+        * Math.min(1, Math.max(0, Math.log(swr) / Math.log(SWEEP_PLOT_MAX)));
+      const path = points
+        .map((point, i) => `${i === 0 ? 'M' : 'L'} ${xOf(point.freqHz).toFixed(2)} `
+          + `${yOf(point.swr).toFixed(2)}`)
+        .join(' ');
+      /** Frequency gridlines at the quarters, labeled at the edges and center. */
+      const ticks = [0, 0.25, 0.5, 0.75, 1].map(fraction => ({
+        freqHz: loHz + (hiHz - loHz) * fraction,
+        labeled: fraction === 0 || fraction === 0.5 || fraction === 1,
+      }));
+      return (
+        <svg className="map-svg" viewBox={`0 0 ${width} ${height}`}>
+          <defs>
+            {/* Same language as the map's too-short zone: hatched is out. */}
+            <pattern id="hatch-limit" width="8" height="8"
+                     patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="8" height="8" fill="#2a2a28" />
+              <rect width="3" height="8" fill={COLORS.short} />
+            </pattern>
+          </defs>
+          <rect x={left} y={top} width={width - left - right}
+                height={Math.max(0, yOf(limit) - top)}
+                fill="url(#hatch-limit)" opacity="0.5" />
+          <line x1={left} y1={yOf(limit)} x2={width - right} y2={yOf(limit)}
+                stroke={COLORS.avoid} strokeWidth="1" />
+          <text x={width - right - 6} y={yOf(limit) + 16} fill={COLORS.label}
+                fontSize={MAP.tickFontSize} textAnchor="end"
+                fontFamily="monospace">tuner {limit}:1</text>
+          {[2, 5, 10].map(swr => (
+            <g key={swr}>
+              <line className="map-rule"
+                    x1={left} y1={yOf(swr)} x2={width - right} y2={yOf(swr)}
+                    stroke={COLORS.axis} strokeWidth="0.5"
+                    strokeDasharray="3 3" />
+              <text x={left - 8} y={yOf(swr) + 5} fill={COLORS.label}
+                    fontSize={MAP.tickFontSize} textAnchor="end"
+                    fontFamily="monospace">{swr}:1</text>
+            </g>
+          ))}
+          {ticks.map(({ freqHz, labeled }) => (
+            <g key={freqHz}>
+              <line className="map-rule"
+                    x1={xOf(freqHz)} y1={top} x2={xOf(freqHz)} y2={bottom}
+                    stroke={COLORS.axis} strokeWidth="0.5"
+                    strokeDasharray="3 3" />
+              {labeled && (
+                <text x={xOf(freqHz)} y={height - 8} fill={COLORS.label}
+                      fontSize={MAP.tickFontSize}
+                      textAnchor={freqHz === loHz ? 'start'
+                        : freqHz === hiHz ? 'end' : 'middle'}
+                      fontFamily="monospace">
+                  {(freqHz / 1e6).toFixed(3)}{freqHz !== loHz
+                    && freqHz !== hiHz ? ' MHz' : ''}</text>
+              )}
+            </g>
+          ))}
+          <path d={path} fill="none" stroke={COLORS.usableEdge}
+                strokeWidth="1.5" />
+          {(() => {
+            // Where the modeled curve pegs the ceiling, one arrow at its
+            // worst frequency says "keeps going".
+            const over = points.filter(point => point.swr > SWEEP_PLOT_MAX);
+            if (over.length === 0) return null;
+            const peak = over.reduce(
+              (worst, point) => (point.swr > worst.swr ? point : worst));
+            const x = xOf(peak.freqHz);
+            return <polygon points={`${x - 7},${top + 14} ${x + 7},${top + 14} ${x},${top}`}
+                            fill={COLORS.usableEdge} />;
+          })()}
+          {measured.map((sample, i) => (
+            sample.swr > SWEEP_PLOT_MAX
+              ? <polygon key={i}
+                         points={`${xOf(sample.freqHz) - 7},${top + 14} ${xOf(sample.freqHz) + 7},${top + 14} ${xOf(sample.freqHz)},${top}`}
+                         fill={COLORS.nec} />
+              : <circle key={i} cx={xOf(sample.freqHz)} cy={yOf(sample.swr)}
+                        r="5" fill={COLORS.nec} />
+          ))}
+        </svg>
+      );
+    }
 
     /** Horizontal map of wire length: red where resonant, green where usable. */
     /**
@@ -3433,8 +3583,11 @@
        * @property {number} scheduled lengths handed to a worker
        * @property {number} total     lengths the grid holds
        * @property {{lenM: Meters, swr: number,
-       *             worst: {swr: number, band: Band, freqHz: Hertz}}[]}
+       *             worst: {swr: number, band: Band, freqHz: Hertz},
+       *             samples: {m: number, freqHz: Hertz, swr: number}[]}[]}
        *           checks  the wire in hand and the offered lengths, measured
+       *           -- samples carry each solved frequency's SWR with its
+       *           band's meters, for the band sweep view
        * @property {?string} note     what went wrong, when status is error
        */
       const [necRun, setNecRun] = useState(/** @type {?NecRun} */ (null));
@@ -3455,6 +3608,23 @@
           : null),
         [necRun, necKey, score]);
 
+      // The band sweep view: which band it shows, the worst by default.
+      const [sweepBandM, setSweepBandM] = useState(
+        /** @type {?number} */ (null));
+      const sweepBand = useMemo(() => {
+        if (score === null || score.bands.length === 0 || scoreHere === null) {
+          return null;
+        }
+        return score.bands.find(b => b.m === sweepBandM)
+          ?? scoreHere.worst.band;
+      }, [score, scoreHere, sweepBandM]);
+      const sweepPoints = useMemo(
+        () => (sweepBand !== null && scoreHere !== null
+          ? bandSweep(wireLenM, sweepBand, segment, site, WIRE_RADIUS_M,
+                      ununRatio)
+          : []),
+        [sweepBand, scoreHere, wireLenM, segment, site, ununRatio]);
+
       /** The finished run's measured picks, empty while stale or absent. */
       const necChecks = (necRun !== null && necRun.key === necKey)
         ? necRun.checks : [];
@@ -3462,6 +3632,77 @@
       const necCheckAt = (lenM) =>
         necChecks.find(c => Math.abs(c.lenM - lenM) < 1e-9) ?? null;
       const necHere = necCheckAt(wireLenM);
+
+      /**
+       * Follow the wire: once a run has finished, a newly chosen length is
+       * measured on demand -- one worker, one length, the coda's grid --
+       * so the verdict, the table and the sweep dots track map clicks
+       * instead of describing only the wire the run happened to hold.
+       */
+      const necFollow = useRef(
+        /** @type {?{lenM: Meters, worker: Worker, url: string}} */ (null));
+      const [necMeasuringM, setNecMeasuringM] = useState(
+        /** @type {?Meters} */ (null));
+      useEffect(() => {
+        if (necRun === null || necRun.status !== 'done'
+            || necRun.key !== necKey || score === null || wireLenM <= 0
+            || riseShortfallM(site, wireLenM) !== null
+            || necRun.checks.some(c => Math.abs(c.lenM - wireLenM) < 1e-9)) {
+          return undefined;
+        }
+        if (necFollow.current !== null && necFollow.current.lenM === wireLenM) {
+          return undefined;
+        }
+        const key = necRun.key;
+        const lenM = wireLenM;
+        const grid = necCheckFreqs(score.bands, segment);
+        const timer = setTimeout(() => {
+          if (necFollow.current !== null) {
+            necFollow.current.worker.terminate();
+            URL.revokeObjectURL(necFollow.current.url);
+          }
+          const url = URL.createObjectURL(
+            new Blob([NEC_WORKER_SOURCE], { type: 'text/javascript' }));
+          const worker = new Worker(url, { type: 'module' });
+          necFollow.current = { lenM, worker, url };
+          setNecMeasuringM(lenM);
+          const finish = () => {
+            worker.terminate();
+            URL.revokeObjectURL(url);
+            necFollow.current = null;
+            setNecMeasuringM(null);
+          };
+          worker.onerror = finish;
+          worker.onmessage = (event) => {
+            /** @type {{lenM: Meters, outputs?: string[], error?: string}} */
+            const data = event.data;
+            finish();
+            if (data.error !== undefined || data.outputs === undefined) return;
+            const zs = data.outputs.map(parseNecZ);
+            if (!zs.every(z => z !== null)) return;
+            const measured = /** @type {Complex[]} */ (zs);
+            const scored = measuredScore(measured, grid, ununRatio);
+            if (scored === null) return;
+            const samples = measured.map((z, i) => ({
+              m: grid[i].band.m, freqHz: grid[i].freqHz,
+              swr: swrAtRadio(z, ununRatio),
+            }));
+            // Only a run that is still the live one gains the point.
+            setNecRun(run => (run !== null && run.key === key
+                && run.status === 'done'
+              ? { ...run,
+                  checks: [...run.checks, { lenM: data.lenM, ...scored,
+                                            samples }] }
+              : run));
+          };
+          worker.postMessage({
+            lenM, kind: 'coda',
+            decks: grid.map(({ freqHz }) =>
+              buildProbeDeck(lenM, freqHz, site, WIRE_RADIUS_M)),
+          });
+        }, NEC_FOLLOW_DELAY_MS);
+        return () => clearTimeout(timer);
+      }, [necRun, necKey, score, wireLenM, site, segment, ununRatio]);
 
       /** Bands where the check's own solver is suspect, for the caveat. */
       const necSuspect = useMemo(
@@ -3598,7 +3839,13 @@
             const measured = /** @type {Complex[]} */ (zs);
             if (data.kind === 'coda') {
               const scored = measuredScore(measured, codaFreqs, ununRatio);
-              if (scored !== null) checks.push({ lenM: data.lenM, ...scored });
+              if (scored !== null) {
+                const samples = measured.map((z, i) => ({
+                  m: codaFreqs[i].band.m, freqHz: codaFreqs[i].freqHz,
+                  swr: swrAtRadio(z, ununRatio),
+                }));
+                checks.push({ lenM: data.lenM, ...scored, samples });
+              }
             } else {
               const swr = geometricMeanSwr(measured, ununRatio);
               if (swr !== null) {
@@ -4161,10 +4408,13 @@
                         + `geometric mean across the selected bands.  Worst sample is `
                         + `${scoreHere.worst.swr.toFixed(1)}:1 on ${scoreHere.worst.band.label} `
                         + `at ${(scoreHere.worst.freqHz / 1e6).toFixed(3)} MHz.`
-                        + (necHere === null ? ''
-                          : `  NEC-2 measures ${necHere.swr.toFixed(1)}:1, `
+                        + (necHere !== null
+                          ? `  NEC-2 measures ${necHere.swr.toFixed(1)}:1, `
                             + `worst ${necHere.worst.swr.toFixed(1)}:1 on `
-                            + `${necHere.worst.band.label}.`)
+                            + `${necHere.worst.band.label}.`
+                          : necMeasuringM === wireLenM
+                            ? '  NEC-2 is measuring this length.'
+                            : '')
                   ) : !verdict
                     ? 'Type a length, click the map, or pick one from the table below.'
                     : verdict.ok
@@ -4273,6 +4523,40 @@
                     </span>
                   )}
                 </div>
+              )}
+
+              {!noBands && mode === 'impedance' && sweepBand !== null
+                && scoreHere !== null && (
+                <details className="panel band-sweep">
+                  <summary className="panel-header sweep-summary">
+                    SWR across a band -- worst{' '}
+                    {scoreHere.worst.swr.toFixed(1)}:1 on{' '}
+                    {scoreHere.worst.band.label}
+                  </summary>
+                  <div className="presets" role="radiogroup"
+                       aria-label="Band to sweep" onKeyDown={onRadioKeys}>
+                    {score !== null && [...score.bands]
+                      .sort((a, b) => b.m - a.m).map(band => (
+                      <button key={band.m}
+                              className={`btn preset-btn ${sweepBand.m === band.m ? 'active' : ''}`}
+                              role="radio" aria-checked={sweepBand.m === band.m}
+                              tabIndex={sweepBand.m === band.m ? 0 : -1}
+                              onClick={() => setSweepBandM(band.m)}>
+                        {band.label}
+                      </button>
+                    ))}
+                  </div>
+                  <BandSweep points={sweepPoints} band={sweepBand}
+                             segment={segment} limit={TUNERS[tuner].limit}
+                             measured={necHere !== null && necHere.samples
+                               ? necHere.samples.filter(s => s.m === sweepBand.m)
+                               : []} />
+                  <div className="control-hint">
+                    The wire in hand, swept across {sweepBand.label} by the
+                    model{necHere !== null
+                      ? '; the dots are NEC-2, from the last check' : ''}.
+                  </div>
+                </details>
               )}
 
               {!noBands && (

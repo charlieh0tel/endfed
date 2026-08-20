@@ -458,7 +458,7 @@ test.describe('layout and legibility', () => {
     // the one behind the map.  The geometry diagrams are not included: they
     // carry aria-hidden and the controls they sit above name themselves.
     await open(page);
-    const worst = await page.locator('svg.map-svg').evaluate((svg) => {
+    const worst = await page.locator('.map-container svg.map-svg').evaluate((svg) => {
       const rgb = (value) => value.match(/\d+(\.\d+)?/g).slice(0, 3).map(Number);
       const luminance = (value) => {
         const channel = (v) => {
@@ -619,6 +619,11 @@ test.describe('the NEC check refines', () => {
       await expect(page.locator('th', { hasText: 'NEC-2' })).toHaveCount(1);
       await expect(page.locator('.verdict-detail'))
         .toContainText('NEC-2 measures');
+      // And the run follows the wire: a fresh length the run never solved
+      // gains a measured figure by itself.
+      await page.locator('input.len-input').fill('123.45');
+      await expect(page.locator('.verdict-detail'))
+        .toContainText('NEC-2 measures', { timeout: 120000 });
     });
 });
 
@@ -636,4 +641,28 @@ test.describe('the wire control', () => {
       // least the top pick's number changes.
       await expect(page.locator('.pick-btn').first()).not.toHaveText(bare);
     });
+});
+
+test.describe('the band sweep', () => {
+  test('opens to a per-band plot with its own selector', async ({ page }) => {
+    await open(page);
+    const panel = page.locator('details.band-sweep');
+    await expect(panel.locator('summary')).toContainText('SWR across a band');
+    await panel.locator('summary').click();
+    await expect(panel.locator('svg path')).toBeVisible();
+    // The selector lists exactly the selected bands and switches the plot.
+    const tabs = panel.locator('button[role="radio"]');
+    await expect(tabs).toHaveCount(4);
+    const before = await panel.locator('svg path').getAttribute('d');
+    // Resolve the target's label before clicking: the aria-checked="false"
+    // locator is live and would re-resolve to some other unselected tab.
+    const other = panel.locator('button[role="radio"][aria-checked="false"]')
+      .first();
+    const label = await other.textContent();
+    await other.click();
+    await expect(panel.locator(`button:text-is("${label}")`))
+      .toHaveAttribute('aria-checked', 'true');
+    const after = await panel.locator('svg path').getAttribute('d');
+    expect(after).not.toBe(before);
+  });
 });
