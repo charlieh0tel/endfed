@@ -66,7 +66,7 @@ const EXPORTS = [
   'necSampleFreqsHz', 'buildProbeDeck', 'parseNecZ', 'geometricMeanSwr',
   'refineGapsM', 'necCheckFreqs', 'measuredScore', 'medianOverlayRatio',
   'bandSweep', 'BAND_SWEEP_POINTS', 'waveMaximaM',
-  'parseNecProfile', 'envelopeProfile', 'PROFILE_POINTS',
+  'parseNecProfile', 'envelopeProfile', 'profileFloor', 'PROFILE_POINTS',
   'necOverlayKey',
   // display
   'toDisplay', 'fromDisplay', 'fmtLen', 'fmtBandEdges', 'tickStep',

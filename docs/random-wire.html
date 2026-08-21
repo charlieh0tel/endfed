@@ -2663,6 +2663,33 @@
     };
 
     /**
+     * The floor across bands: the pointwise minimum of per-band envelopes,
+     * so a dip is a place the wire stays quiet on every band.  This is the
+     * union view's one honest measured statistic -- the maximum washes out,
+     * which is why the union draws markers and a floor rather than a peak
+     * trace.
+     *
+     * @param {Object<number, {volts: number[], amps: number[]}>} profiles
+     * @returns {?{volts: number[], amps: number[]}}
+     */
+    const profileFloor = (profiles) => {
+      const bands = Object.values(profiles);
+      if (bands.length === 0) return null;
+      /** @param {'volts' | 'amps'} kind @returns {number[]} */
+      const floorOf = (kind) => {
+        const first = bands[0][kind];
+        const floor = [...first];
+        for (const band of bands.slice(1)) {
+          for (let i = 0; i < floor.length; i++) {
+            if (band[kind][i] < floor[i]) floor[i] = band[kind][i];
+          }
+        }
+        return floor;
+      };
+      return { volts: floorOf('volts'), amps: floorOf('amps') };
+    };
+
+    /**
      * The model curve's statistic over measured impedances: the geometric
      * mean of the SWR at the radio, as scoreLength takes it.
      *
@@ -3336,9 +3363,10 @@
           {measured !== null && (
             <g>
               <path d={profilePath(measured.volts, rows.volts)} fill="none"
-                    stroke={COLORS.nec} strokeWidth="1.5" opacity="0.9" />
+                    stroke={COLORS.avoid} strokeWidth="1.5" opacity="0.8" />
               <path d={profilePath(measured.amps, rows.amps)} fill="none"
-                    stroke={COLORS.nec} strokeWidth="1.5" opacity="0.9" />
+                    stroke={COLORS.usableEdge} strokeWidth="1.5"
+                    opacity="0.8" />
             </g>
           )}
           {entriesOf(rows).map(([kind, y]) => (
@@ -4954,19 +4982,19 @@
                     ))}
                   </div>
                   <WaveMaxima maxima={waveMaxima} lenM={wireLenM}
-                              measured={maximaBandM !== null
-                                && necHere !== null
-                                && necHere.profiles !== undefined
-                                && necHere.profiles[maximaBandM] !== undefined
-                                ? necHere.profiles[maximaBandM] : null}
+                              measured={necHere === null
+                                  || necHere.profiles === undefined ? null
+                                : maximaBandM !== null
+                                  ? necHere.profiles[maximaBandM] ?? null
+                                  : profileFloor(necHere.profiles)}
                               units={units} />
                   <div className="control-hint">
                     Modeled at each band's center, feed at the left.  All
                     bands is the union: where an insulator must be good on
-                    any band you use.  Pick a band to see its own pattern,
-                    with its measured standing wave in amber after a NEC-2
-                    check; a measured trace of the union would wash out, so
-                    that view stays arithmetic.  Voltage maxima
+                    any band you use, and after a NEC-2 check its traces are
+                    the measured floor -- where they dip, the wire is quiet
+                    on every band.  Pick a band to see its own pattern and
+                    its own measured standing wave.  Voltage maxima
                     want insulation and clearance; the open far end is
                     always one.  Current maxima do the radiating.
                   </div>

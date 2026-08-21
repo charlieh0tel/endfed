@@ -1595,3 +1595,14 @@ test('a band envelope normalizes, interpolates and takes the maximum', () => {
   assert.deepEqual(m.envelopeProfile([[0, 0, 0]], 5), [],
     'an all-zero profile is unusable, not a division by zero');
 });
+
+test('the profile floor keeps only what every band leaves quiet', () => {
+  const floor = m.profileFloor({
+    40: { volts: [1, 0.2, 1], amps: [0.5, 1, 0.5] },
+    20: { volts: [0.3, 1, 1], amps: [1, 0.1, 0.9] },
+  });
+  assert.deepEqual(floor.volts, [0.3, 0.2, 1],
+    'pointwise minimum across bands');
+  assert.deepEqual(floor.amps, [0.5, 0.1, 0.5], 'both rows');
+  assert.equal(m.profileFloor({}), null, 'no bands, no floor');
+});
