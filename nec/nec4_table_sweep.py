@@ -211,7 +211,7 @@ def frequencies():
 
 def solve_group(job):
     """One (frequency, soil): NEC-4 caches its Sommerfeld grid per pair."""
-    binary, freq_hz, soil, sloper = job
+    index, binary, freq_hz, soil, sloper = job
     wavelength_m = C / freq_hz
     rows = []
     with tempfile.TemporaryDirectory(prefix="table-") as work:
@@ -266,7 +266,7 @@ def solve_group(job):
                         z.imag,
                     )
                 )
-    return rows
+    return index, rows
 
 
 def main():
@@ -306,10 +306,30 @@ def main():
     if args.count:
         return 0
 
-    jobs = [(args.binary, freq, soil, args.sloper) for freq in freqs for soil in SOILS]
+    jobs = [
+        (i, args.binary, freq, soil, args.sloper)
+        for i, (freq, soil) in enumerate(
+            (freq, soil) for freq in freqs for soil in SOILS
+        )
+    ]
     start = time.time()
+    # Groups report as they finish, but land at their job index: the rungs
+    # of a Richardson pair must match row for row (extrapolate_sweep.py), so
+    # the output order cannot depend on which group finished first.
+    collected = [None] * len(jobs)
+    finished = solved = 0
     with Pool(args.workers) as pool:
-        collected = pool.map(solve_group, jobs)
+        for index, rows in pool.imap_unordered(solve_group, jobs):
+            collected[index] = rows
+            finished += 1
+            solved += len(rows)
+            _, _, freq_hz, soil, _ = jobs[index]
+            print(
+                f"  {freq_hz / 1e6:>7.3f} MHz {soil}: {len(rows)} points, "
+                f"group {finished}/{len(jobs)}, {100 * solved / points:.0f}% "
+                f"in {time.time() - start:.0f} s",
+                flush=True,
+            )
     columns = np.array([row for group in collected for row in group])
     print(f"solved {len(columns)} in {time.time() - start:.0f} s", flush=True)
 
