@@ -2450,9 +2450,11 @@
      * @param {Meters} radiusM
      * @param {{startHz: Hertz, stepHz: Hertz, points: number}} sweep
      * @param {string[]} comments  CM card bodies
+     * @param {boolean} [charges]  print charge densities (PQ card)
      * @returns {string}
      */
-    const deckCards = (lenM, site, radiusM, sweep, comments) => {
+    const deckCards = (lenM, site, radiusM, sweep, comments,
+                       charges = false) => {
       // Insulation, by K6OIK's equivalent wire (S. Stearns, "Modeling
       // Insulated Wire", ARRL/Pacificon): an uninsulated wire of radius
       // a' = a (b/a)^(1 - 1/epsr) with distributed series inductance
@@ -2498,6 +2500,9 @@
           return `LD 0 ${wire.tag} 1 ${wire.segments} 0`
             + ` ${perSegment.toExponential(6)} 0`;
         }) : []),
+        // PQ: print charge densities, every segment.  Charge density is
+        // the voltage profile, for the maxima panel's measured layer.
+        ...(charges ? ['PQ 0 0 0 0'] : []),
         // EX 0: voltage source, 1 V on tag 1 segment 1, the feedpoint.
         'EX 0 1 1 0 1 0',
         `FR 0 ${sweep.points} 0 0 ${mhz(sweep.startHz)} ${mhz(sweep.stepHz)}`,
@@ -2555,11 +2560,12 @@
      * @param {Hertz} freqHz
      * @param {Site} site
      * @param {Meters} radiusM
+     * @param {boolean} [charges]  print the charge table too (PQ card)
      * @returns {string}
      */
-    const buildProbeDeck = (lenM, freqHz, site, radiusM) =>
+    const buildProbeDeck = (lenM, freqHz, site, radiusM, charges = false) =>
       deckCards(lenM, site, radiusM, { startHz: freqHz, stepHz: 0, points: 1 },
-                ['random-wire.html check probe']);
+                ['random-wire.html check probe'], charges);
 
     /**
      * The source impedance in one nec2c output.  The first data row under
@@ -2581,6 +2587,79 @@
         return Number.isFinite(re) && Number.isFinite(im) ? cpx(re, im) : null;
       }
       return null;
+    };
+
+    /** Common grid the measured standing-wave profiles resample onto. */
+    const PROFILE_POINTS = 200;
+
+    /**
+     * A per-segment magnitude profile from one nec2c output table: the
+     * antenna wire's (tag 1) |I| from CURRENTS AND LOCATION, or |q| from
+     * CHARGE DENSITIES.  Segments are uniform along a wire, so index maps
+     * to position; the heading is searched from the end because a deck's
+     * own CM card may use the same words, and rows stop at the first tag
+     * that is not the antenna.
+     *
+     * @param {string} output
+     * @param {'current' | 'charge'} kind
+     * @returns {number[]}  empty when the table is absent
+     */
+    const parseNecProfile = (output, kind) => {
+      const heading = kind === 'charge' ? 'charge densit' : '- current (amps)';
+      const at = output.toLowerCase().lastIndexOf(heading);
+      if (at < 0) return [];
+      /** @type {number[]} */
+      const values = [];
+      let started = false;
+      for (const line of output.slice(at).split('\n')) {
+        const fields = line.trim().split(/\s+/);
+        const nums = line.match(/-?\d\.\d+E[+-]\d+/g);
+        const isRow = /^\s+\d+\s+\d+\s/.test(line) && nums !== null
+          && nums.length >= 3;
+        if (isRow) {
+          if (fields[1] !== '1') {
+            if (started) break;
+            continue;
+          }
+          started = true;
+          // Both tables end their numeric run with real/imaginary/magnitude
+          // before a plain-format phase, so the magnitude is the last
+          // E-notation field.
+          values.push(Number(nums[nums.length - 1]));
+        } else if (started) {
+          break;
+        }
+      }
+      return values;
+    };
+
+    /**
+     * One band's profiles on a common grid: each frequency's profile
+     * normalized to its own peak, then the pointwise maximum -- the
+     * envelope over the band, which moves little because a band is
+     * narrow.  Interpolation is linear between segment centers.
+     *
+     * @param {number[][]} profiles
+     * @param {number} n  points on the common grid
+     * @returns {number[]}  empty when nothing usable came in
+     */
+    const envelopeProfile = (profiles, n) => {
+      const usable = profiles.filter(p => p.length >= 2
+        && p.every(Number.isFinite) && Math.max(...p) > 0);
+      if (usable.length === 0) return [];
+      const envelope = new Array(n).fill(0);
+      for (const profile of usable) {
+        const peak = Math.max(...profile);
+        for (let i = 0; i < n; i++) {
+          const pos = (i / (n - 1)) * (profile.length - 1);
+          const lo = Math.floor(pos);
+          const hi = Math.min(profile.length - 1, lo + 1);
+          const value = (profile[lo] + (profile[hi] - profile[lo])
+            * (pos - lo)) / peak;
+          if (value > envelope[i]) envelope[i] = value;
+        }
+      }
+      return envelope;
     };
 
     /**
@@ -3222,9 +3301,10 @@
      *
      * @param {{maxima: {volts: {posM: Meters, label: string}[],
      *                   amps: {posM: Meters, label: string}[]},
+     *          measured: ?{volts: number[], amps: number[]},
      *          lenM: Meters, units: UnitKey}} props
      */
-    function WaveMaxima({ maxima, lenM, units }) {
+    function WaveMaxima({ maxima, measured, lenM, units }) {
       const width = 1000;
       const height = 148;
       const left = 90;
@@ -3239,8 +3319,28 @@
       for (let value = 0; value <= toDisplay(lenM, units); value += step) {
         ticks.push(value);
       }
+      /**
+       * A measured envelope riding its row: normalized 0..1 mapped to a
+       * lobe above the row line.
+       * @param {number[]} profile
+       * @param {number} rowY
+       * @returns {string}
+       */
+      const profilePath = (profile, rowY) => profile
+        .map((value, i) => `${i === 0 ? 'M' : 'L'} `
+          + `${(left + (i / (profile.length - 1)) * (width - left - right)).toFixed(1)} `
+          + `${(rowY - 4 - value * 20).toFixed(1)}`)
+        .join(' ');
       return (
         <svg className="map-svg" viewBox={`0 0 ${width} ${height}`}>
+          {measured !== null && (
+            <g>
+              <path d={profilePath(measured.volts, rows.volts)} fill="none"
+                    stroke={COLORS.nec} strokeWidth="1.5" opacity="0.9" />
+              <path d={profilePath(measured.amps, rows.amps)} fill="none"
+                    stroke={COLORS.nec} strokeWidth="1.5" opacity="0.9" />
+            </g>
+          )}
           {entriesOf(rows).map(([kind, y]) => (
             <g key={kind}>
               <text x={left - 10} y={y + 5} fill={COLORS.label}
@@ -3675,6 +3775,34 @@
         [mode, wireLenM, solution, segment, site, ununRatio]);
 
       /**
+       * The measured standing-wave envelopes of one solved length, per
+       * band: each output's current and charge tables lifted, then
+       * enveloped over the band's samples.  Shared by the coda and the
+       * follow solve so the two cannot disagree about what a profile is.
+       *
+       * @param {string[]} outputs  aligned with `grid`
+       * @param {{band: Band, freqHz: Hertz}[]} grid
+       * @returns {Object<number, {volts: number[], amps: number[]}>}
+       */
+      const bandProfiles = (outputs, grid) => {
+        /** @type {Object<number, {volts: number[], amps: number[]}>} */
+        const profiles = {};
+        const bandsSeen = [...new Set(grid.map(g => g.band.m))];
+        for (const m of bandsSeen) {
+          const of = (/** @type {'current' | 'charge'} */ kind) =>
+            envelopeProfile(outputs
+              .filter((_, i) => grid[i].band.m === m)
+              .map(out => parseNecProfile(out, kind)), PROFILE_POINTS);
+          const amps = of('current');
+          const volts = of('charge');
+          if (amps.length > 0 && volts.length > 0) {
+            profiles[m] = { volts, amps };
+          }
+        }
+        return profiles;
+      };
+
+      /**
        * @typedef {Object} NecRun  one check, live or finished
        * @property {string} key       necOverlayKey at launch
        * @property {'running'|'done'|'error'} status
@@ -3684,10 +3812,14 @@
        * @property {number} total     lengths the grid holds
        * @property {{lenM: Meters, swr: number,
        *             worst: {swr: number, band: Band, freqHz: Hertz},
-       *             samples: {m: number, freqHz: Hertz, swr: number}[]}[]}
+       *             samples: {m: number, freqHz: Hertz, swr: number}[],
+       *             profiles: Object<number,
+       *               {volts: number[], amps: number[]}>}[]}
        *           checks  the wire in hand and the offered lengths, measured
        *           -- samples carry each solved frequency's SWR with its
-       *           band's meters, for the band sweep view
+       *           band's meters, for the band sweep view; profiles hold,
+       *           per band meters, the measured standing-wave envelopes
+       *           for the maxima panel's per-band view
        * @property {?string} note     what went wrong, when status is error
        */
       const [necRun, setNecRun] = useState(/** @type {?NecRun} */ (null));
@@ -3788,17 +3920,18 @@
               swr: swrAtRadio(z, ununRatio),
             }));
             // Only a run that is still the live one gains the point.
+            const profiles = bandProfiles(data.outputs, grid);
             setNecRun(run => (run !== null && run.key === key
                 && run.status === 'done'
               ? { ...run,
                   checks: [...run.checks, { lenM: data.lenM, ...scored,
-                                            samples }] }
+                                            samples, profiles }] }
               : run));
           };
           worker.postMessage({
             lenM, kind: 'coda',
             decks: grid.map(({ freqHz }) =>
-              buildProbeDeck(lenM, freqHz, site, WIRE_RADIUS_M)),
+              buildProbeDeck(lenM, freqHz, site, WIRE_RADIUS_M, true)),
           });
         }, NEC_FOLLOW_DELAY_MS);
         return () => clearTimeout(timer);
@@ -3952,7 +4085,7 @@
               lenM, kind: 'coda',
               decks: codaFreqs.map(
                 ({ freqHz }) => buildProbeDeck(lenM, freqHz, site,
-                                               WIRE_RADIUS_M)),
+                                               WIRE_RADIUS_M, true)),
             });
             return;
           }
@@ -3979,7 +4112,9 @@
                   m: codaFreqs[i].band.m, freqHz: codaFreqs[i].freqHz,
                   swr: swrAtRadio(z, ununRatio),
                 }));
-                checks.push({ lenM: data.lenM, ...scored, samples });
+                checks.push({ lenM: data.lenM, ...scored, samples,
+                              profiles: bandProfiles(data.outputs,
+                                                     codaFreqs) });
               }
             } else {
               const swr = geometricMeanSwr(measured, ununRatio);
@@ -4819,13 +4954,20 @@
                     ))}
                   </div>
                   <WaveMaxima maxima={waveMaxima} lenM={wireLenM}
+                              measured={maximaBandM !== null
+                                && necHere !== null
+                                && necHere.profiles !== undefined
+                                && necHere.profiles[maximaBandM] !== undefined
+                                ? necHere.profiles[maximaBandM] : null}
                               units={units} />
                   <div className="control-hint">
                     Modeled at each band's center, feed at the left.  All
                     bands is the union: where an insulator must be good on
-                    any band you use.  One band shows its own pattern.
-                    Voltage maxima want insulation and clearance; the open
-                    far end is always one.  Current maxima do the radiating.
+                    any band you use.  One band shows its own pattern, and
+                    after a NEC-2 check the amber trace is that band's
+                    measured standing wave on this wire.  Voltage maxima
+                    want insulation and clearance; the open far end is
+                    always one.  Current maxima do the radiating.
                   </div>
                 </details>
               )}

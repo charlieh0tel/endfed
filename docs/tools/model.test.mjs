@@ -1558,3 +1558,40 @@ test('standing-wave maxima sit where an open-ended wire puts them', () => {
     (lenM - amps[0]) * m.WIRES.insulated.lengthScale, 1e-9,
     'the jacket scales the spacing');
 });
+
+test('a probe deck prints charges only when asked', () => {
+  const site = defaultSite();
+  const lenM = m.fromDisplay(71, 'ft');
+  assert.equal(cardsOf(m.buildProbeDeck(lenM, 14.175e6, site,
+    m.WIRE_RADIUS_M, true), 'PQ').length, 1, 'PQ when asked');
+  assert.equal(cardsOf(m.buildProbeDeck(lenM, 14.175e6, site,
+    m.WIRE_RADIUS_M), 'PQ').length, 0, 'lean otherwise');
+});
+
+test('the profile parser lifts tag 1 and stops at the return', () => {
+  // Trimmed from real nec2c output; the CM card is the trap the parser
+  // must not anchor on, and the tag 2 row is where the antenna ends.
+  const output = [
+    'CM check probe: charge densities matter',
+    '                                  ------ CHARGE DENSITIES ------',
+    '   SEG   TAG    COORDINATES OF SEG CENTER     SEG          CHARGE DENSITY (COULOMBS/METER)',
+    '   No:   No:     X         Y         Z       LENGTH     REAL      IMAGINARY     MAGN       PHASE',
+    '     1    1   -0.2337    0.0000    0.0000   0.01168  6.4454E-12  6.4971E-11  6.5290E-11   84.335',
+    '     2    1   -0.2220    0.0000    0.0000   0.01168  4.8463E-12  5.2789E-11  5.3011E-11   84.755',
+    '     3    2   -0.2103    0.0000    0.0000   0.01168  9.9999E-12  9.9999E-11  9.9999E-11   85.166',
+  ].join('\n');
+  assert.deepEqual(m.parseNecProfile(output, 'charge'),
+    [6.5290e-11, 5.3011e-11],
+    'tag 1 magnitudes, in order, and nothing from tag 2');
+  assert.deepEqual(m.parseNecProfile('no table here', 'charge'), [],
+    'absence is empty, not an error');
+});
+
+test('a band envelope normalizes, interpolates and takes the maximum', () => {
+  const union = m.envelopeProfile([[1, 0.5, 0], [0, 1, 2]], 5);
+  close(union[0], 1, 1e-9, 'left profile peak survives');
+  close(union[4], 1, 1e-9, 'right profile peak survives');
+  close(union[2], 0.5, 1e-9, 'the middle is the larger of the two halves');
+  assert.deepEqual(m.envelopeProfile([[0, 0, 0]], 5), [],
+    'an all-zero profile is unusable, not a division by zero');
+});
