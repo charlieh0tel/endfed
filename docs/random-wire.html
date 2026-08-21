@@ -4434,11 +4434,9 @@
                        rel="noopener">Fitted against NEC-4.2</a>,
                     {' '}{MODEL_FIT_RANGE_HZ.min / 1e6}&ndash;
                     {MODEL_FIT_RANGE_HZ.max / 1e6} MHz, #14 AWG. |Z| within
-                    {' '}{MODEL_TYPICAL_FACTOR}x for half of lengths and
-                    {' '}{MODEL_BOUND_FACTOR}x for nine in ten, with the angle
-                    out by 20 degrees as often &mdash; so a length this calls a
-                    match may not be one. Good for ranking lengths and avoiding
-                    the bad ones, not for predicting a feedpoint.
+                    {' '}{MODEL_TYPICAL_FACTOR}x for half of lengths,
+                    {' '}{MODEL_BOUND_FACTOR}x for nine in ten. Ranks lengths
+                    and avoids the bad ones; does not predict a feedpoint.
                   </div>
                 )}
                 {mode === 'impedance' && (
@@ -4446,8 +4444,7 @@
                     Wire gauge: <span className="control-value">
                       {WIRE_GAUGE_LABEL}</span>
                     <div className="control-hint">
-                      Not adjustable yet. The fit holds from {WIRE_GAUGE_RANGE_LABEL},
-                      into {Z_SYSTEM_OHMS} ohms at the radio.
+                      Not adjustable; the fit holds from {WIRE_GAUGE_RANGE_LABEL}.
                     </div>
                   </div>
                 )}
@@ -4464,8 +4461,8 @@
                              heightM: clamp(Number(e.target.value),
                                             HEIGHT_RANGE_M) })} />
                     <div className="control-hint">
-                      Matters most when the wire is low in wavelengths, which
-                      on 160 m and 80 m means most installations.
+                      Matters most when the wire is low in wavelengths
+                      &mdash; on 160 m and 80 m, most installations.
                     </div>
                   </label>
                 )}
@@ -4513,11 +4510,10 @@
                       )}
                     </div>
                     <div className="control-hint">
-                      Coax shield or counterpoise, whichever returns the
-                      current, measured from the feedpoint so the{' '}
-                      {fmtLen(dropM, units)} drop counts. All of it resonates,
-                      which is what the preset sets; {fmtLen(counterpoiseM, units)}
-                      {' '}of it lies on the ground.
+                      Coax shield or counterpoise, measured from the
+                      feedpoint: the {fmtLen(dropM, units)} drop counts, and
+                      all of it resonates. {fmtLen(counterpoiseM, units)} of
+                      it lies on the ground.
                     </div>
                   </label>
                 )}
@@ -4534,8 +4530,8 @@
                              counterpoiseZM: clamp(Number(e.target.value),
                                                    COUNTERPOISE_Z_RANGE_M) })} />
                     <div className="control-hint">
-                      On the ground at the bottom, on stakes further along. It
-                      hangs from the feedpoint, so it cannot go above it.
+                      On the ground or on stakes. It hangs from the
+                      feedpoint, so it cannot go above it.
                     </div>
                   </label>
                 )}
@@ -4553,9 +4549,9 @@
                       </button>
                     ))}
                     <div className="control-hint">
-                      Sandy or rocky, medium soil, damp or marshy. Not a quality
-                      scale: damp ground does not give a better match, it gives a
-                      sharper resonance, so deeper dips and higher peaks.
+                      Sandy or rocky, medium, damp or marshy. Not a quality
+                      scale: damp ground sharpens the resonances, it does not
+                      improve the match.
                     </div>
                   </fieldset>
                 )}
@@ -4573,8 +4569,8 @@
                       </button>
                     ))}
                     <div className="control-hint">
-                      A jacket slows the wire about 2%, moving every resonance
-                      to a shorter length. Measured, not assumed; see the{' '}
+                      A jacket slows the wire about 2%, shortening every
+                      resonance. Measured; see the{' '}
                       <a href={MODEL_NOTE_URL} target="_blank"
                          rel="noopener">modeling note</a>.
                     </div>
@@ -4989,14 +4985,11 @@
                                   : profileFloor(necHere.profiles)}
                               units={units} />
                   <div className="control-hint">
-                    Modeled at each band's center, feed at the left.  All
-                    bands is the union: where an insulator must be good on
-                    any band you use, and after a NEC-2 check its traces are
-                    the measured floor -- where they dip, the wire is quiet
-                    on every band.  Pick a band to see its own pattern and
-                    its own measured standing wave.  Voltage maxima
-                    want insulation and clearance; the open far end is
-                    always one.  Current maxima do the radiating.
+                    Feed at the left; the far end is always a voltage
+                    maximum.  All bands is the union of maxima; after a
+                    NEC-2 check its traces are the measured floor across
+                    the bands.  A band tab shows that band&apos;s own
+                    pattern and measured standing wave.
                   </div>
                 </details>
               )}
