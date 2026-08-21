@@ -1830,6 +1830,42 @@ the true insulated resonance -- better than the Cebik/4nec2 curve fit
 His conductivity correction is moot here: the probe decks leave the
 wire perfect.
 
+### The density study: extrapolate, do not densify
+
+The density error does not converge away.  On nec_model's own
+junction-matched decks -- the geometry the tables were actually fitted
+from -- a 1x-to-16x ladder over 144 regimes shows the same first-order
+creep the probe decks showed: |Z| approaches its limit like 1/N, still
+moving a few percent per doubling at 16x, worst at the half-wave peaks
+and the inter-peak valley.  At the fitted density the error against the
+limit is x1.20 median, x1.60 at the 90th, x2.21 worst, and no uniform
+multiplier reaches the limit at tolerable cost.
+
+What does reach it is Richardson extrapolation.  The 1/N behavior is
+clean: extrapolations from (2x, 4x, 8x) and from (4x, 8x, 16x) agree
+within 0.5-3 percent on every worst case tried.  The pairs price out
+as:
+
+| strategy | median | 90th | worst | cost per point |
+|---|---|---|---|---|
+| raw 1x (shipped) | x1.20 | x1.60 | x2.21 | 1.0 |
+| R(1x, 2x) | x1.14 | x1.45 | x2.97 | 2.2 |
+| R(2x, 4x) | x1.02 | x1.07 | x1.33 | 3.2 |
+
+R(1x, 2x) is poisoned -- the fitted density is pre-asymptotic, and
+extrapolating from it can amplify rather than cancel.  R(2x, 4x) cuts
+the measurement error by an order of magnitude for about 3.2x the
+solve time, putting a converged re-sweep of the full table campaign
+near 14 wall hours on this machine, or a few hours more with a third
+rung added where the pair disagrees, which tames the x1.33 tail.
+
+So the re-sweep the density finding calls for is priced and shaped:
+solve every point at 2x and 4x the current density, extrapolate real
+and imaginary parts separately, and fit to the extrapolated
+impedances.  How much of the model's quoted error and the 21.9 percent
+miscall rate is measurement rather than model is unknown until it
+runs; the fitting-density error is the same size as the whole budget.
+
 ## References
 
 Sources for the published length tables this page is measured against,

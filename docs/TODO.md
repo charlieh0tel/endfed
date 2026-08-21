@@ -490,10 +490,15 @@ not wait on the which-reference question, and the two tracks decouple:
 - **B1, done, with a twist.**  The ground delta vanishes at
   convergence (x1.03 median, x1.12 worst over a 144-geometry slice);
   what it exposed instead is that the shipped fitting density of 20
-  segments per wavelength carries x1.17 median / x1.49 90th error
+  segments per wavelength carries x1.20 median / x1.60 90th error
   against converged answers -- the size of the model's whole quoted
-  budget.  See MODEL.md, "NEC-5 arrives".  D is re-scoped accordingly:
-  a converged re-sweep priced by a density-requirement study first.
+  budget.  See MODEL.md, "NEC-5 arrives".
+- **The density study, done.**  Convergence is first-order and never
+  practically completes; Richardson extrapolation from a (2x, 4x) pair
+  reaches within x1.02 median / x1.07 90th of the limit for 3.2x the
+  solve time.  D is therefore: re-sweep at 2x and 4x, extrapolate re
+  and im separately, refit -- about 14 wall hours, needing explicit
+  approval before it runs.  See MODEL.md, "The density study".
 - **B2, done.**  A scalar, as hoped: vf 0.986-0.990 for a 0.3 mm wall
   and 0.974-0.981 for 0.6 mm, near-constant over 1.9-28.85 MHz and
   2-20 m of height.  NEC-4.2's IS card alone -- this NEC-5 build has
