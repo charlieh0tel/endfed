@@ -2673,6 +2673,34 @@
       return ratios[Math.floor(ratios.length / 2)];
     };
 
+    /**
+     * Standing-wave maxima along the wire at one frequency, as distances
+     * from the feed, meters.  The far end is open: current is zero there
+     * and voltage peaks, so voltage maxima sit at whole half-waves back
+     * from the end and current maxima at odd quarter-waves, at the wire's
+     * own velocity (the jacket slows it).
+     *
+     * @param {Meters} lenM
+     * @param {Hertz} freqHz
+     * @param {Site} site
+     * @returns {{volts: Meters[], amps: Meters[]}}
+     */
+    const waveMaximaM = (lenM, freqHz, site) => {
+      const vf = MODEL_VF_A * wireOf(site).lengthScale;
+      const quarterM = (C_SPEED / freqHz) * vf / 4;
+      /** @type {Meters[]} */
+      const volts = [];
+      /** @type {Meters[]} */
+      const amps = [];
+      for (let k = 0; k * 2 * quarterM <= lenM; k++) {
+        volts.push(lenM - k * 2 * quarterM);
+      }
+      for (let k = 0; (2 * k + 1) * quarterM <= lenM; k++) {
+        amps.push(lenM - (2 * k + 1) * quarterM);
+      }
+      return { volts, amps };
+    };
+
     /** Points the band sweep view draws across one band. */
     const BAND_SWEEP_POINTS = 33;
 
@@ -3183,6 +3211,78 @@
               : <circle key={i} cx={xOf(sample.freqHz)} cy={yOf(sample.swr)}
                         r="5" fill={COLORS.nec} />
           ))}
+        </svg>
+      );
+    }
+
+    /**
+     * The wire drawn twice, feed at the left: voltage maxima marked on the
+     * top row, current maxima on the bottom, the union of every selected
+     * band.  Positions come from waveMaximaM; each marker names its band.
+     *
+     * @param {{maxima: {volts: {posM: Meters, label: string}[],
+     *                   amps: {posM: Meters, label: string}[]},
+     *          lenM: Meters, units: UnitKey}} props
+     */
+    function WaveMaxima({ maxima, lenM, units }) {
+      const width = 1000;
+      const height = 148;
+      const left = 90;
+      const right = 16;
+      const rows = { volts: 30, amps: 74 };
+      const axisY = 104;
+      /** @param {Meters} posM @returns {number} SVG x */
+      const xOf = (posM) => left + (posM / lenM) * (width - left - right);
+      // The same tick machinery as the length map, in display units.
+      const step = tickStep(toDisplay(lenM, units));
+      const ticks = [];
+      for (let value = 0; value <= toDisplay(lenM, units); value += step) {
+        ticks.push(value);
+      }
+      return (
+        <svg className="map-svg" viewBox={`0 0 ${width} ${height}`}>
+          {entriesOf(rows).map(([kind, y]) => (
+            <g key={kind}>
+              <text x={left - 10} y={y + 5} fill={COLORS.label}
+                    fontSize={MAP.tickFontSize} textAnchor="end"
+                    fontFamily="monospace">
+                {kind === 'volts' ? 'voltage' : 'current'}</text>
+              <line x1={left} y1={y} x2={width - right} y2={y}
+                    stroke={COLORS.axis} strokeWidth="1" />
+            </g>
+          ))}
+          {maxima.volts.map((mark, i) => (
+            <g key={`v${i}`}>
+              <polygon points={`${xOf(mark.posM) - 6},${rows.volts + 8} ${xOf(mark.posM) + 6},${rows.volts + 8} ${xOf(mark.posM)},${rows.volts - 8}`}
+                       fill={COLORS.avoid}>
+                <title>{`${mark.label}, ${fmtLen(mark.posM, units)} from the feed`}</title>
+              </polygon>
+            </g>
+          ))}
+          {maxima.amps.map((mark, i) => (
+            <circle key={`a${i}`} cx={xOf(mark.posM)} cy={rows.amps} r="6"
+                    fill={COLORS.usableEdge}>
+              <title>{`${mark.label}, ${fmtLen(mark.posM, units)} from the feed`}</title>
+            </circle>
+          ))}
+          <line x1={left} y1={axisY} x2={width - right} y2={axisY}
+                stroke={COLORS.axis} strokeWidth="1" />
+          {ticks.map(value => (
+            <g key={value}>
+              <line x1={xOf(fromDisplay(value, units))} y1={axisY}
+                    x2={xOf(fromDisplay(value, units))} y2={axisY + 5}
+                    stroke={COLORS.axis} strokeWidth="1" />
+              <text x={xOf(fromDisplay(value, units))} y={axisY + 24}
+                    fill={COLORS.label} fontSize={MAP.tickFontSize}
+                    textAnchor="middle" fontFamily="monospace">{value}</text>
+            </g>
+          ))}
+          <text x={left} y={height - 4} fill={COLORS.label}
+                fontSize={MAP.tickFontSize} fontFamily="monospace">feed</text>
+          <text x={width - right} y={height - 4} fill={COLORS.label}
+                fontSize={MAP.tickFontSize} textAnchor="end"
+                fontFamily="monospace">
+            far end, {fmtLen(lenM, units)}</text>
         </svg>
       );
     }
@@ -3703,6 +3803,41 @@
         }, NEC_FOLLOW_DELAY_MS);
         return () => clearTimeout(timer);
       }, [necRun, necKey, score, wireLenM, site, segment, ununRatio]);
+
+      /**
+       * Standing-wave maxima for the wire in hand.  The view is a
+       * selector: the union over every selected band by default -- the
+       * "where must every insulator be good" question -- or one band's
+       * own comb, which is the readable one.  Each band contributes its
+       * center frequency's maxima, tagged so a marker names its band.
+       */
+      const [maximaBandM, setMaximaBandM] = useState(
+        /** @type {?number} */ (null));
+      const waveMaxima = useMemo(() => {
+        if (mode !== 'impedance' || score === null || wireLenM <= 0
+            || riseShortfallM(site, wireLenM) !== null) {
+          return null;
+        }
+        const shown = score.bands
+          .filter(band => maximaBandM === null || band.m === maximaBandM);
+        // A stale selection (its band deselected) falls back to the union.
+        const bands = shown.length > 0 ? shown : score.bands;
+        /** @type {{posM: Meters, label: string}[]} */
+        const volts = [];
+        /** @type {{posM: Meters, label: string}[]} */
+        const amps = [];
+        for (const band of bands) {
+          const [loHz, hiHz] = bandEdgesHz(band, segment);
+          const centered = waveMaximaM(wireLenM, (loHz + hiHz) / 2, site);
+          for (const posM of centered.volts) {
+            volts.push({ posM, label: band.label });
+          }
+          for (const posM of centered.amps) {
+            amps.push({ posM, label: band.label });
+          }
+        }
+        return { volts, amps };
+      }, [mode, score, wireLenM, site, segment, maximaBandM]);
 
       /** Bands where the check's own solver is suspect, for the caveat. */
       const necSuspect = useMemo(
@@ -4655,6 +4790,42 @@
                     The wire in hand, swept across {sweepBand.label} by the
                     model{necHere !== null
                       ? '; the dots are NEC-2, from the last check' : ''}.
+                  </div>
+                </details>
+              )}
+
+              {!noBands && mode === 'impedance' && waveMaxima !== null && (
+                <details className="panel">
+                  <summary className="panel-header sweep-summary">
+                    Voltage and current maxima along the wire
+                  </summary>
+                  <div className="presets" role="radiogroup"
+                       aria-label="Maxima view" onKeyDown={onRadioKeys}>
+                    <button className={`btn preset-btn ${maximaBandM === null ? 'active' : ''}`}
+                            role="radio" aria-checked={maximaBandM === null}
+                            tabIndex={maximaBandM === null ? 0 : -1}
+                            onClick={() => setMaximaBandM(null)}>
+                      All bands
+                    </button>
+                    {score !== null && [...score.bands]
+                      .sort((a, b) => b.m - a.m).map(band => (
+                      <button key={band.m}
+                              className={`btn preset-btn ${maximaBandM === band.m ? 'active' : ''}`}
+                              role="radio" aria-checked={maximaBandM === band.m}
+                              tabIndex={maximaBandM === band.m ? 0 : -1}
+                              onClick={() => setMaximaBandM(band.m)}>
+                        {band.label}
+                      </button>
+                    ))}
+                  </div>
+                  <WaveMaxima maxima={waveMaxima} lenM={wireLenM}
+                              units={units} />
+                  <div className="control-hint">
+                    Modeled at each band's center, feed at the left.  All
+                    bands is the union: where an insulator must be good on
+                    any band you use.  One band shows its own pattern.
+                    Voltage maxima want insulation and clearance; the open
+                    far end is always one.  Current maxima do the radiating.
                   </div>
                 </details>
               )}
