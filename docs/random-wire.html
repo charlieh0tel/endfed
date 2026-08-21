@@ -4958,6 +4958,7 @@
                   <summary className="panel-header sweep-summary">
                     Voltage and current maxima along the wire
                   </summary>
+                  {score !== null && score.bands.length > 1 && (
                   <div className="presets" role="radiogroup"
                        aria-label="Maxima view" onKeyDown={onRadioKeys}>
                     <button className={`btn preset-btn ${maximaBandM === null ? 'active' : ''}`}
@@ -4977,10 +4978,12 @@
                       </button>
                     ))}
                   </div>
+                  )}
                   <WaveMaxima maxima={waveMaxima} lenM={wireLenM}
                               measured={necHere === null
                                   || necHere.profiles === undefined ? null
                                 : maximaBandM !== null
+                                    && score !== null && score.bands.length > 1
                                   ? necHere.profiles[maximaBandM] ?? null
                                   : profileFloor(necHere.profiles)}
                               units={units} />
