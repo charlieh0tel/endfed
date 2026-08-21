@@ -30,6 +30,7 @@ from pathlib import Path
 import numpy as np
 
 import sweep_grid
+import nec_model
 from nec_model import (
     BALUN_HEIGHT_M,
     C,
@@ -278,7 +279,18 @@ def main():
     parser.add_argument(
         "--count", action="store_true", help="report the size and solve nothing"
     )
+    parser.add_argument(
+        "--density",
+        type=int,
+        default=1,
+        help="segmentation multiplier: N solves at N * 20 segments per "
+        "wavelength, for the Richardson pair the density study calls for "
+        "(docs/MODEL.md).  Output lands in a _dN file so rungs cannot be "
+        "mistaken for one another",
+    )
     args = parser.parse_args()
+    # Set before the Pool forks, so every worker segments alike.
+    nec_model.SEGMENTS_PER_WAVELENGTH = 20 * args.density
 
     freqs = frequencies()
     points = 0
@@ -302,6 +314,8 @@ def main():
     print(f"solved {len(columns)} in {time.time() - start:.0f} s", flush=True)
 
     output = SLOPER_OUTPUT if args.sloper else FLAT_TOP_OUTPUT
+    if args.density != 1:
+        output = output.replace(".npz", f"_d{args.density}.npz")
     height_key = "apex_m" if args.sloper else "height_m"
     np.savez_compressed(
         output,
@@ -319,6 +333,7 @@ def main():
         resistance=columns[:, 8],
         reactance=columns[:, 9],
         soil_names=np.array(SOILS),
+        density=np.int16(args.density),
     )
     bad = int(np.isnan(columns[:, 8]).sum())
     print(f"{bad} failed, wrote {output}")

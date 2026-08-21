@@ -510,9 +510,12 @@ not wait on the which-reference question, and the two tracks decouple:
   equivalent wire, validated against the IS card to 0.02 percent, so
   the overlay stays a real check for insulated wire in both wasm
   solvers.  See MODEL.md, "Insulation is a scalar".
-- **D, only if B1 is material in-domain.**  One combined campaign:
-  model-form fix, NEC-5 as sweep target, insulation folded in.  Never a
-  NEC-4.2 re-sweep in the meantime; never sweeping twice.
+- **D, running.**  Re-scoped by B1 and priced by the density study:
+  re-sweep both geometries at 2x and 4x the fitted density
+  (`nec4_table_sweep.py --density`), Richardson-extrapolate real and
+  imaginary parts separately (`extrapolate_sweep.py`), refit from the
+  extrapolated impedances.  Solver stays NEC-4.2: converged, it agrees
+  with NEC-5 within x1.03 median.
 
 **Open, low priority.**  The maxima panel's per-band view could carry
 measured profiles instead of arithmetic: the check's outputs already
