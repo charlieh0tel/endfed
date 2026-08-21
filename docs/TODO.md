@@ -511,6 +511,18 @@ not wait on the which-reference question, and the two tracks decouple:
 
 ## Considered and declined
 
+- A voltage/current maxima strip along the wire.  Built as a spike and
+  removed: on a multiband wire the union of standing waves makes nearly
+  every point an antinode on some band, so the display degenerates to
+  "treat the whole wire as hot," and the one durable fact -- the open
+  far end is always a voltage maximum -- needs a sentence, not a panel.
+  The measured version is proven feasible should a single-band use ever
+  want it: NEC's PQ card (charge density, which is the voltage profile)
+  works in nec2c, nec2++, NEC-4.2 and NEC-5, the first three agreeing
+  to four digits on the calibration dipole, and the current tables ride
+  in the check's outputs already.
+
+
 - Refitting the coefficients against NEC-4.2.  Measured rather than
   argued: fitted to each grid, the same form gives x1.25 median and
   x1.32 against x1.33 at the 90th for `h/lambda >= 0.05`.
