@@ -1537,3 +1537,24 @@ test('a band sweep spans the band and agrees with the score samples', () => {
     m.endFedZin(lenM, loHz, site, m.WIRE_RADIUS_M), 9);
   close(sweep[0].swr, swrAt, 1e-12, 'the same model, the same number');
 });
+
+test('standing-wave maxima sit where an open-ended wire puts them', () => {
+  const site = defaultSite();
+  const freqHz = 14.175e6;
+  const quarterM = m.C_SPEED / freqHz / 4; // bare wire: vf 1.0
+  const lenM = 4.6 * quarterM; // 1.15 wavelengths
+  const { volts, amps } = m.waveMaximaM(lenM, freqHz, site);
+  // Voltage peaks at the open end and every half wave back from it.
+  close(volts[0], lenM, 1e-9, 'the far end is always a voltage maximum');
+  assert.equal(volts.length, 3, 'half-wave spacing fits two more');
+  close(volts[1], lenM - 2 * quarterM, 1e-9, 'a half wave back');
+  // Current peaks between them, odd quarter waves from the end.
+  assert.equal(amps.length, 2, 'odd quarter waves that fit');
+  close(amps[0], lenM - quarterM, 1e-9, 'a quarter wave back');
+  // A jacket slows the wire, pulling every maximum toward the far end.
+  const jacketed = m.waveMaximaM(lenM, freqHz,
+    { ...site, wire: 'insulated' });
+  close(lenM - jacketed.amps[0],
+    (lenM - amps[0]) * m.WIRES.insulated.lengthScale, 1e-9,
+    'the jacket scales the spacing');
+});
