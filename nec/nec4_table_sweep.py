@@ -211,7 +211,12 @@ def frequencies():
 
 def solve_group(job):
     """One (frequency, soil): NEC-4 caches its Sommerfeld grid per pair."""
-    index, binary, freq_hz, soil, sloper = job
+    index, binary, freq_hz, soil, sloper, density = job
+    # Set in the worker, not the parent: under the forkserver start method
+    # (the default from Python 3.14) workers re-import nec_model and a
+    # parent-side assignment never reaches them.  That silently solved a
+    # whole Richardson campaign at the fitting density.
+    nec_model.SEGMENTS_PER_WAVELENGTH = 20 * density
     wavelength_m = C / freq_hz
     rows = []
     with tempfile.TemporaryDirectory(prefix="table-") as work:
@@ -289,8 +294,6 @@ def main():
         "mistaken for one another",
     )
     args = parser.parse_args()
-    # Set before the Pool forks, so every worker segments alike.
-    nec_model.SEGMENTS_PER_WAVELENGTH = 20 * args.density
 
     freqs = frequencies()
     points = 0
@@ -307,7 +310,7 @@ def main():
         return 0
 
     jobs = [
-        (i, args.binary, freq, soil, args.sloper)
+        (i, args.binary, freq, soil, args.sloper, args.density)
         for i, (freq, soil) in enumerate(
             (freq, soil) for freq in freqs for soil in SOILS
         )
@@ -323,7 +326,7 @@ def main():
             collected[index] = rows
             finished += 1
             solved += len(rows)
-            _, _, freq_hz, soil, _ = jobs[index]
+            freq_hz, soil = jobs[index][2], jobs[index][3]
             print(
                 f"  {freq_hz / 1e6:>7.3f} MHz {soil}: {len(rows)} points, "
                 f"group {finished}/{len(jobs)}, {100 * solved / points:.0f}% "

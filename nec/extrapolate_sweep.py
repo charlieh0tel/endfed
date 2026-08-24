@@ -55,6 +55,16 @@ def main():
             f"rungs are x{int(coarse['density'])} and x{int(fine['density'])}: "
             "the extrapolation wants an octave"
         )
+    # The density field records what was asked for, not what was solved: a
+    # campaign once solved both rungs at the fitting density because the
+    # multiplier never reached forkserver workers.  Identical data cannot
+    # be two densities of the same geometry.
+    if np.array_equal(
+        coarse["resistance"], fine["resistance"], equal_nan=True
+    ) and np.array_equal(coarse["reactance"], fine["reactance"], equal_nan=True):
+        raise SystemExit(
+            "rungs are bit-identical: the density flag never reached the solves"
+        )
 
     fields = {
         field: coarse[field]
