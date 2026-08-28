@@ -516,17 +516,20 @@ def load_sweeps(paths):
     """
     loaded = [np.load(path, allow_pickle=False) for path in paths]
     names = loaded[0]["soil_names"]
-    fields = set(loaded[0].files)
+    # Rows only: a sweep also carries provenance (`density`, the rungs an
+    # extrapolation came from) that is not one value per solve.
+    rows = len(loaded[0]["freq_hz"])
+    fields = {
+        field for field in loaded[0].files if loaded[0][field].shape[:1] == (rows,)
+    }
     for path, one in zip(paths[1:], loaded[1:]):
-        if set(one.files) != fields:
+        if not fields <= set(one.files):
             raise SystemExit(f"{path} does not carry the same columns")
         if list(one["soil_names"]) != list(names):
             raise SystemExit(f"{path} orders its soils differently")
     return {
-        field: names
-        if field == "soil_names"
-        else np.concatenate([one[field] for one in loaded])
-        for field in fields
+        "soil_names": names,
+        **{field: np.concatenate([one[field] for one in loaded]) for field in fields},
     }
 
 

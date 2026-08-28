@@ -615,29 +615,31 @@ measures that directly: the shipped table and NEC, at the same geometry,
 each taken through the unun, each compared against the tuner's limit.  A
 miscall is a length the model calls usable and NEC does not.
 
-Against the sweeps the tables were fitted from, in sample:
+Against the converged sweeps the tables are now fitted from, in sample:
 
 | unun into tuner | flat top offers | of those, wrong | sloper offers | wrong |
 |---|---|---|---|---|
-| 9:1 into 3:1 | 36.2% | **21.9%** | 34.1% | 14.5% |
-| 9:1 into 5:1 | 63.5% | 14.5% | 63.5% | 7.2% |
-| 9:1 into 9:1 | 85.1% | 7.4% | 86.0% | 4.2% |
-| 4:1 into 3:1 | 16.9% | 24.0% | 12.8% | 13.9% |
-| 1:1 into 3:1 | 0.8% | 34.4% | 0.6% | 38.2% |
+| 9:1 into 3:1 | 37.1% | **26.0%** | 35.6% | 20.7% |
+| 9:1 into 5:1 | 63.9% | 19.4% | 62.9% | 12.7% |
+| 9:1 into 9:1 | 85.3% | 10.4% | 84.2% | 7.5% |
+| 4:1 into 3:1 | 16.9% | 24.7% | 12.7% | 15.8% |
+| 1:1 into 3:1 | 0.6% | 36.8% | 0.5% | 34.0% |
 
 At the page's own defaults -- 9:1 into a 3:1 rig tuner -- one length in
-five that it offers is not usable.  By band, flat top, same setting:
-160 m 33.4 percent wrong, 40 m 25.6, 20 m 25.3, 10 m 16.4.  It is worst
+four that it offers is not usable.  By band, flat top, same setting:
+160 m 47.0 percent wrong, 40 m 29.4, 20 m 27.5, 10 m 18.3.  It is worst
 on the low bands and the tight tuners, which is the case a random wire
-exists for.
+exists for.  (Measured against the density-1 sweeps this read 21.9
+percent overall; the difference is the flattery documented under the
+converged re-sweep, not a change in the model.)
 
 Three things this says that the `|Z|` bound does not.
 
 The error lives in the reactance.  Computing the same table with the
-reactance discarded -- taking `|Z|` as a resistance -- gives 8.2 percent
-where the honest figure is 21.9.  The fit's objective does carry phase,
-and the table now records it, but a magnitude-only bound hides most of
-what a user meets.
+reactance discarded -- taking `|Z|` as a resistance -- gave 8.2 percent
+where the honest figure was 21.9 (both against the density-1 data).
+The fit's objective does carry phase, and the table now records it, but
+a magnitude-only bound hides most of what a user meets.
 
 It is not an interpolation problem, so snapping a user's height or
 counterpoise to a table node would not help: the table is evaluated at
@@ -645,14 +647,16 @@ each group's own geometry when this is measured, and the misses
 concentrate at the resonance structure the form gets wrong (see "The
 peaks are too sharp").
 
-And it is not a measurement problem either, which was tested rather than
-assumed.  The decks were rebuilt to fix a segment-grading defect at the
-feedpoint and re-swept -- 480,000 NEC-4.2 solves -- which moved individual
-impedances by a median of x1.03, a 99th percentile of x2.2 and a worst of
-x6.5, with a tenth of flat-top points and a sixth of sloper points moving
-more than 25 percent.  The miscall rate did not move at all: 21.9 percent
-before, 21.9 after.  The fit simply re-absorbed the change.  What sets
-this number is the model form, and better data cannot reach it.
+And it is not a measurement problem either, which was tested twice
+rather than assumed.  The decks were rebuilt to fix a segment-grading
+defect at the feedpoint and re-swept -- 480,000 NEC-4.2 solves -- which
+moved individual impedances by a median of x1.03, a 99th percentile of
+x2.2 and a worst of x6.5, and the miscall rate did not move at all:
+21.9 percent before, 21.9 after.  Then the converged re-sweep replaced
+the data outright and the rate moved only because the scoring got
+honest, not because the model got better.  The fit re-absorbs data
+changes.  What sets this number is the model form, and better data
+cannot reach it.
 
 This is the number for judging any change to the model.
 
@@ -1854,17 +1858,59 @@ as:
 
 R(1x, 2x) is poisoned -- the fitted density is pre-asymptotic, and
 extrapolating from it can amplify rather than cancel.  R(2x, 4x) cuts
-the measurement error by an order of magnitude for about 3.2x the
-solve time, putting a converged re-sweep of the full table campaign
-near 14 wall hours on this machine, or a few hours more with a third
-rung added where the pair disagrees, which tames the x1.33 tail.
+the measurement error by an order of magnitude.
+
+The cost column above, measured on this study's probe solves, did not
+survive the real campaign: on the full fitting decks a 2x solve costs
+7-14x a 1x solve and a 4x solve runs about 3.3 s flat across the
+frequency range, so the pair prices out near 20x the original sweep
+per point, not 3.2x.  The converged re-sweep of both geometries took
+83.5 wall hours at 12 workers, not 14.
 
 So the re-sweep the density finding calls for is priced and shaped:
 solve every point at 2x and 4x the current density, extrapolate real
 and imaginary parts separately, and fit to the extrapolated
-impedances.  How much of the model's quoted error and the 21.9 percent
-miscall rate is measurement rather than model is unknown until it
-runs; the fitting-density error is the same size as the whole budget.
+impedances.
+
+### The converged re-sweep: the old figures were flattered, not inflated
+
+The campaign ran in August 2026: 922,706 NEC-4.2 solves -- both
+geometries at 2x and 4x, plus an 8x third rung for the 669 points
+whose (2x, 4x) extrapolation crossed into negative resistance and a
+16x fourth rung for the 41 of those (all sitting exactly on the first
+half-wave peak) that the (4x, 8x) pair still could not tame.  Zero
+solves failed.  The rung gap came out at 6.2 percent median flat top,
+7.1 sloper, and spot re-solves of randomly drawn rows reproduce the
+stored impedances digit for digit.  `nec/extrapolate_sweep.py` refuses
+bit-identical rungs after a first attempt at this campaign solved both
+rungs at the fitting density: a Python 3.14 machine starts pool workers
+under forkserver, where a parent-side segmentation override never
+arrives, so the density now rides inside each job.
+
+The question the campaign was asked -- how much of the model's error
+budget was measurement -- has an answer nobody predicted: none of it.
+The old figures were flattered, not inflated.  Refit to the converged
+impedances and measured against them:
+
+| per group |Z| factor | median | 90th | worst |
+|---|---|---|---|---|
+| flat top, old fit vs density-1 data | x1.25 | x1.33 | x1.59 |
+| flat top, refit vs converged data | x1.29 | x1.43 | x1.83 |
+| sloper, old fit vs density-1 data | x1.16 | x1.27 | x1.39 |
+| sloper, refit vs converged data | x1.24 | x1.35 | x1.45 |
+
+Fitting to biased data and scoring against the same biased data
+understates the honest error: the fit absorbed the density bias the
+way it absorbed the deck-grading fix, and the in-sample statistics
+never saw it.  Per length the flat top now reads x1.18 median and
+x1.55 at the ninetieth (was x1.14 and x1.43), and the page quotes the
+new figures.  The headline miscall rate at 9:1 into a 3:1 tuner moves
+from 21.9 to 26.0 percent.
+
+Which closes the density question the way the ground question closed:
+the shipped tables now stand on converged measurements, the honest
+error is known, and what remains is model form -- the same conclusion
+the decision metric reached from the other direction.
 
 ## References
 

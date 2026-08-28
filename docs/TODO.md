@@ -495,10 +495,10 @@ not wait on the which-reference question, and the two tracks decouple:
   budget.  See MODEL.md, "NEC-5 arrives".
 - **The density study, done.**  Convergence is first-order and never
   practically completes; Richardson extrapolation from a (2x, 4x) pair
-  reaches within x1.02 median / x1.07 90th of the limit for 3.2x the
-  solve time.  D is therefore: re-sweep at 2x and 4x, extrapolate re
-  and im separately, refit -- about 14 wall hours, needing explicit
-  approval before it runs.  See MODEL.md, "The density study".
+  reaches within x1.02 median / x1.07 90th of the limit.  Its 3.2x
+  cost estimate did not survive the campaign (nearer 20x per point;
+  see MODEL.md).  D became: re-sweep at 2x and 4x, extrapolate re and
+  im separately, refit.  See MODEL.md, "The density study".
 - **B2, done.**  A scalar, as hoped: vf 0.986-0.990 for a 0.3 mm wall
   and 0.974-0.981 for 0.6 mm, near-constant over 1.9-28.85 MHz and
   2-20 m of height.  NEC-4.2's IS card alone -- this NEC-5 build has
@@ -510,12 +510,14 @@ not wait on the which-reference question, and the two tracks decouple:
   equivalent wire, validated against the IS card to 0.02 percent, so
   the overlay stays a real check for insulated wire in both wasm
   solvers.  See MODEL.md, "Insulation is a scalar".
-- **D, running.**  Re-scoped by B1 and priced by the density study:
-  re-sweep both geometries at 2x and 4x the fitted density
-  (`nec4_table_sweep.py --density`), Richardson-extrapolate real and
-  imaginary parts separately (`extrapolate_sweep.py`), refit from the
-  extrapolated impedances.  Solver stays NEC-4.2: converged, it agrees
-  with NEC-5 within x1.03 median.
+- **D, done.**  922,706 solves over 83.5 hours, zero failed: both
+  geometries at 2x and 4x, an 8x rung for 669 negative-resistance
+  extrapolations (`third_rung.py`) and a 16x rung for the 41 holdouts
+  on the first half-wave peak.  The tables are refit from the converged
+  impedances and the page quotes the re-measured accuracy (per length
+  x1.18 median / x1.55 90th, was x1.14 / x1.43).  The finding: the old
+  figures were flattered by the density bias, not inflated -- none of
+  the budget was measurement.  See MODEL.md, "The converged re-sweep".
 
 **Open, low priority.**  The maxima panel's per-band view could carry
 measured profiles instead of arithmetic: the check's outputs already

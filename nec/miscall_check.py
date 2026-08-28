@@ -31,8 +31,8 @@ from table2d import look_up
 
 DATA = Path(__file__).resolve().parent / "coefficients2d.json"
 
-FLAT_TOP_SWEEPS = ("nec4_table_sweep.npz",)
-SLOPER_SWEEPS = ("nec4_table_sloper_sweep.npz",)
+FLAT_TOP_SWEEPS = ("nec4_table_sweep_extrapolated.npz",)
+SLOPER_SWEEPS = ("nec4_table_sloper_sweep_extrapolated.npz",)
 
 #: The page's own controls.
 TUNER_LIMITS = {
