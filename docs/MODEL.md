@@ -619,19 +619,21 @@ Against the converged sweeps the tables are now fitted from, in sample:
 
 | unun into tuner | flat top offers | of those, wrong | sloper offers | wrong |
 |---|---|---|---|---|
-| 9:1 into 3:1 | 37.1% | **26.0%** | 35.6% | 20.7% |
-| 9:1 into 5:1 | 63.9% | 19.4% | 62.9% | 12.7% |
-| 9:1 into 9:1 | 85.3% | 10.4% | 84.2% | 7.5% |
-| 4:1 into 3:1 | 16.9% | 24.7% | 12.7% | 15.8% |
-| 1:1 into 3:1 | 0.6% | 36.8% | 0.5% | 34.0% |
+| 9:1 into 3:1 | 35.8% | **23.6%** | 34.7% | 18.7% |
+| 9:1 into 5:1 | 64.7% | 19.4% | 64.6% | 14.0% |
+| 9:1 into 9:1 | 87.9% | 11.7% | 86.3% | 8.6% |
+| 4:1 into 3:1 | 17.2% | 25.0% | 13.2% | 17.1% |
+| 1:1 into 3:1 | 0.5% | 32.6% | 0.3% | 21.9% |
 
-At the page's own defaults -- 9:1 into a 3:1 rig tuner -- one length in
-four that it offers is not usable.  By band, flat top, same setting:
-160 m 47.0 percent wrong, 40 m 29.4, 20 m 27.5, 10 m 18.3.  It is worst
-on the low bands and the tight tuners, which is the case a random wire
-exists for.  (Measured against the density-1 sweeps this read 21.9
-percent overall; the difference is the flattery documented under the
-converged re-sweep, not a change in the model.)
+At the page's own defaults -- 9:1 into a 3:1 rig tuner -- nearly one
+length in four that it offers is not usable.  By band, flat top, same
+setting: 160 m 46.2 percent wrong, 40 m 27.6, 20 m 25.3, 10 m 15.0.  It
+is worst on the low bands and the tight tuners, which is the case a
+random wire exists for.  (Measured against the density-1 sweeps the
+constant-`alpha` table read 21.9 percent overall and 26.0 against the
+converged ones; the first difference is the flattery documented under
+the converged re-sweep, the second the falling loss documented under
+the peaks.)
 
 Three things this says that the `|Z|` bound does not.
 
@@ -1902,10 +1904,11 @@ impedances and measured against them:
 Fitting to biased data and scoring against the same biased data
 understates the honest error: the fit absorbed the density bias the
 way it absorbed the deck-grading fix, and the in-sample statistics
-never saw it.  Per length the flat top now reads x1.18 median and
-x1.55 at the ninetieth (was x1.14 and x1.43), and the page quotes the
-new figures.  The headline miscall rate at 9:1 into a 3:1 tuner moves
-from 21.9 to 26.0 percent.
+never saw it.  Per length the flat top read x1.18 median and
+x1.55 at the ninetieth against these data (was x1.14 and x1.43 against
+the old), and the headline miscall rate at 9:1 into a 3:1 tuner moved
+from 21.9 to 26.0 percent; the falling loss under "The peaks are too
+sharp" has since taken those to x1.16, x1.49 and 23.6.
 
 Which closes the density question the way the ground question closed:
 the shipped tables now stand on converged measurements, the honest
@@ -2076,19 +2079,71 @@ from 14.5 to 16.1, and the rate at which good lengths are called bad
 climbs from 36 to 57 percent at 1:1.  The per-length 99th improves
 (x2.23 to x1.88) and the decision does not.
 
-The reading is that the length term makes each group fit better and makes
-the *surface* of coefficients less smooth across `h/lambda` and
-`z/lambda`, so the tabulation and interpolation give back more than the
-form wins.  Which says the next form to try is not merely one that fits a
-group better, but one whose coefficients vary smoothly over the axes the
-table indexes -- a property nothing here has ever measured.
-`nec/alpha_length_check.py` is the experiment; reverted, not shipped.
+That reading -- the length term makes each group fit better but the
+surface of coefficients rougher, so tabulation gives back what the form
+wins -- was the natural one, and measuring it on the converged sweeps
+shows it is wrong.  Fitting every flat-top group both ways and comparing
+each coefficient with its nearest neighbour on the (h/lambda, z/lambda)
+grid, the exponent is the smoothest coefficient in the model: a median
+step of 0.024 between neighbours, against a x1.11 jump in `alpha_a` and
+x1.21 in `alpha_r`, and adding it roughens the others only slightly.
+What the per-group fits show instead is a step in height:
 
-So the peaks want something structurally different -- a term that bites
-only at resonance, or a modal representation instead of one line -- not
-a better fit of this one.  That is research rather than a tweak, and the
-random-wire case, which is what the page is for, is the one the current
-form already serves correctly.
+| h/lambda | groups | constant | falling | fitted `p` |
+|---|---|---|---|---|
+| below 0.03 | 87 | x1.069 | x1.069 | 0.00 |
+| 0.03 to 0.10 | 228 | x1.172 | x1.172 | 0.00 |
+| 0.10 to 0.30 | 333 | x1.239 | x1.199 | 0.52 |
+| 0.30 to 1.0 | 378 | x1.232 | x1.169 | 0.61 |
+| above 1.0 | 225 | x1.225 | x1.157 | 0.63 |
+
+A quarter of the domain, every wire under a tenth of a wavelength up,
+wants no length dependence at all; everything above wants about 0.6.
+Which is physical: near the ground the loss is soil loss, the same at
+every length, and higher up it is radiation loss, which the measurement
+says thins out along the wire.  The experiment above shipped one shared
+exponent for the whole table, forcing 0.6 onto the quarter that wants
+zero -- and the low wires are where the tight-tuner, low-band miscalls
+concentrate, so the shared value helped the high wires and hurt the
+decision where it is most sensitive.  That is the "better at 3:1, worse
+on every looser tuner" signature.  `nec/alpha_length_check.py` is the
+per-group experiment; the pipeline test was reverted, not shipped.
+
+So the form change was not dead; it had been shipped in the wrong
+shape.  Through the real pipeline -- fit per group, tabulate, refine,
+fill -- a step (zero below h/lambda 0.1, 0.58 above) and a log-linear
+ramp (zero at 0.1, 0.63 from 0.2 up, the shape the per-group exponents
+trace) come out equivalent to a few tenths of a point everywhere, and
+neither is worse than the constant-`alpha` table on both counts in any
+unun-by-tuner cell of either geometry.  The ramp ships, as a closed
+form rather than a table column: `p = 0.63 * clip(log2(h/lambda / 0.1),
+0, 1)`, three constants in `nec/table_spec.py` the page evaluates from
+the height it already knows.  Refit with it:
+
+| | per group median / 90th / worst | per length median / 90th / 99th | miscall, 9:1 into 3:1 |
+|---|---|---|---|
+| flat top, constant `alpha` | x1.29 / x1.43 / x1.83 | x1.18 / x1.55 / x2.35 | 26.0% |
+| flat top, falling by height | x1.25 / x1.40 / x1.79 | x1.16 / x1.49 / x2.06 | 23.6% |
+| sloper, constant `alpha` | x1.24 / x1.35 / x1.45 | x1.16 / x1.45 / x2.09 | 20.7% |
+| sloper, falling by height | x1.23 / x1.34 / x1.45 | x1.15 / x1.43 / x1.97 | 18.7% |
+
+The gain grows with frequency, since that is where wires sit high in
+wavelengths: on the flat top at the defaults 10 m goes from 18.3 to
+15.0 percent wrong, 20 m 27.5 to 25.3, 40 m 29.4 to 27.6, and 160 m,
+whose wires never clear a tenth of a wavelength, 45.6 to 46.2.  Where
+the loose tuners offer more lengths the rate of good lengths called bad
+falls by more than the miscall rate rises.  What remains true is that
+the first half-wave peak reads nearly twice high in every form tried,
+so an end-fed half wave through a 49:1 is the case the model serves
+worst, and the random-wire case, which is what the page is for, is the
+one it serves best.
+
+One per-length figure in the json is not the model's: the flat top's
+worst, x26.6, is three points at exactly a half wave on a 2 m wire at
+7.15 MHz, where the resonance is so sharp that the 2x and 4x rungs sit
+on different sides of it (19 and 96 kilohm) and the extrapolation
+doubles it to 180.  The neighbouring lengths are ordinary.  It is a
+measurement artifact at a peak, left in the data as measured.
 
 ## What the model deliberately does not do
 

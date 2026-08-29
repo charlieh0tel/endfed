@@ -35,7 +35,14 @@ import itertools
 
 import numpy as np
 
-from table_spec import MIN_H_OVER_LAMBDA, NODES, SOURCE_INDEX, TABLE_PARAMS, VF_A
+from table_spec import (
+    MIN_H_OVER_LAMBDA,
+    NODES,
+    SOURCE_INDEX,
+    TABLE_PARAMS,
+    VF_A,
+    length_power,
+)
 from fit import fit_group, model_zin
 from nec_model import C
 
@@ -78,6 +85,7 @@ def fitted(data):
             total_return_m,
             wavelength_m,
             data["resistance"][sel] + 1j * data["reactance"][sel],
+            power=length_power(height_m / wavelength_m),
         )
         out.append(
             {
@@ -195,6 +203,7 @@ def error(data, table, second=None, second_nodes=None):
             data["ratio"][sel] * wavelength_m,
             total_return_m,
             wavelength_m,
+            power=length_power(height_m / wavelength_m),
         )
         err = np.log(np.abs(model)) - np.log(
             np.abs(data["resistance"][sel] + 1j * data["reactance"][sel])

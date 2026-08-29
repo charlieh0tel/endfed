@@ -310,6 +310,15 @@ Remaining:
       Candidate fix: run both wasm solvers and draw only where they
       agree, marking a split as uncheckable in a browser.
 
+- [ ] **The check's suspect gate misses nec2c's second peak.**  The
+      gate keys on feedpoint height, which passes on a flat top at
+      0.22 wavelengths while the counterpoise lies on the ground -- and
+      that is the geometry where nec2c invents a peak past two
+      half-waves.  Seen live: 207 ft on 40 m at the page defaults, the
+      overlay off the 15:1 chart at 185 ft where converged NEC-4.2 reads
+      1.4:1.  Gate on counterpoise height and length past two half-waves,
+      or run nec2++ beside nec2c and mark where they disagree.
+
 - [ ] **Model the counterpoise in contact with the ground.**  Most
       people let the coax lie on the dirt.  The model holds it 5 cm up
       because NEC-2 must: a wire bonded to the ground plane shorts the
@@ -396,12 +405,17 @@ coefficients against `h/lambda` and `z/lambda`, how much a node's value
 differs from its neighbours', and how much of the per-length error is
 interpolation rather than form.  No solver time.
 
-**Open, and a project rather than a task.**  Chasing the model form
-itself.  The peaks read x1.86 high because one `alpha` sets the loss at
-every length, and the measurement says it should fall as `(l/lambda)`
-to about -0.6.  Per group that is worth taking the 99th per-length error
-from x2.06 to x1.66 and the miscall rate from 17.0 to 14.4 percent.  It
-does not survive the table, which is the finding above.
+**Done: the falling `alpha` by height.**  One `alpha` set the loss at
+every length and the peaks read x1.86 high; the measurement says the
+loss should fall as `(l/lambda)` to about -0.6, but only above a tenth
+of a wavelength up, where it is radiation loss rather than soil loss.
+Shipped as a closed-form rule, `p = 0.63 * clip(log2(h/lambda / 0.1),
+0, 1)`, in `table_spec.py` and the page alike, refit for both
+geometries: per-length 99th x2.35 to x2.06 on the flat top, miscall at
+the defaults 26.0 to 23.6 percent, 20.7 to 18.7 on the sloper, no
+unun-by-tuner cell worse on both counts.  A per-height-node column was
+the fallback and is not needed.  See MODEL.md, "The peaks are too
+sharp".
 
 What that leaves, in rough order of how much it would have to change:
 

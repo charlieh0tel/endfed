@@ -34,6 +34,9 @@ from scipy.sparse import csr_matrix
 
 from table_spec import (
     COUNTERPOISE_CEILING_FRACTION,
+    LENGTH_POWER_H_LAM_HIGH,
+    LENGTH_POWER_H_LAM_LOW,
+    LENGTH_POWER_PLATEAU,
     MAX_COUNTERPOISE_Z_M,
     MIN_COUNTERPOISE_Z_M,
     MIN_H_OVER_LAMBDA,
@@ -42,6 +45,7 @@ from table_spec import (
     TABLE_PARAMS,
     VF_A,
     Z_NODES,
+    length_power,
 )
 from fit import fit_group, model_zin
 from nec_model import BALUN_HEIGHT_M, C
@@ -62,6 +66,7 @@ DATA = Path(__file__).resolve().parent / "coefficients2d.json"
 PAGE = Path(__file__).resolve().parents[1] / "docs" / "random-wire.html"
 BEGIN = "// BEGIN GENERATED COEFFICIENTS"
 END = "// END GENERATED COEFFICIENTS"
+
 
 #: Indices into TABLE_PARAMS that carry the second axis.
 TWO_D = RETURN_ONLY
@@ -163,7 +168,9 @@ def fit_groups(data, geometry):
         for h_lam, z_lam, length_m, total_return_m, wavelength_m, z_nec in slices(
             data, si, geometry, min_points=20
         ):
-            params, _, _ = fit_group(length_m, total_return_m, wavelength_m, z_nec)
+            params, _, _ = fit_group(
+                length_m, total_return_m, wavelength_m, z_nec, power=length_power(h_lam)
+            )
             out.append({"soil": si, "h_lam": h_lam, "z_lam": z_lam, "params": params})
     return out
 
@@ -243,6 +250,7 @@ def refine(table, data, geometry, max_nfev=600):
     for si, rows in enumerate(grouped):
         weights = weight_matrix(rows, len(lo))
         counts, length_m, total_return_m, wavelength_m, z_nec = group_points(rows)
+        power = np.repeat([length_power(h_lam) for h_lam, *_ in rows], counts)
         log_abs_nec = np.log(np.abs(z_nec))
         angle_nec = np.angle(z_nec)
 
@@ -278,6 +286,7 @@ def refine(table, data, geometry, max_nfev=600):
                 length_m,
                 total_return_m,
                 wavelength_m,
+                power=power,
             )
             magnitude = np.log(np.abs(model)) - log_abs_nec
             phase = np.angle(model) - angle_nec
@@ -395,6 +404,7 @@ def measure(data, table, geometry):
                 length_m,
                 total_return_m,
                 wavelength_m,
+                power=length_power(h_lam),
             )
             err = np.log(np.abs(model)) - np.log(np.abs(z_nec))
             factors.append(np.exp(np.sqrt(np.mean(err**2))))
@@ -461,6 +471,15 @@ def render(tables, soils):
         f"      minCounterpoiseZM: {MIN_COUNTERPOISE_Z_M},",
         f"      maxCounterpoiseZM: {MAX_COUNTERPOISE_Z_M},",
         f"      counterpoiseCeilingFraction: {COUNTERPOISE_CEILING_FRACTION},",
+        "    });",
+        "    /**",
+        "     * The antenna line's loss falls with electrical length above a",
+        "     * tenth of a wavelength up; see nec/table_spec.py and docs/MODEL.md.",
+        "     */",
+        "    const MODEL_LENGTH_POWER = Object.freeze({",
+        f"      plateau: {LENGTH_POWER_PLATEAU},",
+        f"      hOverLambdaLow: {LENGTH_POWER_H_LAM_LOW},",
+        f"      hOverLambdaHigh: {LENGTH_POWER_H_LAM_HIGH},",
         "    });",
         "    const MODEL_COEFFS = Object.freeze({",
     ]
@@ -620,6 +639,12 @@ if __name__ == "__main__":
                 "params": list(TABLE_PARAMS),
                 "two_d_params": [TABLE_PARAMS[i] for i in TWO_D],
                 "vf_a": VF_A,
+                # The loss exponent's rule, so the page can be held to it.
+                "length_power": {
+                    "plateau": LENGTH_POWER_PLATEAU,
+                    "h_lam_low": LENGTH_POWER_H_LAM_LOW,
+                    "h_lam_high": LENGTH_POWER_H_LAM_HIGH,
+                },
                 "soils": [str(s) for s in data["soil_names"]],
                 # The range the model is fitted over, carried beside the
                 # numbers so a consumer need not restate it to know it.

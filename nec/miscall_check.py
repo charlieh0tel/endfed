@@ -26,7 +26,7 @@ import numpy as np
 from coefficients2d import FLAT_TOP, SLOPER, load_sweeps, slices
 from fit import model_zin
 from nec_model import C
-from table_spec import VF_A, Z_NODES
+from table_spec import VF_A, Z_NODES, length_power
 from table2d import look_up
 
 DATA = Path(__file__).resolve().parent / "coefficients2d.json"
@@ -98,6 +98,7 @@ def paired(sweeps, geometry, table, soil_names):
                     length_m,
                     total_return_m,
                     wavelength_m,
+                    power=length_power(h_lam),
                 )
             )
             nec.append(z_nec)

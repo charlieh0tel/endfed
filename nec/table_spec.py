@@ -53,6 +53,26 @@ REFINE_BOUNDS = (
 #: The antenna line's velocity factor, constant rather than tabulated.
 VF_A = 1.0
 
+#: The antenna line's loss falls with electrical length,
+#: `alpha_a_lam * (l / lambda) ** -p`, and the exponent depends on height:
+#: zero up to LENGTH_POWER_H_LAM_LOW, where the loss is soil loss and the
+#: same at every length, ramping log-linearly in h/lambda to
+#: LENGTH_POWER_PLATEAU at LENGTH_POWER_H_LAM_HIGH, where it is radiation
+#: loss thinning out along the wire.  Fitted per group on the converged
+#: sweeps; see docs/MODEL.md, "The peaks are too sharp".
+LENGTH_POWER_PLATEAU = 0.63
+LENGTH_POWER_H_LAM_LOW = 0.1
+LENGTH_POWER_H_LAM_HIGH = 0.2
+
+
+def length_power(h_lam):
+    """The loss exponent at a height, as the page computes it too."""
+    along = np.log(h_lam / LENGTH_POWER_H_LAM_LOW) / np.log(
+        LENGTH_POWER_H_LAM_HIGH / LENGTH_POWER_H_LAM_LOW
+    )
+    return LENGTH_POWER_PLATEAU * float(np.clip(along, 0.0, 1.0))
+
+
 #: Nodes in counterpoise height over wavelength, the table's second axis.
 #: Log spaced across what the page's controls reach: 1 cm at 1.8 MHz is
 #: 0.00006, and the ceiling of half a 30 m wire at 30 MHz is 1.5.  Both axes

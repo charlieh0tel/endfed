@@ -416,6 +416,12 @@ test('inlined coefficients match the fitted table they were generated from', asy
   assert.deepEqual([...m.MODEL_H_NODES], data.h_nodes, 'height nodes agree');
   assert.deepEqual([...m.MODEL_Z_NODES], data.z_nodes, 'counterpoise nodes agree');
   close(m.MODEL_VF_A, data.vf_a, 1e-12, 'antenna velocity factor');
+  close(m.MODEL_LENGTH_POWER.plateau, data.length_power.plateau, 1e-12,
+        'loss exponent plateau');
+  close(m.MODEL_LENGTH_POWER.hOverLambdaLow, data.length_power.h_lam_low, 1e-12,
+        'loss exponent ramp start');
+  close(m.MODEL_LENGTH_POWER.hOverLambdaHigh, data.length_power.h_lam_high, 1e-12,
+        'loss exponent ramp end');
 
   // The json carries a dense (soil, height, counterpoise, parameter) array;
   // the page stores the two antenna coefficients once, since they do not
@@ -442,6 +448,18 @@ test('inlined coefficients match the fitted table they were generated from', asy
       });
     });
   }
+});
+
+test('the loss exponent is zero near the ground and ramps to its plateau', () => {
+  const { plateau, hOverLambdaLow, hOverLambdaHigh } = m.MODEL_LENGTH_POWER;
+  assert.equal(m.lengthPower(hOverLambdaLow / 3), 0, 'no length dependence low down');
+  assert.equal(m.lengthPower(hOverLambdaLow), 0, 'zero at the ramp start');
+  close(m.lengthPower(hOverLambdaHigh), plateau, 1e-12, 'plateau at the ramp end');
+  close(m.lengthPower(hOverLambdaHigh * 10), plateau, 1e-12, 'flat above it');
+  // Log-linear between: the geometric midpoint is half way up.
+  const mid = Math.sqrt(hOverLambdaLow * hOverLambdaHigh);
+  close(m.lengthPower(mid), plateau / 2, 1e-12, 'half way at the geometric midpoint');
+  assert.equal(m.lengthPower(0), 0, 'a zero height is not an error');
 });
 
 test('the fitted coefficients are physically plausible', () => {
@@ -1121,7 +1139,9 @@ test('a length the model cannot describe is declined, not scored as NaN', () => 
   assert.equal(m.scoreLength(21.336, bands, 'full', site, m.WIRE_RADIUS_M, 9),
     null, 'no return conductor, no score');
   const sane = { ...site, counterpoiseM: m.DEFAULT_COUNTERPOISE_M };
-  assert.equal(m.scoreLength(1e5, bands, 'full', sane, m.WIRE_RADIUS_M, 9), null,
+  // The antenna line's loss falls with length, so its attenuation grows only
+  // as l^0.37 and overflow needs a wire a few light-hours long.
+  assert.equal(m.scoreLength(1e12, bands, 'full', sane, m.WIRE_RADIUS_M, 9), null,
     'a wire long enough to overflow coth is declined too');
   assert.ok(m.scoreLength(21.336, bands, 'full', sane, m.WIRE_RADIUS_M, 9),
     'and an ordinary antenna still scores');

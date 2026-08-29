@@ -60,10 +60,16 @@ def schelkunoff_z0(length_m, radius_m=WIRE_RADIUS_M):
     return 60.0 * (np.log(2.0 * length_m / radius_m) - 1.0)
 
 
-def model_zin(params, length_m, total_return_m, wavelength_m, radius_m=WIRE_RADIUS_M):
-    """Zin for the two-line model at the given lengths."""
+def model_zin(
+    params, length_m, total_return_m, wavelength_m, radius_m=WIRE_RADIUS_M, power=0.0
+):
+    """Zin for the two-line model at the given lengths.
+
+    `power` lets the antenna line's loss fall with electrical length,
+    `alpha_a_lam * (l / lambda) ** -power`; zero is the shipped model.
+    """
     alpha_a_lam, vf_a, ka, alpha_r_lam, vf_r, kr = params
-    alpha_a = alpha_a_lam / wavelength_m
+    alpha_a = alpha_a_lam * (length_m / wavelength_m) ** -power / wavelength_m
     alpha_r = alpha_r_lam / wavelength_m
     beta_a = 2.0 * np.pi / (wavelength_m * vf_a)
     beta_r = 2.0 * np.pi / (wavelength_m * vf_r)
@@ -77,7 +83,13 @@ def model_zin(params, length_m, total_return_m, wavelength_m, radius_m=WIRE_RADI
 
 
 def _residual(
-    params, length_m, total_return_m, wavelength_m, z_nec, radius_m=WIRE_RADIUS_M
+    params,
+    length_m,
+    total_return_m,
+    wavelength_m,
+    z_nec,
+    radius_m=WIRE_RADIUS_M,
+    power=0.0,
 ):
     """Complex log residual, flattened to the real vector least_squares wants.
 
@@ -87,14 +99,16 @@ def _residual(
     every half wave.  Wrapping the difference rather than differencing the
     wrapped values makes the phase error the angle it actually is.
     """
-    z = model_zin(params, length_m, total_return_m, wavelength_m, radius_m)
+    z = model_zin(params, length_m, total_return_m, wavelength_m, radius_m, power)
     magnitude = np.log(np.abs(z)) - np.log(np.abs(z_nec))
     phase = np.angle(z) - np.angle(z_nec)
     phase = (phase + np.pi) % (2.0 * np.pi) - np.pi
     return np.concatenate([magnitude, phase])
 
 
-def fit_group(length_m, total_return_m, wavelength_m, z_nec, radius_m=WIRE_RADIUS_M):
+def fit_group(
+    length_m, total_return_m, wavelength_m, z_nec, radius_m=WIRE_RADIUS_M, power=0.0
+):
     """Fit one (frequency, height, soil) group.
 
     Every point is used.  An earlier version dropped those with a
@@ -109,7 +123,7 @@ def fit_group(length_m, total_return_m, wavelength_m, z_nec, radius_m=WIRE_RADIU
         _residual,
         INITIAL,
         bounds=BOUNDS,
-        args=(length_m, total_return_m, wavelength_m, z_nec, radius_m),
+        args=(length_m, total_return_m, wavelength_m, z_nec, radius_m, power),
         max_nfev=4000,
     )
     if out.status <= 0:
