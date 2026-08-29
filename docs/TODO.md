@@ -417,28 +417,32 @@ None of these is worth starting before the smoothness measurement above,
 because that says whether a richer form can be carried by a table at
 all.
 
-**Open.**  Coefficients in `coefficients2d.json` sit exactly on
-their refinement bounds.  Of 1440 values per geometry, after the 16 Aug
-refit: the flat top has `vf_r` at its 1.0 ceiling 41 times,
-`alpha_r_lam` on its 0.05 floor 14 times, `alpha_a_lam` at its 0.4
-ceiling 11; the sloper has `alpha_a_lam` at that ceiling 22 times.
-A parameter held at its constraint is the bound,
-not a measurement -- the "compensating for the model rather than fitting
-the antenna" case `table_spec.py` says the bounds exist to prevent.
-*Decided:* investigate before refitting.  Find which (h/lambda, z/lambda,
-soil) cells rail and whether they share a corner; a physical edge and a
-model deficiency want different answers.
+**Done: the railed coefficients are measurements, not deficiencies.**
+After the converged refit more of the table sits on its refinement
+bounds, not less -- flat top `vf_r` at its 1.0 ceiling in 74 cells (47
+fitted, the rest copied), `alpha_r_lam` on its 0.05 floor in 34,
+`alpha_a_lam` at its 0.4 ceiling in 19; sloper `alpha_a_lam` at that
+ceiling in 33.  Mapped, each has a corner and a verdict.  `vf_r` rails
+only at `h/lambda >= 0.5` with `z/lambda >= 0.06`, an elevated
+counterpoise far from ground, and 1.0 is the optimum rather than a
+truncation: moving it to 0.9 takes those groups from x1.25 to x2.11
+median, to 1.05 takes them to x1.64.  The return conductor up there is
+a wire in air and the fit says so.  `alpha_a_lam` rails at the lowest
+heights, `h/lambda <= 0.012`, where a wire nearly on the ground is
+loaded by the soil; 0.4 is within a percent of optimal for the flat top
+and worth about x1.27 to x1.25 for the sloper's lowest cells if the
+ceiling were 0.6 -- marginal.  `alpha_r_lam` rails at low heights over
+good soil and the fit is indifferent to it: lifting it to 0.15 changes
+the nearest groups by nothing at three decimals.  No bound is hiding a
+model defect; the groups near railed cells fit better than the rest
+(x1.25 / x1.28 against x1.31 / x1.45), so the model-form error lives in
+the unrailed interior.  See MODEL.md, "Coefficients on their bounds".
 
-**Open.**  `coefficients2d.py` refines with `least_squares` and keeps
-`out.x` while discarding `out.status` and `out.success`, so a run that
-stopped at `max_nfev` is indistinguishable from a converged one after
-the fact.  `fit.py` raises on `status <= 0`; this does not.  Nothing in
-the json records nfev, status or the `--max-nfev` used, nor which
-parameters were held out of the refinement and which came back on a
-bound -- both are printed once and then lost, and both are what a reader
-needs to know how much of a cell is measurement.  `scipy` is also
-unpinned, which for a table that takes hours of NEC time to reproduce is
-the same hazard `uv.lock` exists to close.
+**Done.**  `coefficients2d.py` raises on a refinement whose `status <= 0`
+and records per soil in `coefficients2d.json` the status, nfev, the
+`--max-nfev` budget, the cost, and how many parameters were fitted
+against held; `uv.lock` pins scipy.  Which coefficients came back on a
+bound is the railing study below.
 
 **Open.**  Every figure the page quotes is still in sample in every axis
 but frequency.  `holdout_check.py` covers frequency, and `MODEL.md`

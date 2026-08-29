@@ -1912,6 +1912,35 @@ the shipped tables now stand on converged measurements, the honest
 error is known, and what remains is model form -- the same conclusion
 the decision metric reached from the other direction.
 
+### Coefficients on their bounds are measurements
+
+The converged refit left more coefficients on their refinement bounds
+than the old one: 74 flat-top cells have `vf_r` at its 1.0 ceiling (47
+fitted, the rest copied into unsupported nodes), 34 have `alpha_r_lam`
+on its 0.05 floor, and `alpha_a_lam` sits at its 0.4 ceiling in 19
+flat-top and 33 sloper cells.  A parameter on a bound is a warning that
+the fit is compensating for the form, so each was mapped and probed by
+moving it off the bound and re-measuring the groups nearest it.
+
+`vf_r` rails in one corner only: `h/lambda >= 0.5` with `z/lambda >=
+0.06`, the counterpoise well above ground.  There the bound is the
+answer.  Moving it to 0.9 takes those groups from x1.25 median to
+x2.11; moving it past the bound to 1.05 takes them to x1.64.  An
+elevated return conductor is a wire in air, its phase velocity is c,
+and the fit finds exactly that.  `alpha_a_lam` rails at the lowest
+heights, `h/lambda <= 0.012`, where the wire is loaded by soil it
+nearly touches; 0.4 is within a percent of optimal for the flat top and
+a ceiling of 0.6 would be worth about x1.27 to x1.25 on the sloper's
+lowest cells.  `alpha_r_lam` rails at low heights over good soil and
+does not matter: lifting it to 0.15 leaves the nearest groups unchanged
+to three decimals.
+
+None of the three hides a model defect.  The groups nearest railed
+cells fit better than the rest, x1.25 / x1.28 against x1.31 / x1.45,
+which puts the model-form error in the unrailed interior -- at the
+resonance structure the peaks section describes -- and not at the
+edges the bounds guard.
+
 ## References
 
 Sources for the published length tables this page is measured against,
