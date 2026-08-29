@@ -19,6 +19,24 @@ test('half wave reproduces the 468 / f(MHz) rule at vf 0.95', () => {
   }
 });
 
+test('the version is a dated release and the changelog leads with it', () => {
+  // YYYY.MM.DD.NNN: the deploy date and a counter within it.  String order
+  // is release order for that shape, which the descending check leans on.
+  const shape = /^\d{4}\.(0[1-9]|1[0-2])\.(0[1-9]|[12]\d|3[01])\.\d{3}$/;
+  assert.match(m.PAGE_VERSION, shape, 'version shape');
+  assert.ok(m.CHANGELOG.length > 0, 'a changelog entry exists');
+  assert.equal(m.CHANGELOG[0].version, m.PAGE_VERSION,
+    'the newest entry is the shipped version');
+  for (const entry of m.CHANGELOG) {
+    assert.match(entry.version, shape, `entry version shape: ${entry.version}`);
+    assert.ok(entry.title.trim().length > 0, `${entry.version} has a title`);
+    assert.ok(entry.text.trim().length > 0, `${entry.version} says something`);
+  }
+  const versions = m.CHANGELOG.map(e => e.version);
+  assert.deepEqual(versions, [...versions].sort().reverse(), 'newest first');
+  assert.equal(new Set(versions).size, versions.length, 'no version twice');
+});
+
 test('feet per meter is the international foot', () => {
   close(m.FT_PER_M, 1 / 0.3048, 1e-12, 'FT_PER_M');
 });

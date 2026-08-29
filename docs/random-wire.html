@@ -485,6 +485,53 @@
     .info strong { color: #aaa; }
     .info a { color: #888; }
 
+    /* The version and its changelog: a link-styled button in the footer
+       and a native dialog styled as a panel. */
+    .link-button {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: #7fb2e5;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .link-button:focus-visible {
+      outline: 2px solid #4dabf7;
+      outline-offset: 2px;
+    }
+    .whats-new {
+      background: #1a1a1a;
+      color: #e0e0e0;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 18px;
+      width: min(560px, calc(100% - 48px));
+      font-family: inherit;
+      font-size: 12px;
+      text-align: left;
+    }
+    .whats-new::backdrop { background: rgba(0, 0, 0, 0.6); }
+    .changelog {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .changelog-version { font-size: 11px; color: #949494; }
+    .changelog-title { font-weight: 600; color: #fff; margin: 2px 0; }
+    .changelog-text { color: #c8c8c8; line-height: 1.5; }
+    .btn-close {
+      padding: 6px 12px;
+      background: #2a2a2a;
+      color: #e0e0e0;
+      font-size: 12px;
+    }
+
     .footer {
       font-size: 11px;
       color: #949494;
@@ -518,6 +565,85 @@
 
     /** Feet per meter (exact, by definition of the international foot). */
     const FT_PER_M = 1 / 0.3048;
+
+    /**
+     * The page's version: the release date and a counter within it, since
+     * master deploys and may do so several times a day.  Any change a user
+     * would notice bumps it and adds the first CHANGELOG entry.
+     */
+    const PAGE_VERSION = '2026.08.28.001';
+
+    /**
+     * One release, as the user sees it.
+     * @typedef {Object} ChangelogEntry
+     * @property {string} version  the PAGE_VERSION it shipped as
+     * @property {string} title
+     * @property {string} text     what changed, in the user's terms
+     */
+
+    /**
+     * What changed, newest first.  The first entry's version is
+     * PAGE_VERSION; the dialog in the footer shows the list.
+     * @type {ReadonlyArray<ChangelogEntry>}
+     */
+    const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.001',
+        title: 'Better accuracy on the higher bands',
+        text: 'The model now lets a wire\'s loss fall with its length once '
+          + 'it is more than a tenth of a wavelength up, which the NEC '
+          + 'measurements had been asking for. The quoted accuracy tightens '
+          + 'to 1.16x at the median length and 1.49x at the ninetieth, and '
+          + 'the share of lengths offered at the defaults that turn out not '
+          + 'to match falls from 26 to 24 percent. 10 m and 20 m gain the '
+          + 'most; 160 m is unchanged.',
+      },
+      {
+        version: '2026.08.27.001',
+        title: 'Tables refit on converged NEC data',
+        text: 'Every impedance behind the tables was re-measured at twice and '
+          + 'four times the earlier segment density and extrapolated to the '
+          + 'converged answer, 922,706 NEC-4.2 runs in all. The tables '
+          + 'changed little; the accuracy caveat changed more, because the '
+          + 'old figures had been scored against biased data. The numbers '
+          + 'the page quotes are now the ones a user meets.',
+      },
+      {
+        version: '2026.08.20.001',
+        title: 'Standing waves along the wire, and SWR across a band',
+        text: 'Two openable panels under the length table. One draws where '
+          + 'the voltage and current maxima fall along the wire, per band or '
+          + 'for all bands at once; after a NEC-2 check it shows the measured '
+          + 'standing wave. The other plots SWR across the band you pick, '
+          + 'with the tuner limit drawn in. The published-length and '
+          + 'half-wave tables now fold away.',
+      },
+      {
+        version: '2026.08.19.001',
+        title: 'Insulated wire',
+        text: 'A Wire control, bare or insulated. A PVC jacket shortens every '
+          + 'resonance by about two percent, measured in NEC; the model, the '
+          + 'suggestions and the in-page check all carry it.',
+      },
+      {
+        version: '2026.08.17.001',
+        title: 'Check the length map against NEC-2 in the page',
+        text: 'One button runs a real NEC-2 (nec2c, compiled to WebAssembly) '
+          + 'over your antenna on the bands you picked and draws the measured '
+          + 'curve on the length map, refining where the peaks are sharp. The '
+          + 'length table gains a NEC-2 column and the verdict line says how '
+          + 'far the measurement sits from the model. Bands where NEC-2\'s '
+          + 'own ground treatment is unreliable are marked.',
+      },
+      {
+        version: '2026.08.16.001',
+        title: 'Readable, and reachable from the keyboard',
+        text: 'Dim greys lifted to where the contrast passes AA. The arrow '
+          + 'keys move within an option group, and each group is one tab '
+          + 'stop. The accuracy caveat is now quoted per length rather than '
+          + 'per group, which is the figure a user actually meets.',
+      },
+    ]);
 
     /**
      * Amateur band edges in kHz, per region.
@@ -3687,6 +3813,42 @@
       options[at].click();
     };
 
+    /**
+     * The version, and a dialog of what changed for the user.  A native
+     * dialog: Escape closes it, focus stays inside while it is open and
+     * returns to the button when it closes.
+     * @returns {JSX.Element}
+     */
+    function WhatsNew() {
+      const dialogRef = useRef(/** @type {?HTMLDialogElement} */ (null));
+      return (
+        <>
+          v{PAGE_VERSION},{' '}
+          <button type="button" className="link-button"
+                  onClick={() => dialogRef.current?.showModal()}>
+            what&apos;s new
+          </button>
+          <dialog ref={dialogRef} className="whats-new"
+                  aria-labelledby="whats-new-title">
+            <div className="panel-header" id="whats-new-title">What&apos;s new</div>
+            <ul className="changelog">
+              {CHANGELOG.map(entry => (
+                <li key={entry.version}>
+                  <div className="changelog-version">{entry.version}</div>
+                  <div className="changelog-title">{entry.title}</div>
+                  <div className="changelog-text">{entry.text}</div>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="btn btn-close"
+                    onClick={() => dialogRef.current?.close()}>
+              Close
+            </button>
+          </dialog>
+        </>
+      );
+    }
+
     function RandomWire() {
       const [p, setP] = useState(getUrlParams);
 
@@ -5143,8 +5305,9 @@
           <div className="footer">
             {'\u00A9'} 2026 Christopher Hoover.{' '}
             <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0-or-later</a>.{' '}
-            <a href="https://github.com/charlieh0tel/ham_radio">GitHub</a>.{' '}
-            <a href="https://github.com/charlieh0tel/ham_radio/issues">Bugs &amp; Feedback</a>
+            <WhatsNew />.{' '}
+            <a href="https://github.com/charlieh0tel/endfed">GitHub</a>.{' '}
+            <a href="https://github.com/charlieh0tel/endfed/issues">Bugs &amp; Feedback</a>
           </div>
         </div>
       );

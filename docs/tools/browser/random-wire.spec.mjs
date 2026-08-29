@@ -666,3 +666,25 @@ test.describe('the band sweep', () => {
     expect(after).not.toBe(before);
   });
 });
+
+test.describe("what's new", () => {
+  test('the footer names the version and opens a changelog the keyboard can close',
+       async ({ page }) => {
+    await open(page);
+    const footer = page.locator('.footer').last();
+    await expect(footer).toContainText(/v\d{4}\.\d{2}\.\d{2}\.\d{3}/);
+    const version = (await footer.textContent())?.match(/v(\d{4}\.\d{2}\.\d{2}\.\d{3})/)?.[1];
+    const dialog = page.locator('dialog.whats-new');
+    await expect(dialog).toBeHidden();
+    const button = footer.getByRole('button', { name: "what's new" });
+    await button.click();
+    await expect(dialog).toBeVisible();
+    // The newest entry is the version the footer shows.
+    await expect(dialog.locator('.changelog-version').first()).toHaveText(version ?? '');
+    await expect(dialog.locator('li')).not.toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    // Focus comes back to what opened it.
+    await expect(button).toBeFocused();
+  });
+});

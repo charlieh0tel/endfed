@@ -212,6 +212,13 @@ must pass before committing and before pushing.
 4. **Math verification**: Pay special attention to complex number
    operations, impedance conversions, wavelength / frequency conversions
    and band edge data.
+5. **Version and changelog**: a change a user would notice bumps
+   `PAGE_VERSION` in `random-wire.html` -- the release date and a counter
+   within it, `2026.08.28.001`, since master may deploy several times a
+   day -- and adds the first `CHANGELOG` entry in the same commit, written
+   for the user rather than as a commit message.  The footer's "what's
+   new" dialog is the user's changelog; a test holds the two together.
+   Internal changes bump nothing.
 
 ## Additional Guidelines
 
