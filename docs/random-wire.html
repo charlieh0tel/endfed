@@ -571,7 +571,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.001';
+    const PAGE_VERSION = '2026.08.28.002';
 
     /**
      * One release, as the user sees it.
@@ -587,6 +587,13 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.002',
+        title: 'Credit where it is due',
+        text: 'The footer credits AB3AP\'s method only when the classic '
+          + 'half-wave rule is selected; the modeled method credits its own '
+          + 'note. The version and this list are new too.',
+      },
       {
         version: '2026.08.28.001',
         title: 'Better accuracy on the higher bands',
@@ -5296,10 +5303,18 @@
               plans; national rules vary within a region, so check your own license
               conditions before trusting the edges.
             </p>
-            <p>
-              Method from Mike Markowski AB3AP,{' '}
-              <a href="http://udel.edu/~mm/ham/randomWire/">udel.edu/~mm/ham/randomWire/</a>.
-            </p>
+            {mode === 'classical' ? (
+              <p>
+                Method from Mike Markowski AB3AP,{' '}
+                <a href="http://udel.edu/~mm/ham/randomWire/">udel.edu/~mm/ham/randomWire/</a>.
+              </p>
+            ) : (
+              <p>
+                Method: a two-line transmission-line model with coefficients
+                fitted against NEC-4.2; see the{' '}
+                <a href={MODEL_NOTE_URL} target="_blank" rel="noopener">modeling note</a>.
+              </p>
+            )}
           </div>
 
           <div className="footer">
