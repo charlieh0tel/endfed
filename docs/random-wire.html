@@ -377,6 +377,8 @@
       vertical-align: middle;
     }
     .swatch-bold { border-top-width: 4px; }
+    /* The best-lengths cell of the solver the page follows for that length. */
+    .nec-followed { color: #fff; font-weight: 600; }
     .swatch-dashed { border-top-style: dashed; }
 
     /* Verdict */
@@ -582,7 +584,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.006';
+    const PAGE_VERSION = '2026.08.28.007';
 
     /**
      * One release, as the user sees it.
@@ -598,6 +600,16 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.007',
+        title: 'The check follows the solver measured to be right',
+        text: 'Both browser NEC-2s were scored against converged NEC-4.2 on '
+          + '4,104 of the page\'s own decks. nec2c holds on a short wire over '
+          + 'a counterpoise near the ground and nec2++ everywhere else, so '
+          + 'the measured line now follows whichever was right in that '
+          + 'regime, frequency by frequency, and the verdict quotes it. The '
+          + 'band still shows the other reading where they part.',
+      },
       {
         version: '2026.08.28.006',
         title: 'A readable table when the solvers part',
@@ -2889,6 +2901,48 @@
     const NEC_AGREE_FACTOR = 1.15;
 
     /**
+     * Which NEC-2 to believe, where, measured: 4,104 of the page's own probe
+     * decks across both geometries, heights, counterpoise heights, soils and
+     * three bands, each solver scored against NEC-4.2 converged by Richardson
+     * extrapolation (docs/MODEL.md, "Which solver to believe, where").
+     * nec2++ misreads a counterpoise within a few centimeters of the soil
+     * and nec2c invents a resonance past two half-waves, so the page follows
+     * nec2c only on a short wire over a low counterpoise and nec2++ everywhere
+     * else.  The rule scores x1.21 median / x1.86 at the 90th against x1.24 /
+     * x3.16 for nec2c alone and x1.23 / x1.90 for nec2++ alone.
+     */
+    const NEC_PREFER_NEC2C_MAX_Z_M = 0.05;
+    const NEC_PREFER_NEC2C_MAX_HALVES = 2;
+
+    /**
+     * The solver the page follows for one length at one frequency.
+     * @param {Site} site
+     * @param {Meters} lenM
+     * @param {Hertz} freqHz
+     * @returns {'nec2c' | 'necpp'}
+     */
+    const necPreferred = (site, lenM, freqHz) => {
+      const halves = 2 * lenM * freqHz / C_SPEED;
+      return site.counterpoiseZM <= NEC_PREFER_NEC2C_MAX_Z_M
+          && halves < NEC_PREFER_NEC2C_MAX_HALVES
+        ? 'nec2c' : 'necpp';
+    };
+
+    /**
+     * The impedances the page follows, frequency by frequency: nec2++'s
+     * where the rule prefers it and it solved, nec2c's otherwise.
+     * @param {Complex[]} nec2c
+     * @param {?Complex[]} necpp
+     * @param {Hertz[]} freqsHz
+     * @param {Site} site
+     * @param {Meters} lenM
+     * @returns {Complex[]}
+     */
+    const necFollowed = (nec2c, necpp, freqsHz, site, lenM) =>
+      nec2c.map((z, i) => (necpp !== null
+        && necPreferred(site, lenM, freqsHz[i]) === 'necpp' ? necpp[i] : z));
+
+    /**
      * Whether a measured point's two solvers agree, or only one answered.
      * @param {{swr: number, alt: ?number}} point
      * @returns {boolean}
@@ -3839,7 +3893,8 @@
     /**
      * @param {{solution: ReturnType<typeof solve>,
      *          score: ?ReturnType<typeof solveImpedance>,
-     *          necPoints: ?{lenM: Meters, swr: number, alt: ?number}[],
+     *          necPoints: ?{lenM: Meters, swr: number, alt: ?number,
+     *                        best: number}[],
      *          maxLenM: Meters, units: UnitKey,
      *          wireLenM: Meters, onPick: (lenM: Meters) => void}} props
      */
@@ -3899,8 +3954,8 @@
       // on top of it, two matching curves merged into one ambiguous one.
       /**
        * One SVG path through points, at a reading of each.
-       * @param {{lenM: Meters, swr: number, alt: ?number}[]} points
-       * @param {(point: {swr: number, alt: ?number}) => number} swrOf
+       * @param {{lenM: Meters, swr: number, alt: ?number, best: number}[]} points
+       * @param {(point: {swr: number, alt: ?number, best: number}) => number} swrOf
        */
       const pathThrough = (points, swrOf) => points
         .map((point, i) => `${i === 0 ? 'M' : 'L'} ${xOf(point.lenM).toFixed(2)} `
@@ -3908,11 +3963,11 @@
         .join(' ');
       const runs = (score === null || necPoints === null) ? null
         : necRuns(necPoints);
-      // The line, only where the two NEC-2 solvers agree.
-      const necPath = runs === null ? '' : runs.line
-        .filter(run => run.length >= 2)
-        .map(run => pathThrough(run, point => point.swr))
-        .join(' ');
+      // The line: the reading the page follows, solver by solver as the
+      // measured rule prefers.
+      const necPath = (runs === null || necPoints === null
+                       || necPoints.length < 2) ? ''
+        : pathThrough(necPoints, point => point.best);
       // Where they part, a band between them with two thin edges and no
       // line: the check's own uncertainty, drawn rather than asserted.
       // Out along the higher reading and back along the lower.
@@ -4054,7 +4109,10 @@
                 ? `${fmtLen(hoverM, units)} - SWR ${hoverScore.swr.toFixed(1)}:1 typical, `
                   + `worst ${hoverScore.worst.swr.toFixed(1)}:1 on ${hoverScore.worst.band.label}`
                   + (hoverNecNear && hoverNec !== null
-                    ? `, NEC-2 ${necSwrText(hoverNec.swr, hoverNec.alt)}` : '')
+                    ? `, NEC-2 ${fmtSwr(hoverNec.best)}:1`
+                      + (necAgrees(hoverNec) ? ''
+                        : ` (${necSwrText(hoverNec.swr, hoverNec.alt)})`)
+                    : '')
                 : `${fmtLen(hoverM, units)} - ${hoverHit ? `avoid: ${hoverHit.label}` : 'usable'}`}
           </div>
           <div className="map-legend">
@@ -4081,7 +4139,7 @@
               <>
                 <span><span className="swatch swatch-line swatch-bold"
                              style={{ borderColor: COLORS.nec }}></span>
-                  NEC-2 where nec2c and nec2++ agree</span>
+                  NEC-2, the solver the page follows here</span>
                 <span><span className="swatch swatch-line"
                              style={{ borderColor: COLORS.nec }}></span>
                   nec2c</span>
@@ -4343,15 +4401,20 @@
        * @typedef {Object} NecRun  one check, live or finished
        * @property {string} key       necOverlayKey at launch
        * @property {'running'|'done'|'error'} status
-       * @property {{lenM: Meters, swr: number, alt: ?number}[]} points
+       * @property {{lenM: Meters, swr: number, alt: ?number,
+       *             best: number}[]} points
        *           sorted by length; swr is nec2c's, alt nec2++'s when it
-       *           solved, and the map draws the band between them
+       *           solved, best the one the page follows frequency by
+       *           frequency (necPreferred); the map draws best as the line
+       *           and the band between the two where they part
        * @property {number} solved    lengths with a point on the map
        * @property {number} scheduled lengths handed to a worker
        * @property {number} total     lengths the grid holds
        * @property {{lenM: Meters, swr: number,
        *             worst: {swr: number, band: Band, freqHz: Hertz},
        *             alt: ?{swr: number,
+       *                    worst: {swr: number, band: Band, freqHz: Hertz}},
+       *             best: {swr: number,
        *                    worst: {swr: number, band: Band, freqHz: Hertz}},
        *             samples: {m: number, freqHz: Hertz, swr: number}[],
        *             profiles: Object<number,
@@ -4461,7 +4524,10 @@
             if (scored === null) return;
             const other = alternatesOf(data.alternates, measured.length);
             const alt = other === null ? null : measuredScore(other, grid, ununRatio);
-            const samples = measured.map((z, i) => ({
+            const followed = necFollowed(measured, other,
+                                         grid.map(g => g.freqHz), site, lenM);
+            const best = measuredScore(followed, grid, ununRatio) ?? scored;
+            const samples = followed.map((z, i) => ({
               m: grid[i].band.m, freqHz: grid[i].freqHz,
               swr: swrAtRadio(z, ununRatio),
             }));
@@ -4471,7 +4537,7 @@
                 && run.status === 'done'
               ? { ...run,
                   checks: [...run.checks, { lenM: data.lenM, ...scored, alt,
-                                            samples, profiles }] }
+                                            best, samples, profiles }] }
               : run));
           };
           const decks = grid.map(({ freqHz }) =>
@@ -4656,13 +4722,18 @@
             if (data.kind === 'coda') {
               const scored = measuredScore(measured, codaFreqs, ununRatio);
               if (scored !== null) {
-                const samples = measured.map((z, i) => ({
+                const followed = necFollowed(measured, other,
+                                             codaFreqs.map(g => g.freqHz),
+                                             site, data.lenM);
+                const best = measuredScore(followed, codaFreqs, ununRatio)
+                  ?? scored;
+                const samples = followed.map((z, i) => ({
                   m: codaFreqs[i].band.m, freqHz: codaFreqs[i].freqHz,
                   swr: swrAtRadio(z, ununRatio),
                 }));
                 const alt = other === null ? null
                   : measuredScore(other, codaFreqs, ununRatio);
-                checks.push({ lenM: data.lenM, ...scored, alt, samples,
+                checks.push({ lenM: data.lenM, ...scored, alt, best, samples,
                               profiles: bandProfiles(data.outputs,
                                                      codaFreqs) });
               }
@@ -4671,7 +4742,10 @@
               if (swr !== null) {
                 const alt = other === null ? null
                   : geometricMeanSwr(other, ununRatio);
-                results.push({ lenM: data.lenM, swr, alt });
+                const best = geometricMeanSwr(
+                  necFollowed(measured, other, freqs, site, data.lenM),
+                  ununRatio) ?? swr;
+                results.push({ lenM: data.lenM, swr, alt, best });
                 solved++;
               }
             }
@@ -5227,16 +5301,16 @@
                         + `${scoreHere.worst.swr.toFixed(1)}:1 on ${scoreHere.worst.band.label} `
                         + `at ${(scoreHere.worst.freqHz / 1e6).toFixed(3)} MHz.`
                         + (necHere !== null
-                          ? `  NEC-2 measures ${necSwrText(necHere.swr,
-                                necHere.alt === null ? null : necHere.alt.swr)}, `
-                            + `worst ${necSwrText(necHere.worst.swr,
-                                necHere.alt === null ? null : necHere.alt.worst.swr)} on `
-                            + `${necHere.worst.band.label}`
+                          ? `  NEC-2 measures ${fmtSwr(necHere.best.swr)}:1, `
+                            + `worst ${fmtSwr(necHere.best.worst.swr)}:1 on `
+                            + `${necHere.best.worst.band.label}`
                             + (necHere.alt !== null
                                && Math.max(necHere.swr / necHere.alt.swr,
                                            necHere.alt.swr / necHere.swr)
                                   > NEC_AGREE_FACTOR
-                              ? '; the two solvers disagree here.'
+                              ? ` (${necSwrText(necHere.swr, necHere.alt.swr)};`
+                                + ' the page follows the one measured better'
+                                + ' at this counterpoise height and length).'
                               : '.')
                           : necMeasuringM === wireLenM
                             ? '  NEC-2 is measuring this length.'
@@ -5343,10 +5417,10 @@
                         && ` Across this map nec2c reads x${necFactor.toFixed(1)} `
                            + 'the model\'s SWR at the median length.'}
                       {necSuspect.length === 0
-                        && ' Where the two solvers agree the overlay is a line'
-                           + ' and what parts it from the model is the model\'s'
-                           + ' error; where they disagree it is a band, and the'
-                           + ' check is unsure.'}
+                        && ' The line follows nec2c on a short wire over a low'
+                           + ' counterpoise and nec2++ elsewhere, which is how'
+                           + ' each was measured to hold; where they part the'
+                           + ' band shows the other reading.'}
                       {necRun.scheduled < necRun.total
                         && ` Stopped at ${necRun.solved} of `
                            + `${necRun.total} lengths.`}
@@ -5401,17 +5475,24 @@
                               </td>
                               <td>{point.worst.band.label}</td>
                               {necChecks.length > 0 && (
-                                <td>{(check =>
-                                  check === null ? ''
-                                    : `${fmtSwr(check.swr)} / ${fmtSwr(check.worst.swr)}:1`
-                                )(necCheckAt(point.lenM))}</td>
+                                <td className={(check => check !== null
+                                    && check.best.swr === check.swr
+                                    ? 'nec-followed' : '')(necCheckAt(point.lenM))}>
+                                  {(check =>
+                                    check === null ? ''
+                                      : `${fmtSwr(check.swr)} / ${fmtSwr(check.worst.swr)}:1`
+                                  )(necCheckAt(point.lenM))}</td>
                               )}
                               {necChecks.length > 0 && (
-                                <td>{(check =>
-                                  check === null || check.alt === null ? ''
-                                    : `${fmtSwr(check.alt.swr)} / `
-                                      + `${fmtSwr(check.alt.worst.swr)}:1`
-                                )(necCheckAt(point.lenM))}</td>
+                                <td className={(check => check !== null
+                                    && check.alt !== null
+                                    && check.best.swr !== check.swr
+                                    ? 'nec-followed' : '')(necCheckAt(point.lenM))}>
+                                  {(check =>
+                                    check === null || check.alt === null ? ''
+                                      : `${fmtSwr(check.alt.swr)} / `
+                                        + `${fmtSwr(check.alt.worst.swr)}:1`
+                                  )(necCheckAt(point.lenM))}</td>
                               )}
                             </tr>
                           ))}

@@ -11,11 +11,12 @@ nec2c and nec2++ in the page.
 
 - [ ] **The check measures at one density.**  Its probe decks are
       segmented as the fit was, and every solver at that density
-      carries the bias the density study measured -- even NEC-4.2 reads
-      |Z| x1.85 high at a half wave on the page's own decks, which the
-      49:1 hides in SWR.  Densifying costs the 7-14x per solve the
-      campaign paid.  Decide whether to say so in the status line, or
-      to offer a slower converged check on request.
+      carries the bias the density study measured: the solver ranking
+      puts NEC-4.2 itself at x1.16 median / x1.79 at the 90th from the
+      same deck, and the browser solvers, where they agree, at x1.17 /
+      x1.90 -- the floor, not the solvers.  Densifying costs the 7-14x
+      per solve the campaign paid.  Decide whether to say so in the
+      status line, or to offer a slower converged check on request.
 
 ## The model
 

@@ -1636,6 +1636,24 @@ test('a measured SWR reads as one figure when the solvers agree and a range when
   assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
 });
 
+test('the check follows nec2c only on a short wire over a low counterpoise', () => {
+  const low = m.withSiteInvariants({ geometry: 'flatTop', heightM: 9.144,
+    counterpoiseM: 7.62, counterpoiseZM: 0.05, balunM: 0.61,
+    soil: m.DEFAULT_SOIL, wire: 'bare' });
+  const high = { ...low, counterpoiseZM: 0.3 };
+  const lam = m.C_SPEED / 7.15e6;
+  assert.equal(m.necPreferred(low, 0.75 * lam, 7.15e6), 'nec2c', 'low and short');
+  assert.equal(m.necPreferred(low, 1.25 * lam, 7.15e6), 'necpp', 'low but past two half-waves');
+  assert.equal(m.necPreferred(high, 0.75 * lam, 7.15e6), 'necpp', 'a raised counterpoise');
+  // Frequency by frequency: the same wire is short on 40 m and long on 10 m.
+  const zs = [{ re: 100, im: 0 }, { re: 200, im: 0 }];
+  const alt = [{ re: 1000, im: 0 }, { re: 2000, im: 0 }];
+  const mixed = m.necFollowed(zs, alt, [7.15e6, 28.85e6], low, 0.75 * lam);
+  assert.deepEqual(mixed, [zs[0], alt[1]], 'nec2c on 40 m, nec2++ on 10 m');
+  assert.deepEqual(m.necFollowed(zs, null, [7.15e6, 28.85e6], low, 0.75 * lam), zs,
+    'nec2c throughout when nec2++ did not solve');
+});
+
 test('the measured curve splits into runs of agreement and runs of doubt', () => {
   const a = (swr) => ({ lenM: 0, swr, alt: swr * 1.05 });   // agree
   const d = (swr) => ({ lenM: 0, swr, alt: swr * 2 });      // disagree

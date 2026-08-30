@@ -1808,6 +1808,67 @@ Eigen putting its matrices on a WebAssembly stack -- which would have
 sent every long wire on a high band to nec2c alone; 0.2.2 fixed that
 and solves the page's largest decks, 233 segments, in about 120 ms.
 
+### Which solver to believe, where
+
+The band says the check is unsure; this measures which side of it to
+stand on.  `nec/solver_ranking_decks.mjs` generates 4,104 of the page's
+own probe decks -- flat top at 3, 9.1 and 20 m with the counterpoise at
+1, 5, 30 and 100 cm, sloper apexes at 10 and 20 m with it at 5 and 30
+cm, three soils, 40, 20 and 10 m, thirty lengths from 3 to 66 m -- and
+solves each with nec2c and nec2++ exactly as the check does.
+`nec/solver_ranking.py` adds NEC-4.2 at 1x, 2x and 4x the deck's
+segmentation and NEC-5 at 1x, takes the (2x, 4x) Richardson pair as the
+converged answer, and scores every solver's SWR at the radio against it
+through the page's 9:1 and 49:1.  The error factor is exp|ln(swr /
+swr_converged)|, median and 90th percentile:
+
+| regime | n | nec2c | nec2++ | NEC-4.2 at 1x | NEC-5 at 1x |
+|---|---|---|---|---|---|
+| everything | 8208 | x1.24 / x3.16 | x1.23 / x1.90 | x1.16 / x1.79 | x1.32 / x2.72 |
+| flat top | 6480 | x1.22 / x2.71 | x1.22 / x1.85 | x1.16 / x1.77 | x1.32 / x2.69 |
+| sloper | 1728 | x1.38 / x12.6 | x1.27 / x2.03 | x1.17 / x1.85 | x1.29 / x2.84 |
+| under 1 half-wave | 1152 | x1.10 / x1.67 | x1.20 / x1.85 | x1.10 / x1.67 | x1.16 / x2.18 |
+| 1 to 2 half-waves | 1440 | x1.17 / x1.92 | x1.23 / x2.03 | x1.18 / x1.92 | x1.33 / x3.11 |
+| 2 to 3 half-waves | 1608 | x1.36 / x10.5 | x1.23 / x2.02 | x1.18 / x1.96 | x1.31 / x2.90 |
+| past 3 half-waves | 4008 | x1.31 / x4.06 | x1.24 / x1.83 | x1.17 / x1.73 | x1.38 / x2.64 |
+| flat, z 5 cm, under 1 half-wave | 270 | x1.09 / x1.50 | x1.29 / x1.67 | x1.10 / x1.51 | x1.15 / x2.03 |
+| flat, z 5 cm, 2 to 3 half-waves | 306 | x1.34 / x11.7 | x1.24 / x1.83 | x1.15 / x1.92 | x1.27 / x2.95 |
+| flat, z 30 cm, past 3 half-waves | 756 | x1.28 / x2.99 | x1.15 / x1.60 | x1.18 / x1.63 | x1.39 / x2.78 |
+| sloper, z 5 cm, past 3 half-waves | 492 | x1.57 / x358056 | x1.39 / x2.10 | x1.19 / x1.77 | x1.39 / x2.42 |
+
+Four things.  NEC-4.2 at the check's own segmentation is the floor:
+x1.16 median is the density bias measured under "The density study",
+and no browser solver can do better than that from the same deck.
+nec2++ sits just above the floor everywhere and never falls off it;
+its 90th is x1.90 against nec2c's x3.16, and nec2c's tail past two
+half-waves is not a tail but a cliff, x10 at the 90th and six figures
+at the worst where its reflection pins at the cap.  Below two
+half-waves the ranking reverses: over a counterpoise within 5 cm of
+the soil nec2c is the floor itself, x1.09 to x1.18, where nec2++ reads
+x1.29 to x1.35 -- the low-counterpoise misread measured earlier, now
+placed.  And NEC-5 at the fitting density is the worst solver on this
+table, x1.32 / x2.72, though converged it agrees with NEC-4.2 within
+x1.03: whatever NEC-5 does differently, it converges from further away.
+
+Agreement is a real signal.  Where the two browser solvers agree
+within 1.15 in SWR -- 51 percent of points -- each reads x1.17 /
+x1.90, which is the density floor; where they part, nec2c reads x1.40
+/ x12.8 and nec2++ x1.29 / x1.91.  So the line is as good as the deck
+allows and the band is where one solver, usually nec2c, has failed.
+
+The rule the page follows is two constants: nec2c on a wire under two
+half-waves over a counterpoise within 5 cm of the soil, nec2++
+everywhere else, chosen frequency by frequency since the same wire is
+short on 40 m and long on 10 m.  It scores x1.21 / x1.86 / x2.78 at
+the median, 90th and 99th against x1.24 / x3.16 / x688641 for nec2c
+alone and x1.23 / x1.90 / x2.82 for nec2++ alone; an oracle picking
+the better solver at every point would reach x1.14 / x1.70 / x2.52,
+so the rule takes most of what is there to take.  Averaging the two
+geometrically is worse than either where they part (x3.88 at the 90th),
+because nec2c's failures are not noise to average out.  The measured
+line now follows the rule, the verdict quotes it, and the band still
+shows the other reading where they part.
+
 ## NEC-5 arrives: the ground stands, the density does not
 
 NEC-5 (`nec5cl`) passed the conductivity limit on arrival, matching
