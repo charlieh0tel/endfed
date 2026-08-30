@@ -64,6 +64,14 @@ COEFFICIENT_TOLERANCE = 0.15
 #: The cost is the invariant: two points in a flat valley have the same one.
 COST_TOLERANCE = 1e-6
 
+#: A node no group lands nearest is compared not at all.  Such a node can
+#: still be brushed by a group's interpolation weight and so be refined, and
+#: along that nearly flat direction two machines landed 20 percent apart with
+#: the cost agreeing to nine figures; it is then filled from a neighbour and
+#: carries nothing of its own.  The fixture is a 24-group cut, so this is
+#: the loosest threshold that leaves cells to compare.
+MIN_SUPPORT = 1
+
 
 def run():
     """The shipped pipeline, over the fixture."""
@@ -84,6 +92,7 @@ def run():
         "held": [run["held"] for run in runs],
         "cost": [run["cost"] for run in runs],
         "filled": len(filled),
+        "support": counts.tolist(),
         "table": table.tolist(),
         "error": error_block(factors, magnitude, phase),
     }
@@ -111,13 +120,17 @@ def differences(got, want):
                 )
 
     compare_errors(got["error"], want["error"])
+    if got["support"] != want["support"]:
+        out.append("support: the groups land on different nodes")
     a, b = np.array(got["table"]), np.array(want["table"])
     if a.shape != b.shape:
         out.append(f"table shape: {a.shape}, expected {b.shape}")
         return out
-    worst = np.abs(a - b).max()
+    # Only where the data constrains the cell; see MIN_SUPPORT.
+    gap = np.abs(a - b) * (np.array(want["support"])[..., np.newaxis] >= MIN_SUPPORT)
+    worst = gap.max()
     if worst > COEFFICIENT_TOLERANCE:
-        si, hi, zi, pi = np.unravel_index(np.abs(a - b).argmax(), a.shape)
+        si, hi, zi, pi = np.unravel_index(gap.argmax(), a.shape)
         out.append(
             f"table: largest difference {worst:.3e} at soil {si}, "
             f"h node {NODES[hi]:g}, z node {Z_NODES[zi]:g}, {TABLE_PARAMS[pi]} "
