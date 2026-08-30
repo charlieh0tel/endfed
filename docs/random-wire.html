@@ -538,6 +538,7 @@
     .changelog-version { font-size: 11px; color: #949494; }
     .changelog-title { font-weight: 600; color: #fff; margin: 2px 0; }
     .changelog-text { color: #c8c8c8; line-height: 1.5; }
+    .changelog-text p { margin: 0 0 10px; }
     .btn-close {
       padding: 6px 12px;
       background: #2a2a2a;
@@ -584,7 +585,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.009';
+    const PAGE_VERSION = '2026.08.28.010';
 
     /**
      * One release, as the user sees it.
@@ -600,6 +601,14 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.010',
+        title: 'How the modeled method works',
+        text: 'A "How it works" link under the Modeled method opens a short '
+          + 'account of the model: two transmission lines in series, '
+          + 'coefficients fitted against 922,706 NEC-4.2 simulations, what '
+          + 'accuracy that buys, and where it falls short.',
+      },
       {
         version: '2026.08.28.009',
         title: 'The check says what its own segmentation costs',
@@ -1388,6 +1397,17 @@
      */
     const MODEL_TYPICAL_FACTOR = 1.16;
     const MODEL_BOUND_FACTOR = 1.49;
+
+    /**
+     * What the tables stand on, quoted in the "how it works" dialog: the
+     * NEC-4.2 solves behind the fit (both geometries at twice and four
+     * times the working segment density, Richardson-extrapolated to the
+     * converged answer, with the third and fourth rungs where the pair
+     * disagreed) and the fresh solves the tables were then scored against
+     * out of sample.  Both counts are in docs/MODEL.md.
+     */
+    const MODEL_NEC_RUNS = 922706;
+    const MODEL_HOLDOUT_RUNS = 19008;
 
     /** Keeps a perfectly reflecting load from producing an infinite SWR. */
     const MAX_GAMMA = 0.999999;
@@ -4224,6 +4244,68 @@
      * returns to the button when it closes.
      * @returns {JSX.Element}
      */
+    /**
+     * How the modeled method works, in a dialog: what it computes, what it
+     * was fitted to, and how far to trust it.  Native dialog, as the
+     * changelog's.
+     * @returns {JSX.Element}
+     */
+    function HowItWorks() {
+      const dialogRef = useRef(/** @type {?HTMLDialogElement} */ (null));
+      return (
+        <>
+          {' '}
+          <button type="button" className="link-button"
+                  onClick={() => dialogRef.current?.showModal()}>
+            How it works
+          </button>
+          <dialog ref={dialogRef} className="whats-new"
+                  aria-labelledby="how-it-works-title">
+            <div className="panel-header" id="how-it-works-title">
+              How the modeled method works
+            </div>
+            <div className="changelog-text">
+              <p>
+                An end-fed wire is treated as two open-ended transmission
+                lines in series, the antenna wire and the return path (drop
+                plus counterpoise), each with a characteristic impedance from
+                its length and gauge, a loss and a phase velocity. Their sum
+                is the feedpoint impedance; through the unun it is SWR at the
+                radio, and lengths are ranked by its geometric mean across
+                the bands you picked.
+              </p>
+              <p>
+                The loss and velocity coefficients are fitted against NEC-4.2
+                and tabulated over wire height and counterpoise height in
+                wavelengths, per soil and geometry, from{' '}
+                {MODEL_NEC_RUNS.toLocaleString('en-US')} NEC-4.2 simulations:
+                every geometry solved at twice and four times the working
+                segment density and extrapolated to the converged answer.
+              </p>
+              <p>
+                The modeled impedance is within {MODEL_TYPICAL_FACTOR}x of NEC
+                for half the lengths offered and {MODEL_BOUND_FACTOR}x for
+                nine in ten; about one offered length in four at the defaults
+                would not match through the tuner. Another{' '}
+                {MODEL_HOLDOUT_RUNS.toLocaleString('en-US')} solves at
+                geometries the fit never saw read the same to within a few
+                percent. The first half-wave peak reads about twice high, so
+                an end-fed half wave through a 49:1 is the case served worst,
+                and no installation&apos;s ground, sag or common-mode current
+                is predicted. The{' '}
+                <a href={MODEL_NOTE_URL} target="_blank"
+                   rel="noopener">modeling note</a> has every measurement.
+              </p>
+            </div>
+            <button type="button" className="btn btn-close"
+                    onClick={() => dialogRef.current?.close()}>
+              Close
+            </button>
+          </dialog>
+        </>
+      );
+    }
+
     function WhatsNew() {
       const dialogRef = useRef(/** @type {?HTMLDialogElement} */ (null));
       return (
@@ -4952,7 +5034,10 @@
                     </button>
                   ))}
                 </div>
-                <div className="control-hint">{MODES[mode].note}</div>
+                <div className="control-hint">
+                  {MODES[mode].note}
+                  {mode === 'impedance' && <HowItWorks />}
+                </div>
               </div>
 
               <div className="panel">

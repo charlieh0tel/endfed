@@ -678,7 +678,7 @@ test.describe("what's new", () => {
     const footer = page.locator('.footer').last();
     await expect(footer).toContainText(/v\d{4}\.\d{2}\.\d{2}\.\d{3}/);
     const version = (await footer.textContent())?.match(/v(\d{4}\.\d{2}\.\d{2}\.\d{3})/)?.[1];
-    const dialog = page.locator('dialog.whats-new');
+    const dialog = page.locator('dialog[aria-labelledby="whats-new-title"]');
     await expect(dialog).toBeHidden();
     const button = footer.getByRole('button', { name: "what's new" });
     await button.click();
@@ -689,6 +689,24 @@ test.describe("what's new", () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     // Focus comes back to what opened it.
+    await expect(button).toBeFocused();
+  });
+});
+
+test.describe('how it works', () => {
+  test('the modeled method explains itself in a dialog the keyboard can close',
+       async ({ page }) => {
+    await open(page, '?mode=classical');
+    await expect(page.getByRole('button', { name: 'How it works' })).toHaveCount(0);
+    await open(page, '?mode=impedance');
+    const button = page.getByRole('button', { name: 'How it works' });
+    await expect(button).toBeVisible();
+    await button.click();
+    const dialog = page.locator('dialog[aria-labelledby="how-it-works-title"]');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText(/922,706 NEC-4.2 simulations/);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
     await expect(button).toBeFocused();
   });
 });
