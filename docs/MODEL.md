@@ -1867,7 +1867,11 @@ so the rule takes most of what is there to take.  Averaging the two
 geometrically is worse than either where they part (x3.88 at the 90th),
 because nec2c's failures are not noise to average out.  The measured
 line now follows the rule, the verdict quotes it, and the band still
-shows the other reading where they part.
+shows the other reading where they part.  And the check's status
+line says what its segmentation costs: about x1.2 from a converged
+answer for any solver, so the overlay is read as a measurement at one
+density.  A converged check -- 2x and 4x, extrapolated -- would cost
+7-14x the solve time and is not offered.
 
 ## NEC-5 arrives: the ground stands, the density does not
 

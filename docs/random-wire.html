@@ -584,7 +584,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.008';
+    const PAGE_VERSION = '2026.08.28.009';
 
     /**
      * One release, as the user sees it.
@@ -600,6 +600,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.009',
+        title: 'The check says what its own segmentation costs',
+        text: 'The NEC-2 check solves at the segmentation the tables were '
+          + 'fitted at, and that alone sits about 1.2x from a converged '
+          + 'answer -- for any solver, NEC-4.2 included. The status line '
+          + 'now says so, so the overlay reads as a measurement at one '
+          + 'density rather than as the truth.',
+      },
       {
         version: '2026.08.28.008',
         title: 'The model line stays visible under a NEC-2 check',
@@ -2921,6 +2930,16 @@
      */
     const NEC_PREFER_NEC2C_MAX_Z_M = 0.05;
     const NEC_PREFER_NEC2C_MAX_HALVES = 2;
+
+    /**
+     * What the check's own segmentation costs: its probe decks are cut as
+     * the tables were fitted, and from such a deck even NEC-4.2 reads this
+     * far, at the median, from its converged answer (the solver ranking in
+     * docs/MODEL.md: x1.16, and the browser solvers where they agree sit on
+     * the same floor).  Quoted so a user reads the overlay as a measurement
+     * at one density rather than as the limit.
+     */
+    const NEC_CHECK_DENSITY_FACTOR = 1.2;
 
     /**
      * The solver the page follows for one length at one frequency.
@@ -5435,6 +5454,10 @@
                            + ' counterpoise and nec2++ elsewhere, which is how'
                            + ' each was measured to hold; where they part the'
                            + ' band shows the other reading.'}
+                      {` Both solve at the segmentation the tables were fitted`
+                        + ` at, which sits about x${NEC_CHECK_DENSITY_FACTOR}`
+                        + ' from a converged answer on its own, so the overlay'
+                        + ' is a measurement at one density, not the limit.'}
                       {necRun.scheduled < necRun.total
                         && ` Stopped at ${necRun.solved} of `
                            + `${necRun.total} lengths.`}
