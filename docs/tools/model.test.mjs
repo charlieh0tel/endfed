@@ -1597,6 +1597,41 @@ test('standing-wave maxima sit where an open-ended wire puts them', () => {
     'the jacket scales the spacing');
 });
 
+test('a probe deck reads back as the same model for nec2++', () => {
+  const site = m.withSiteInvariants({ geometry: 'flatTop', heightM: 9.144,
+    counterpoiseM: 7.62, counterpoiseZM: 0.05, balunM: 0.61,
+    soil: m.DEFAULT_SOIL, wire: 'bare' });
+  const deck = m.buildProbeDeck(20, 7.15e6, site, m.WIRE_RADIUS_M);
+  const model = m.deckModel(deck);
+  const gw = deck.split('\n').filter(line => line.startsWith('GW'));
+  assert.equal(model.wires.length, gw.length, 'every wire');
+  assert.equal(model.wires[0].tag, 1, 'the antenna wire is tag 1');
+  assert.ok(model.wires.every(w => w.segments > 0 && w.radiusM > 0), 'segments and radius');
+  assert.equal(model.ground.epsR, m.SOILS[site.soil].epsR, 'the soil');
+  assert.equal(model.ground.sigmaSm, m.SOILS[site.soil].sigmaSm, 'and its conductivity');
+  assert.equal(model.groundConnected, true, 'GE 1');
+  assert.deepEqual(model.sources, [{ kind: 'voltage', tag: 1, segment: 1,
+    volts: { re: 1, im: 0 } }], 'the feed');
+  close(model.freqMhz, 7.15, 1e-9, 'the frequency');
+  assert.equal(model.loads.length, 0, 'a bare wire carries no load');
+  const jacketed = m.deckModel(m.buildProbeDeck(20, 7.15e6,
+    { ...site, wire: 'insulated' }, m.WIRE_RADIUS_M));
+  assert.equal(jacketed.loads.length, gw.length, 'a jacket loads every wire');
+  assert.ok(jacketed.loads.every(l => l.kind === 'series' && l.inductanceH > 0),
+    'as series inductance');
+  // A deck the reader does not understand is an error, not a guess.
+  assert.throws(() => m.deckModel(deck.replace(/^FR 0 1 /m, 'FR 0 3 ')),
+    /sweeps 3 frequencies/);
+});
+
+test('a measured SWR reads as one figure when the solvers agree and a range when not', () => {
+  assert.equal(m.necSwrText(2.5, null), '2.5:1', 'one solver');
+  assert.equal(m.necSwrText(2.5, 2.6), '2.5:1', 'agreement');
+  assert.equal(m.necSwrText(3.77, 1.84), '1.8-3.8:1', 'a range, low first');
+  assert.equal(m.necSwrText(1.84, 3.77), '1.8-3.8:1', 'whichever solver is high');
+  assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
+});
+
 test('a probe deck prints charges only when asked', () => {
   const site = defaultSite();
   const lenM = m.fromDisplay(71, 'ft');

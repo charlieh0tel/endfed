@@ -617,6 +617,9 @@ test.describe('the NEC check refines', () => {
       // The coda measured the offered lengths: the table grew a NEC-2
       // column and the verdict speaks in measured terms.
       await expect(page.locator('th', { hasText: 'NEC-2' })).toHaveCount(1);
+      // Both solvers ran: with the counterpoise on the ground they part past
+      // two half-waves, and the overlay carries the band between them.
+      await expect(page.locator('svg.map-svg .nec-band')).toHaveCount(1);
       await expect(page.locator('.verdict-detail'))
         .toContainText('NEC-2 measures');
       // And the run follows the wire: a fresh length the run never solved

@@ -1649,7 +1649,8 @@ above.  In this geometry NEC-2 is fine and **nec2++ is the outlier** --
 
 It also reopens the in-browser check, which was declared blocked on the
 grounds that nec2c-wasm would be about 30 percent off in exactly this
-configuration.  It would not be.  See TODO.md.
+configuration.  It would not be, and the check now ships; see "The
+check runs both, and draws where they part".
 
 The exported deck needs no variant per solver: it is plain NEC-2 cards
 and NEC-4 reads them, so one file serves all three.  What differs is
@@ -1754,6 +1755,58 @@ alone, so its overlay near and past half-wave peaks at a low
 counterpoise can read several times high -- some of what the overlay
 paints as model error there is the checker.  The model's own error
 figures are unaffected: they are measured against NEC-4.2 directly.
+
+### The check runs both, and draws where they part
+
+Seen live before it was measured: at the page's defaults on 40 m --
+30 ft up, 25 ft of counterpoise on the ground, average soil, 49:1 --
+the single-solver overlay left the 15:1 chart near 185 ft and called
+207 ft a 3.5:1 length where the model said 1.8:1.  The page's own probe
+decks, at the check's own segmentation, through every solver to hand
+at 7.15 MHz, |Z| and SWR through the 49:1; the first column is the
+converged answer, NEC-4.2 Richardson-extrapolated from 2x and 4x that
+segmentation, and the rest are what each solver reads from the deck as
+the check writes it:
+
+| length | converged | NEC-4.2 | NEC-5 | nec2c | nec2++ |
+|---|---|---|---|---|---|
+| 69 ft | 3281, 2.78 | 6085, 2.70 | 6384, 2.61 | 6095, 2.70 | 5438, 2.42 |
+| 138 ft | 2810, 2.21 | 5372, 2.33 | 6055, 2.47 | 7367, 3.53 | 4754, 2.06 |
+| 172 ft | 1649, 4.17 | 1919, 3.10 | 3544, 1.45 | 1210, 3.64 | 1340, 3.82 |
+| 180 ft | 1996, 4.14 | 2135, 3.30 | 3743, 1.56 | 803, 3.50 | 1550, 3.95 |
+| 185.7 ft | 2343, 4.02 | 2358, 3.36 | 3932, 1.62 | 723, 3.56 | 1754, 3.91 |
+| 193 ft | 3147, 3.58 | 2760, 3.44 | 4249, 1.78 | 677, 3.70 | 2140, 3.78 |
+| 207 ft | 2578, 1.90 | 4855, 2.09 | 5795, 2.37 | 658, 3.77 | 4293, 1.84 |
+
+Three things in that table.  nec2c is exact at the half wave and falls
+away past two half-waves, to a seventh of NEC-4.2 by 207 ft, where
+nec2++ sits within 10 percent of the converged SWR; the verdict the
+overlay had given was the checker's error, not the model's, which reads
+1.8:1 against a converged 1.9.  The suspect-band gate keys on the
+feedpoint's height, 0.22 wavelengths here, and could not fire.  And
+every solver at the check's segmentation carries the density bias the
+density study measured -- even NEC-4.2 reads |Z| x1.85 high at the
+half wave, which the 49:1 hides in SWR -- so the overlay is a
+measurement at one density, not the limit; NEC-5 at that density is
+the furthest off between 172 and 193 ft, though it agrees with NEC-4.2
+within x1.03 once both are converged.  Densifying the check's decks
+would cost the 7-14x per solve the campaign paid and is not offered.
+
+So the check now runs both.  The worker hands each probe deck to nec2c
+as text and, read back into nec2++'s API by `deckModel` -- the same
+wires, ground, jacket loads, source and frequency -- to nec2++, which
+answers with numbers.  Where the two agree within `NEC_AGREE_FACTOR`
+(1.15 in SWR) the overlay is the line it was; where they part it is a
+band between them, the verdict and the table read as a range, and the
+status line says the check is unsure rather than that the model is
+wrong.  nec2++ solves a deck in the time nec2c does, about 40 ms, so a
+run costs twice what it did.  The standing-wave profiles stay nec2c's,
+which is the one that prints them.  Should nec2++ fail to load, the
+check runs on nec2c alone and draws no band, which is its way of saying
+so.  necpp-wasm 0.2.1 trapped on memory above about 140 segments --
+Eigen putting its matrices on a WebAssembly stack -- which would have
+sent every long wire on a high band to nec2c alone; 0.2.2 fixed that
+and solves the page's largest decks, 233 segments, in about 120 ms.
 
 ## NEC-5 arrives: the ground stands, the density does not
 
