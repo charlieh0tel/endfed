@@ -1629,6 +1629,10 @@ test('a measured SWR reads as one figure when the solvers agree and a range when
   assert.equal(m.necSwrText(2.5, 2.6), '2.5:1', 'agreement');
   assert.equal(m.necSwrText(3.77, 1.84), 'nec2c 3.8:1 / nec2++ 1.8:1',
     'each solver named when they part');
+  assert.equal(m.necSwrText(1999999, 3.9), 'nec2c >99:1 / nec2++ 3.9:1',
+    'a solver that has gone wrong reads as >99, not seven digits');
+  assert.equal(m.fmtSwr(98.96), '99.0');
+  assert.equal(m.fmtSwr(99.5), '>99');
   assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
 });
 

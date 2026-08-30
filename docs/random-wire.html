@@ -582,7 +582,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.005';
+    const PAGE_VERSION = '2026.08.28.006';
 
     /**
      * One release, as the user sees it.
@@ -598,6 +598,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.006',
+        title: 'A readable table when the solvers part',
+        text: 'The best-lengths table gives each NEC-2 solver its own '
+          + 'column, and an SWR past 99 reads as ">99" instead of a '
+          + 'seven-digit number. Where the feedpoint is too low for nec2c, '
+          + 'the warning now says the dashed nec2++ edge is the one to '
+          + 'read.',
+      },
       {
         version: '2026.08.28.005',
         title: 'Which solver said what',
@@ -2928,17 +2937,31 @@
     };
 
     /**
+     * An SWR beyond this reads as ">99": a solver that has gone wrong
+     * returns a reflection at MAX_GAMMA, and 1999999:1 is not a number a
+     * user should have to read.
+     */
+    const SWR_SHOWN_MAX = 99;
+
+    /**
+     * An SWR as the page prints it.
+     * @param {number} swr
+     * @returns {string}
+     */
+    const fmtSwr = (swr) => (swr > SWR_SHOWN_MAX ? `>${SWR_SHOWN_MAX}` : swr.toFixed(1));
+
+    /**
      * A measured SWR as text: one figure when the solvers agree or only one
-     * answered, a range when they part.
+     * answered, each solver named when they part.
      * @param {number} swr    nec2c's
      * @param {?number} alt   nec2++'s, when it solved
      * @returns {string}
      */
     const necSwrText = (swr, alt) => {
       if (alt === null || Math.max(swr / alt, alt / swr) <= NEC_AGREE_FACTOR) {
-        return `${swr.toFixed(1)}:1`;
+        return `${fmtSwr(swr)}:1`;
       }
-      return `nec2c ${swr.toFixed(1)}:1 / nec2++ ${alt.toFixed(1)}:1`;
+      return `nec2c ${fmtSwr(swr)}:1 / nec2++ ${fmtSwr(alt)}:1`;
     };
 
     /** Common grid the measured standing-wave profiles resample onto. */
@@ -5266,9 +5289,10 @@
                 <div className="control-hint deck-warning">
                   The feedpoint sits under{' '}
                   {NEC2_FEED_MIN_LAMBDA} wavelengths on{' '}
-                  {necSuspect.map(b => b.label).join(', ')}, where NEC-2&apos;s
-                  own ground treatment goes wrong: there a check measures the
-                  solver rather than the model.
+                  {necSuspect.map(b => b.label).join(', ')}, where nec2c&apos;s
+                  ground treatment goes wrong and nec2++&apos;s holds: there
+                  the dashed edge is the measurement and the solid one is the
+                  solver failing.
                   {score !== null && necSuspect.length < score.bands.length
                     && ' Deselect those bands to check the rest.'}
                   {' '}See the{' '}
@@ -5357,7 +5381,8 @@
                         <thead>
                           <tr>
                             <th>Length</th><th>Typical SWR</th><th>Worst</th><th>On</th>
-                            {necChecks.length > 0 && <th>NEC-2 typ / worst</th>}
+                            {necChecks.length > 0 && <th>nec2c typ / worst</th>}
+                            {necChecks.length > 0 && <th>nec2++ typ / worst</th>}
                           </tr>
                         </thead>
                         <tbody>
@@ -5378,11 +5403,14 @@
                               {necChecks.length > 0 && (
                                 <td>{(check =>
                                   check === null ? ''
-                                    : `${necSwrText(check.swr,
-                                        check.alt === null ? null : check.alt.swr)}`
-                                      + ` / ${necSwrText(check.worst.swr,
-                                          check.alt === null ? null
-                                            : check.alt.worst.swr)}`
+                                    : `${fmtSwr(check.swr)} / ${fmtSwr(check.worst.swr)}:1`
+                                )(necCheckAt(point.lenM))}</td>
+                              )}
+                              {necChecks.length > 0 && (
+                                <td>{(check =>
+                                  check === null || check.alt === null ? ''
+                                    : `${fmtSwr(check.alt.swr)} / `
+                                      + `${fmtSwr(check.alt.worst.swr)}:1`
                                 )(necCheckAt(point.lenM))}</td>
                               )}
                             </tr>
