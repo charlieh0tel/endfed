@@ -1632,6 +1632,22 @@ test('a measured SWR reads as one figure when the solvers agree and a range when
   assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
 });
 
+test('the measured curve splits into runs of agreement and runs of doubt', () => {
+  const a = (swr) => ({ lenM: 0, swr, alt: swr * 1.05 });   // agree
+  const d = (swr) => ({ lenM: 0, swr, alt: swr * 2 });      // disagree
+  const lone = { lenM: 0, swr: 2, alt: null };               // one solver
+  assert.ok(m.necAgrees(a(2)) && !m.necAgrees(d(2)) && m.necAgrees(lone));
+  const points = [a(1), a(2), d(3), d(4), a(5), a(6), d(7)];
+  const runs = m.necRuns(points);
+  assert.deepEqual(runs.line.map(r => r.map(p => p.swr)), [[1, 2], [5, 6]],
+    'the line covers the agreeing stretches');
+  assert.deepEqual(runs.split.map(r => r.map(p => p.swr)), [[2, 3, 4, 5], [6, 7]],
+    'a split run keeps an agreeing neighbour at each end so its edges meet the line');
+  assert.deepEqual(m.necRuns([a(1), a(2)]).split, [], 'agreement all the way: no band');
+  assert.deepEqual(m.necRuns([d(1), d(2)]).line, [], 'doubt all the way: no line');
+  assert.deepEqual(m.necRuns([]), { line: [], split: [] }, 'nothing measured');
+});
+
 test('a probe deck prints charges only when asked', () => {
   const site = defaultSite();
   const lenM = m.fromDisplay(71, 'ft');

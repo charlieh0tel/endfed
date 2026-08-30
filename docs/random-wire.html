@@ -571,7 +571,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.003';
+    const PAGE_VERSION = '2026.08.28.004';
 
     /**
      * One release, as the user sees it.
@@ -587,6 +587,13 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.004',
+        title: 'The measured line stops where the solvers part',
+        text: 'Where nec2c and nec2++ disagree the overlay now shows only '
+          + 'the band between them, edged thin, and no line: the check '
+          + 'commits to neither. The bold line resumes where they agree.',
+      },
       {
         version: '2026.08.28.003',
         title: 'The NEC-2 check runs two solvers and shows where they disagree',
@@ -2854,6 +2861,54 @@
     const NEC_AGREE_FACTOR = 1.15;
 
     /**
+     * Whether a measured point's two solvers agree, or only one answered.
+     * @param {{swr: number, alt: ?number}} point
+     * @returns {boolean}
+     */
+    const necAgrees = (point) => point.alt === null
+      || Math.max(point.swr / point.alt, point.alt / point.swr) <= NEC_AGREE_FACTOR;
+
+    /**
+     * The measured curve cut into what the map draws: runs of agreement,
+     * drawn as the line, and runs of disagreement, drawn as a band with
+     * two thin edges and no line, so the check commits to neither solver
+     * there.  A split run keeps one agreeing neighbour at each end so its
+     * edges meet the line.
+     *
+     * @template {{swr: number, alt: ?number}} P
+     * @param {P[]} points  sorted by length
+     * @returns {{line: P[][], split: P[][]}}
+     */
+    const necRuns = (points) => {
+      /** @type {P[][]} */
+      const line = [];
+      /** @type {P[][]} */
+      const split = [];
+      /** @type {P[]} */
+      let run = [];
+      let agreeing = true;
+      points.forEach((point, i) => {
+        const agrees = necAgrees(point);
+        if (agrees !== agreeing) {
+          if (agreeing) {
+            line.push(run);
+            // The split run starts at the last agreeing point.
+            run = run.length > 0 ? [run[run.length - 1]] : [];
+          } else {
+            run.push(point);
+            split.push(run);
+            run = [];
+          }
+          agreeing = agrees;
+        }
+        run.push(point);
+        if (i === points.length - 1) (agreeing ? line : split).push(run);
+      });
+      return { line: line.filter(r => r.length > 0),
+               split: split.filter(r => r.length > 0) };
+    };
+
+    /**
      * A measured SWR as text: one figure when the solvers agree or only one
      * answered, a range when they part.
      * @param {number} swr    nec2c's
@@ -3800,24 +3855,36 @@
       // under the model curve and wider, so agreement reads as an amber
       // edging on the green line and disagreement as amber standing alone;
       // on top of it, two matching curves merged into one ambiguous one.
-      const necPath = (score === null || necPoints === null
-                       || necPoints.length < 2) ? '' : necPoints
+      /**
+       * One SVG path through points, at a reading of each.
+       * @param {{lenM: Meters, swr: number, alt: ?number}[]} points
+       * @param {(point: {swr: number, alt: ?number}) => number} swrOf
+       */
+      const pathThrough = (points, swrOf) => points
         .map((point, i) => `${i === 0 ? 'M' : 'L'} ${xOf(point.lenM).toFixed(2)} `
-          + `${yOfSwr(point.swr).toFixed(2)}`)
+          + `${yOfSwr(swrOf(point)).toFixed(2)}`)
         .join(' ');
-      // Where the two NEC-2 solvers part, a band between them: the check's
-      // own uncertainty, drawn rather than asserted.  Out along the higher
-      // reading and back along the lower.
-      const necBanded = score === null || necPoints === null ? []
-        : necPoints.filter(point => point.alt !== null);
-      const necBand = necBanded.length < 2 ? '' : [
-        ...necBanded.map((point, i) => `${i === 0 ? 'M' : 'L'} `
-          + `${xOf(point.lenM).toFixed(2)} `
-          + `${yOfSwr(Math.max(point.swr, point.alt ?? point.swr)).toFixed(2)}`),
-        ...[...necBanded].reverse().map(point => `L ${xOf(point.lenM).toFixed(2)} `
-          + `${yOfSwr(Math.min(point.swr, point.alt ?? point.swr)).toFixed(2)}`),
-        'Z',
-      ].join(' ');
+      const runs = (score === null || necPoints === null) ? null
+        : necRuns(necPoints);
+      // The line, only where the two NEC-2 solvers agree.
+      const necPath = runs === null ? '' : runs.line
+        .filter(run => run.length >= 2)
+        .map(run => pathThrough(run, point => point.swr))
+        .join(' ');
+      // Where they part, a band between them with two thin edges and no
+      // line: the check's own uncertainty, drawn rather than asserted.
+      // Out along the higher reading and back along the lower.
+      const high = (/** @type {{swr: number, alt: ?number}} */ point) =>
+        Math.max(point.swr, point.alt ?? point.swr);
+      const low = (/** @type {{swr: number, alt: ?number}} */ point) =>
+        Math.min(point.swr, point.alt ?? point.swr);
+      const necSplits = runs === null ? [] : runs.split.filter(run => run.length >= 2);
+      const necBand = necSplits.map(run =>
+        `${pathThrough(run, high)} ${[...run].reverse()
+          .map(point => `L ${xOf(point.lenM).toFixed(2)} ${yOfSwr(low(point)).toFixed(2)}`)
+          .join(' ')} Z`).join(' ');
+      const necEdges = necSplits.flatMap(run =>
+        [pathThrough(run, high), pathThrough(run, low)]);
 
       /** The score under the pointer, for the readout. */
       const hoverScore = (score === null || hoverM === null) ? null
@@ -3888,8 +3955,15 @@
                       <path className="nec-band" d={necBand} fill={COLORS.nec}
                             fillOpacity="0.22" stroke="none" />
                     )}
-                    <path d={necPath} fill="none" stroke={COLORS.nec}
-                          strokeWidth="4" strokeOpacity="0.85" />
+                    {necEdges.map((d, i) => (
+                      <path key={i} className="nec-edge" d={d} fill="none"
+                            stroke={COLORS.nec} strokeWidth="1.5"
+                            strokeOpacity="0.85" />
+                    ))}
+                    {necPath !== '' && (
+                      <path d={necPath} fill="none" stroke={COLORS.nec}
+                            strokeWidth="4" strokeOpacity="0.85" />
+                    )}
                     <text x={MAP.width - MAP.right - 6} y={MAP.top + 12}
                           fill={COLORS.nec} fontSize={MAP.tickFontSize}
                           textAnchor="end" fontFamily="monospace">NEC-2</text>
