@@ -69,11 +69,6 @@ nec2c and nec2++ in the page.
       Research rather than a task.  See MODEL.md, "The peaks are too
       sharp".
 
-- [ ] **The sloper's `alpha_a_lam` ceiling.**  Raising the refinement
-      bound from 0.4 to 0.6 is worth about x1.27 to x1.25 in the
-      sloper's lowest cells and nothing on the flat top.  A refit and a
-      bump; marginal.  See MODEL.md, "Coefficients on their bounds".
-
 - [ ] **The unun is not in the model.**  NEC measures the feedpoint and
       the page divides by the ratio, so an ideal, lossless,
       frequency-flat transformer is assumed at the one place in the
@@ -91,16 +86,6 @@ nec2c and nec2++ in the page.
       correcting it means a re-sweep before the tables can be
       reproduced from source.
 
-- [ ] **`sweep_grid.py`'s claim.**  It says every sweep imports it "so
-      that two grids cannot drift apart and be read as one", and three
-      no longer do: `gauge_sweep.py`, `ground_contact.py` and
-      `nec4_gauge_sweep.py` each redeclare `FREQS_HZ`, and
-      `nec4_table_sweep.py` adds two frequencies of its own on top of
-      it.  Either the claim goes or the imports come back.
-      `segmentation_check.py` has the same kind of drift in its head:
-      it reasons about NEC-2's junction assumption and solves with
-      PyNEC, while every shipped table is now NEC-4.2.
-
 ## The page
 
 - [ ] Decide the default return length.  25 ft is what a typical user's
@@ -111,9 +96,6 @@ nec2c and nec2++ in the page.
       in the page rather than moving the default: a long counterpoise
       flattens the score curve, so length choice matters less, which is
       more useful than any single length.
-
-- [ ] **Accessibility of the length map.**  Decided, not yet built: the
-      map is mouse-only, with no role, name or live region.
 
 - [ ] Exercise the page in a browser for the things a machine cannot
       judge.  The mechanical half is automated in

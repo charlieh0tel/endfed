@@ -78,8 +78,12 @@ async function publishedLengths(page) {
 const selected = (page, legend) =>
   group(page, legend).locator('button[aria-checked="true"]').first().textContent();
 
-/** The wire length the page currently holds, in whatever unit is displayed. */
-const lengthField = (page) => page.locator('input[type=number]');
+/**
+ * The wire length the page currently holds, in whatever unit is displayed.
+ * By class, not by type: classical mode has a second number input, the
+ * velocity factor.
+ */
+const lengthField = (page) => page.locator('input.len-input');
 
 /** Relative luminance of an "rgb(r, g, b)" string, per WCAG 2.1. */
 function luminance(color) {
@@ -570,6 +574,56 @@ test.describe('keyboard', () => {
       (ring.boxShadow && ring.boxShadow !== 'none');
     expect(hasRing, JSON.stringify(ring)).toBe(true);
   });
+
+  test('the length map is a slider the keyboard can drive', async ({ page }) => {
+    // 21.336 m is exactly 70 ft, so the steps below land on round numbers.
+    await open(page, '?mode=impedance&len_m=21.336');
+    const map = page.getByRole('slider', { name: 'Wire length map' });
+    await map.focus();
+    await expect(map).toBeFocused();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(lengthField(page), 'right arrow adds a foot').toHaveValue('71.00');
+    await page.keyboard.press('ArrowLeft');
+    await expect(lengthField(page), 'left arrow comes back').toHaveValue('70.00');
+    await page.keyboard.press('Shift+ArrowRight');
+    await expect(lengthField(page), 'shifted arrow moves ten').toHaveValue('80.00');
+    await page.keyboard.press('PageDown');
+    await expect(lengthField(page), 'PageDown moves ten back').toHaveValue('70.00');
+    await page.keyboard.press('Home');
+    await expect(lengthField(page), 'Home is the short end, clamped above zero')
+      .toHaveValue('1.00');
+    await page.keyboard.press('End');
+    const valuemax = Number(await map.getAttribute('aria-valuemax'));
+    expect(Number.parseFloat(await lengthField(page).inputValue()),
+      'End is the far end of the axis').toBeCloseTo(valuemax, 0);
+
+    // The slider says where it stands, and the live region repeats it for a
+    // screen reader that missed the value change.
+    await expect(map).toHaveAttribute('aria-valuetext', /ft, SWR [\d.]+:1/);
+    const announced = await page
+      .locator('.map-container [aria-live="polite"]').textContent();
+    expect(announced, 'the live region carries the last keyed change')
+      .toMatch(/ft, SWR/);
+  });
+
+  test('the focused map shows a ring, and classical mode answers keys too',
+    async ({ page }) => {
+      await open(page, '?mode=classical&len_m=21.336');
+      const map = page.getByRole('slider', { name: 'Wire length map' });
+      await map.focus();
+      const ring = await map.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return `${style.outlineStyle} ${style.outlineWidth}`;
+      });
+      expect(ring, 'focus is visible on the map').not.toMatch(/none|0px/);
+
+      await page.keyboard.press('ArrowRight');
+      await expect(lengthField(page), 'arrows work without a score')
+        .toHaveValue('71.00');
+      await expect(map, 'without a score the verdict is the zone')
+        .toHaveAttribute('aria-valuetext', /ft, (usable|avoid)/);
+    });
 });
 
 test.describe('the NEC check', () => {
