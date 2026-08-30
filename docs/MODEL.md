@@ -2062,6 +2062,44 @@ which puts the model-form error in the unrailed interior -- at the
 resonance structure the peaks section describes -- and not at the
 edges the bounds guard.
 
+### Out of sample: geometries the sweeps never carried
+
+Every figure above is in sample in every axis but frequency.
+`nec/holdout_oob.py` solves 9,504 fresh decks between and beyond the
+sweeps' grid -- flat tops at 4, 6, 8.5, 12 and 17 m with the
+counterpoise at 3, 15 and 60 cm; slopers with apexes at 8 and 14 m, the
+counterpoise at 10 and 25 cm and the balun at 0.61 and 1.0 m; returns
+of 5.5 and 15 m; 80, 30 and 15 m, none of them sweep frequencies; three
+soils; 24 lengths from 3 to 66 m -- at 2x and 4x the fitting density,
+Richardson-extrapolated, and scores the shipped tables against them
+exactly as the in-sample figures were scored.  All 9,504 converged.
+
+| | in sample | out of sample |
+|---|---|---|
+| flat top, per length median / 90th / 99th | x1.16 / x1.49 / x2.06 | x1.20 / x1.58 / x2.29 |
+| sloper, per length | x1.15 / x1.43 / x1.97 | x1.14 / x1.45 / x2.45 |
+| flat top, phase median / 90th | 10.9 / 31.4 deg | 10.8 / 31.6 deg |
+| flat top, miscall at 9:1 into 3:1 | 23.6% | 24.4% |
+| sloper, miscall at 9:1 into 3:1 | 18.7% | 23.3% |
+
+The tables generalize.  Per length they read a few percent worse than
+in sample; the flat top's miscall rate moves one point and the
+sloper's four and a half, on a holdout that leans on apexes and balun
+heights its sweep never had.  The worst axis is 80 m, x1.74 at the
+90th, which the sweeps bracket only from 1.9 MHz, and good soil, x1.63,
+against x1.47 on poor.  No axis is a cliff: heights read x1.13 to
+x1.22 median, counterpoise heights x1.13 to x1.22, the two returns
+x1.16 and x1.19.
+
+That also answers a question the fixture check raised.  The refinement
+has flat directions wherever a node is thinly supported -- with one
+group behind it, kr and alpha_r trade off freely -- so the tables'
+coefficients are not unique across machines even where their cost and
+predictions agree to many figures; `nec/pipeline_check.py` holds its
+fixture to the cost and the error for that reason.  Where
+non-uniqueness could cost something is between nodes and outside the
+sweeps, and this holdout puts that cost at the few percent above.
+
 ## References
 
 Sources for the published length tables this page is measured against,

@@ -69,14 +69,6 @@ nec2c and nec2++ in the page.
       Research rather than a task.  See MODEL.md, "The peaks are too
       sharp".
 
-- [ ] **Out-of-band holdout.**  Every figure the page quotes is in
-      sample in every axis but frequency.  `holdout_check.py` covers
-      frequency, and `MODEL.md` records what it cost: 1.9 points of
-      miscall rate.  The stronger version is a holdout against fresh
-      NEC solves -- a height, a counterpoise or a soil the sweeps never
-      carried -- at 2x and 4x density, extrapolated, an evening of
-      solver time on explicit approval.
-
 - [ ] **The sloper's `alpha_a_lam` ceiling.**  Raising the refinement
       bound from 0.4 to 0.6 is worth about x1.27 to x1.25 in the
       sloper's lowest cells and nothing on the flat top.  A refit and a
