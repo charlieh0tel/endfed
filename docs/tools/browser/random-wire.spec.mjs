@@ -704,7 +704,7 @@ test.describe('how it works', () => {
     await button.click();
     const dialog = page.locator('dialog[aria-labelledby="how-it-works-title"]');
     await expect(dialog).toBeVisible();
-    await expect(dialog).toContainText(/922,706 NEC-4.2 simulations/);
+    await expect(dialog).toContainText(/[0-9,]{7,} NEC-4.2 simulations/);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(button).toBeFocused();

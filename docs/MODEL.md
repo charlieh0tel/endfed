@@ -1985,7 +1985,15 @@ survive the real campaign: on the full fitting decks a 2x solve costs
 7-14x a 1x solve and a 4x solve runs about 3.3 s flat across the
 frequency range, so the pair prices out near 20x the original sweep
 per point, not 3.2x.  The converged re-sweep of both geometries took
-83.5 wall hours at 12 workers, not 14.
+83.5 wall hours at 12 workers, not 14 -- and most of that was waste,
+found afterwards: nec4d42 is an OpenMP build that starts a thread per
+core for every solve, so twelve workers were a hundred and ninety
+runnable threads on sixteen, thrashing at a load average over a
+hundred.  Pinned to one thread per solve (`OMP_NUM_THREADS=1`, now set
+by every tool that calls a solver), the same solve is no slower and a
+plane that had not finished a group in six and a half hours completed
+in ten minutes.  The campaign's honest price at one thread is a few
+hours, not days.
 
 So the re-sweep the density finding calls for is priced and shaped:
 solve every point at 2x and 4x the current density, extrapolate real
@@ -2099,6 +2107,33 @@ predictions agree to many figures; `nec/pipeline_check.py` holds its
 fixture to the cost and the error for that reason.  Where
 non-uniqueness could cost something is between nodes and outside the
 sweeps, and this holdout puts that cost at the few percent above.
+
+### An 80 m plane, and what coverage does not buy
+
+The holdout's weakest axis was 80 m, x1.74 at the 90th, which the
+sweeps bracketed only from 1.9 MHz.  `nec4_table_sweep.py --only-mhz
+3.75` swept a 3.75 MHz plane for both geometries at 2x and 4x --
+48,960 and 28,035 points, 154,125 solves with the 135 third-rung
+repairs, about two hours at one OpenMP thread per solve -- and both
+tables were refit from the old sweeps and the plane together, 1,455
+groups for the flat top and 891 for the sloper.
+
+| | before the plane | with it |
+|---|---|---|
+| holdout, 80 m, per length median / 90th / 99th | x1.19 / x1.74 / x2.93 | x1.19 / x1.71 / x2.70 |
+| holdout, everything | x1.17 / x1.54 / x2.33 | x1.17 / x1.53 / x2.27 |
+| in sample, flat top per length | x1.16 / x1.49 / x2.06 | x1.17 / x1.51 / x2.11 |
+| in sample, sloper per length | x1.15 / x1.43 / x1.97 | x1.16 / x1.45 / x2.05 |
+| miscall at 9:1 into 3:1, flat / sloper | 23.6% / 18.7% | 23.4% / 18.6% |
+
+The plane trims the 80 m tail and moves nothing else; the in-sample
+figures rise slightly because they are now measured over the harder
+plane too.  So the 80 m weakness was never coverage.  80 m puts every
+wire the page can describe below a tenth of a wavelength up, where the
+loss is the soil's and the form has the least to say -- the same regime
+the falling-loss exponent leaves at zero.  Better data cannot reach it;
+the page quotes the new figures and the tables stand on 1,076,831
+solves.
 
 ## References
 
