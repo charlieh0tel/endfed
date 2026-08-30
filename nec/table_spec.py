@@ -47,7 +47,7 @@ TABLE_PARAMS = ("alpha_a_lam", "ka", "alpha_r_lam", "vf_r", "kr")
 #: asserted again on the far side, in docs/tools/model.test.mjs.
 REFINE_BOUNDS = (
     (0.02, 0.4, 0.05, 0.35, 0.4),
-    (0.40, 1.6, 3.00, 1.00, 1.6),
+    (0.60, 1.6, 3.00, 1.00, 1.6),
 )
 
 #: The antenna line's velocity factor, constant rather than tabulated.

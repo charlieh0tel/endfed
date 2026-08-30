@@ -2058,9 +2058,11 @@ x2.11; moving it past the bound to 1.05 takes them to x1.64.  An
 elevated return conductor is a wire in air, its phase velocity is c,
 and the fit finds exactly that.  `alpha_a_lam` rails at the lowest
 heights, `h/lambda <= 0.012`, where the wire is loaded by soil it
-nearly touches; 0.4 is within a percent of optimal for the flat top and
-a ceiling of 0.6 would be worth about x1.27 to x1.25 on the sloper's
-lowest cells.  `alpha_r_lam` rails at low heights over good soil and
+nearly touches; 0.4 was within a percent of optimal for the flat top
+and a ceiling of 0.6 was worth x1.37 to x1.35 on the sloper's lowest
+cells, so the ceiling is now 0.6.  Some cells rail there too -- the
+lowest wires want still more loss -- but the probe showed 0.8 buys
+them nothing the aggregate does not pay back.  `alpha_r_lam` rails at low heights over good soil and
 does not matter: lifting it to 0.15 leaves the nearest groups unchanged
 to three decimals.
 

@@ -1,8 +1,13 @@
-"""The grid the sweeps share: what is solved, and over what.
+"""The grid the table sweeps share: what is solved, and over what.
 
 Separate from `table_spec.py`, which says what the model is fitted to and
-over what domain.  This says where NEC is asked, and every sweep imports it
-so that two grids cannot drift apart and be read as one.
+over what domain.  This says where NEC is asked.  The table sweeps import
+it so their grids cannot drift apart and be read as one;
+`nec4_table_sweep.py` adds its node-grid frequencies on top of it.  The
+one-off instruments (`gauge_sweep.py`, `nec4_gauge_sweep.py`,
+`ground_contact.py`) deliberately carry smaller grids of their own: they
+answer spot questions, and their files are never read beside a table
+sweep's.
 """
 
 #: Four frequencies spanning HF.  More would only resolve the soil's
