@@ -107,6 +107,11 @@ design decisions in the model note and task state in the TODO.
 - Run `ruff format` and `ruff check` after changes and before commits.
 - There is no pytest suite. `nec/validate.py` is the regression check for
   the physics and prints numbers a human reads.
+- `nec4d42` and `nec5cl` are OpenMP builds that start a thread per core
+  for every solve.  Anything that runs them in a pool sets
+  `OMP_NUM_THREADS=1` in the subprocess environment (`SOLVER_ENV` in the
+  sweep tools); without it a dozen workers are two hundred runnable
+  threads, a load average over a hundred, and a forty-fold slowdown.
 - `nec/deck_check.py` reads the NEC decks the geometry builds -- wires,
   segmentation, source, ground card, both geometries -- without solving
   them, so CI runs it.  `nec/validate.py` is the other half and needs a

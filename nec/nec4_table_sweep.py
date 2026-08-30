@@ -18,6 +18,7 @@ Writes `nec4_table_sweep.npz` or `nec4_table_sloper_sweep.npz`.
 """
 
 import argparse
+import os
 import re
 import subprocess
 import sys
@@ -44,6 +45,13 @@ from table_spec import (
     Z_NODES,
     counterpoise_range_m,
 )
+
+#: NEC-4.2 and NEC-5 are OpenMP builds that spawn a thread per core for
+#: every solve; a pool of a dozen of them is a hundred and fifty runnable
+#: threads and a load average to match, for no throughput.  One thread per
+#: solve is as fast on these small matrices and leaves the machine usable.
+SOLVER_ENV = {**os.environ, "OMP_NUM_THREADS": "1"}
+
 
 FLAT_TOP_OUTPUT = "nec4_table_sweep.npz"
 SLOPER_OUTPUT = "nec4_table_sloper_sweep.npz"
@@ -251,6 +259,7 @@ def solve_group(job):
                     subprocess.run(
                         [binary, str(source), str(result)],
                         capture_output=True,
+                        env=SOLVER_ENV,
                         check=True,
                         cwd=work,
                     )

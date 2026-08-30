@@ -14,6 +14,7 @@ height column, as extrapolate_sweep.py wrote it.
 """
 
 import argparse
+import os
 import subprocess
 import sys
 import tempfile
@@ -24,6 +25,13 @@ import numpy as np
 
 import nec_model
 from nec4_table_sweep import parse_impedance
+
+#: NEC-4.2 and NEC-5 are OpenMP builds that spawn a thread per core for
+#: every solve; a pool of a dozen of them is a hundred and fifty runnable
+#: threads and a load average to match, for no throughput.  One thread per
+#: solve is as fast on these small matrices and leaves the machine usable.
+SOLVER_ENV = {**os.environ, "OMP_NUM_THREADS": "1"}
+
 
 THIRD_DENSITY = 8
 WORKERS = 12
@@ -61,6 +69,7 @@ def solve_row(job):
             subprocess.run(
                 [binary, str(source), str(result)],
                 capture_output=True,
+                env=SOLVER_ENV,
                 check=True,
                 cwd=work,
             )

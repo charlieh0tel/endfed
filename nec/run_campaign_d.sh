@@ -7,6 +7,8 @@ set -e
 cd "$(dirname "$0")"
 : "${WORKERS:=12}"
 : "${NICE:=19}"
+# Belt and braces: the sweep pins its solvers to one OpenMP thread itself.
+export OMP_NUM_THREADS=1
 echo "campaign start: $(date -Is), $WORKERS workers, nice $NICE"
 for geometry in "" "--sloper"; do
   for density in 2 4; do

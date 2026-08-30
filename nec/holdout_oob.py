@@ -14,6 +14,7 @@ the miscall rate through the page's ununs and tuners.
 """
 
 import argparse
+import os
 import itertools
 import json
 import subprocess
@@ -30,6 +31,13 @@ from nec_model import C, GROUNDS, MIN_DROP_M
 from table2d import look_up
 from table_spec import VF_A, Z_NODES, length_power
 from fit import model_zin
+
+#: NEC-4.2 and NEC-5 are OpenMP builds that spawn a thread per core for
+#: every solve; a pool of a dozen of them is a hundred and fifty runnable
+#: threads and a load average to match, for no throughput.  One thread per
+#: solve is as fast on these small matrices and leaves the machine usable.
+SOLVER_ENV = {**os.environ, "OMP_NUM_THREADS": "1"}
+
 
 HERE = Path(__file__).resolve().parent / "holdout"
 RESULTS = HERE / "oob.jsonl"
@@ -129,6 +137,7 @@ def solve(deck):
             subprocess.run(
                 [NEC4, str(source), str(result)],
                 capture_output=True,
+                env=SOLVER_ENV,
                 check=True,
                 cwd=work,
             )
