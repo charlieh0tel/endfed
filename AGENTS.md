@@ -113,7 +113,8 @@ design decisions in the model note and task state in the TODO.
   solver: textbook physics, by hand, locally.
 - `nec/pipeline_check.py` is the regression check for the fitting code: it
   runs `fit.py`, `table2d.py` and `coefficients2d.py` over a committed cut
-  of a NEC-4.2 sweep and compares against committed coefficients, in about
+  of a NEC-4.2 sweep and compares the cost and error statistics against
+  committed values, in about
   two seconds and with no solver.  CI runs it, because CI cannot have
   NEC-4.2.  After an intended change, `--write` and say in the commit what
   moved.
