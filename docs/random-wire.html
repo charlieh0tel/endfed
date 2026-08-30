@@ -368,6 +368,17 @@
       background: repeating-linear-gradient(45deg, #8c8c88 0 2px, #2a2a28 2px 5px);
     }
 
+    /* Line swatches, for the measured curve and the band's two edges. */
+    .swatch-line {
+      width: 14px;
+      height: 0;
+      border-radius: 0;
+      border-top: 2px solid;
+      vertical-align: middle;
+    }
+    .swatch-bold { border-top-width: 4px; }
+    .swatch-dashed { border-top-style: dashed; }
+
     /* Verdict */
     /* The geometry picker: two pictures, side by side, chosen like radios. */
     .geometry-row { display: flex; gap: 8px; }
@@ -571,7 +582,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.004';
+    const PAGE_VERSION = '2026.08.28.005';
 
     /**
      * One release, as the user sees it.
@@ -587,6 +598,14 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.005',
+        title: 'Which solver said what',
+        text: 'Where the two NEC-2 solvers part, the band\'s edges tell them '
+          + 'apart -- nec2c solid, nec2++ dashed, with a legend -- and the '
+          + 'verdict and table name each solver\'s figure instead of a bare '
+          + 'range.',
+      },
       {
         version: '2026.08.28.004',
         title: 'The measured line stops where the solvers part',
@@ -2919,7 +2938,7 @@
       if (alt === null || Math.max(swr / alt, alt / swr) <= NEC_AGREE_FACTOR) {
         return `${swr.toFixed(1)}:1`;
       }
-      return `${Math.min(swr, alt).toFixed(1)}-${Math.max(swr, alt).toFixed(1)}:1`;
+      return `nec2c ${swr.toFixed(1)}:1 / nec2++ ${alt.toFixed(1)}:1`;
     };
 
     /** Common grid the measured standing-wave profiles resample onto. */
@@ -3883,8 +3902,11 @@
         `${pathThrough(run, high)} ${[...run].reverse()
           .map(point => `L ${xOf(point.lenM).toFixed(2)} ${yOfSwr(low(point)).toFixed(2)}`)
           .join(' ')} Z`).join(' ');
-      const necEdges = necSplits.flatMap(run =>
-        [pathThrough(run, high), pathThrough(run, low)]);
+      // Each solver's own edge of the band: nec2c solid, nec2++ dashed.
+      const necEdges = necSplits.flatMap(run => [
+        { d: pathThrough(run, point => point.swr), dashed: false },
+        { d: pathThrough(run, point => point.alt ?? point.swr), dashed: true },
+      ]);
 
       /** The score under the pointer, for the readout. */
       const hoverScore = (score === null || hoverM === null) ? null
@@ -3955,10 +3977,11 @@
                       <path className="nec-band" d={necBand} fill={COLORS.nec}
                             fillOpacity="0.22" stroke="none" />
                     )}
-                    {necEdges.map((d, i) => (
-                      <path key={i} className="nec-edge" d={d} fill="none"
+                    {necEdges.map((edge, i) => (
+                      <path key={i} className="nec-edge" d={edge.d} fill="none"
                             stroke={COLORS.nec} strokeWidth="1.5"
-                            strokeOpacity="0.85" />
+                            strokeOpacity="0.85"
+                            strokeDasharray={edge.dashed ? '5 4' : undefined} />
                     ))}
                     {necPath !== '' && (
                       <path d={necPath} fill="none" stroke={COLORS.nec}
@@ -4031,6 +4054,19 @@
             )}
             <span><span className="swatch" style={{ background: COLORS.marker }}></span>
               your wire</span>
+            {necPoints !== null && necPoints.length > 0 && (
+              <>
+                <span><span className="swatch swatch-line swatch-bold"
+                             style={{ borderColor: COLORS.nec }}></span>
+                  NEC-2 where nec2c and nec2++ agree</span>
+                <span><span className="swatch swatch-line"
+                             style={{ borderColor: COLORS.nec }}></span>
+                  nec2c</span>
+                <span><span className="swatch swatch-line swatch-dashed"
+                             style={{ borderColor: COLORS.nec }}></span>
+                  nec2++, where they part</span>
+              </>
+            )}
           </div>
         </div>
       );
@@ -5177,7 +5213,7 @@
                                && Math.max(necHere.swr / necHere.alt.swr,
                                            necHere.alt.swr / necHere.swr)
                                   > NEC_AGREE_FACTOR
-                              ? '; a range where nec2c and nec2++ disagree.'
+                              ? '; the two solvers disagree here.'
                               : '.')
                           : necMeasuringM === wireLenM
                             ? '  NEC-2 is measuring this length.'
@@ -5343,11 +5379,10 @@
                                 <td>{(check =>
                                   check === null ? ''
                                     : `${necSwrText(check.swr,
-                                        check.alt === null ? null : check.alt.swr)
-                                        .replace(/:1$/, '')} / `
-                                      + necSwrText(check.worst.swr,
+                                        check.alt === null ? null : check.alt.swr)}`
+                                      + ` / ${necSwrText(check.worst.swr,
                                           check.alt === null ? null
-                                            : check.alt.worst.swr)
+                                            : check.alt.worst.swr)}`
                                 )(necCheckAt(point.lenM))}</td>
                               )}
                             </tr>

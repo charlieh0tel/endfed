@@ -1627,8 +1627,8 @@ test('a probe deck reads back as the same model for nec2++', () => {
 test('a measured SWR reads as one figure when the solvers agree and a range when not', () => {
   assert.equal(m.necSwrText(2.5, null), '2.5:1', 'one solver');
   assert.equal(m.necSwrText(2.5, 2.6), '2.5:1', 'agreement');
-  assert.equal(m.necSwrText(3.77, 1.84), '1.8-3.8:1', 'a range, low first');
-  assert.equal(m.necSwrText(1.84, 3.77), '1.8-3.8:1', 'whichever solver is high');
+  assert.equal(m.necSwrText(3.77, 1.84), 'nec2c 3.8:1 / nec2++ 1.8:1',
+    'each solver named when they part');
   assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
 });
 
