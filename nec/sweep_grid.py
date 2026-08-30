@@ -7,7 +7,7 @@ so that two grids cannot drift apart and be read as one.
 
 #: Four frequencies spanning HF.  More would only resolve the soil's
 #: frequency dependence, which is smooth; the rest of the problem scales.
-FREQS_HZ = (1.9e6, 7.15e6, 14.175e6, 28.85e6)
+FREQS_HZ = (1.9e6, 3.75e6, 7.15e6, 14.175e6, 28.85e6)
 
 #: Heights someone might actually hang a wire at, meters.
 HEIGHTS_M = (2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 25.0)

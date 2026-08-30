@@ -18,7 +18,6 @@ Writes `nec4_table_sweep.npz` or `nec4_table_sloper_sweep.npz`.
 """
 
 import argparse
-import itertools
 import re
 import subprocess
 import sys
@@ -210,8 +209,9 @@ def frequencies():
 
 
 def solve_group(job):
-    """One (frequency, soil): NEC-4 caches its Sommerfeld grid per pair."""
-    index, binary, freq_hz, soil, sloper, density = job
+    """One (frequency, soil, return): a third of what NEC-4's Sommerfeld
+    grid is cached for, so a run's tail is a third as long."""
+    index, binary, freq_hz, soil, return_m, sloper, density = job
     # Set in the worker, not the parent: under the forkserver start method
     # (the default from Python 3.14) workers re-import nec_model and a
     # parent-side assignment never reaches them.  That silently solved a
@@ -223,7 +223,7 @@ def solve_group(job):
         source = Path(work) / "in.nec"
         result = Path(work) / "out.txt"
         for height_m, z_m, balun_m, step in cells(freq_hz, sloper):
-            for return_m, ratio in itertools.product(RETURNS_M, RATIOS):
+            for ratio in RATIOS:
                 length_m = ratio * wavelength_m
                 if sloper:
                     deck = sloper_deck(
@@ -285,6 +285,13 @@ def main():
         "--count", action="store_true", help="report the size and solve nothing"
     )
     parser.add_argument(
+        "--only-mhz",
+        type=float,
+        nargs="+",
+        help="sweep these frequencies alone, into a file named for them, "
+        "to add a plane to the table without re-sweeping the rest",
+    )
+    parser.add_argument(
         "--density",
         type=int,
         default=1,
@@ -296,6 +303,11 @@ def main():
     args = parser.parse_args()
 
     freqs = frequencies()
+    if args.only_mhz:
+        wanted = {round(f * 1e6) for f in args.only_mhz}
+        freqs = tuple(f for f in freqs if round(f) in wanted)
+        if len(freqs) != len(wanted):
+            raise SystemExit(f"not every frequency in {args.only_mhz} is on the grid")
     points = 0
     for freq_hz in freqs:
         here = len(cells(freq_hz, args.sloper)) * len(RETURNS_M) * len(RATIOS)
@@ -305,14 +317,20 @@ def main():
             f"placements, {here * len(SOILS):>7} points",
             flush=True,
         )
-    print(f"at most {points} points in {len(freqs) * len(SOILS)} groups", flush=True)
+    print(
+        f"at most {points} points in {len(freqs) * len(SOILS) * len(RETURNS_M)} groups",
+        flush=True,
+    )
     if args.count:
         return 0
 
     jobs = [
-        (i, args.binary, freq, soil, args.sloper, args.density)
-        for i, (freq, soil) in enumerate(
-            (freq, soil) for freq in freqs for soil in SOILS
+        (i, args.binary, freq, soil, return_m, args.sloper, args.density)
+        for i, (freq, soil, return_m) in enumerate(
+            (freq, soil, return_m)
+            for freq in freqs
+            for soil in SOILS
+            for return_m in RETURNS_M
         )
     ]
     start = time.time()
@@ -326,9 +344,10 @@ def main():
             collected[index] = rows
             finished += 1
             solved += len(rows)
-            freq_hz, soil = jobs[index][2], jobs[index][3]
+            freq_hz, soil, return_m = jobs[index][2:5]
             print(
-                f"  {freq_hz / 1e6:>7.3f} MHz {soil}: {len(rows)} points, "
+                f"  {freq_hz / 1e6:>7.3f} MHz {soil} return {return_m:g} m: "
+                f"{len(rows)} points, "
                 f"group {finished}/{len(jobs)}, {100 * solved / points:.0f}% "
                 f"in {time.time() - start:.0f} s",
                 flush=True,
@@ -337,6 +356,9 @@ def main():
     print(f"solved {len(columns)} in {time.time() - start:.0f} s", flush=True)
 
     output = SLOPER_OUTPUT if args.sloper else FLAT_TOP_OUTPUT
+    if args.only_mhz:
+        tag = "_".join(f"{f:g}MHz" for f in args.only_mhz)
+        output = output.replace(".npz", f"_{tag}.npz")
     if args.density != 1:
         output = output.replace(".npz", f"_d{args.density}.npz")
     height_key = "apex_m" if args.sloper else "height_m"

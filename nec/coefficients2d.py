@@ -536,16 +536,20 @@ def load_sweeps(paths):
     loaded = [np.load(path, allow_pickle=False) for path in paths]
     names = loaded[0]["soil_names"]
     # Rows only: a sweep also carries provenance (`density`, the rungs an
-    # extrapolation came from) that is not one value per solve.
-    rows = len(loaded[0]["freq_hz"])
-    fields = {
-        field for field in loaded[0].files if loaded[0][field].shape[:1] == (rows,)
-    }
-    for path, one in zip(paths[1:], loaded[1:]):
-        if not fields <= set(one.files):
-            raise SystemExit(f"{path} does not carry the same columns")
+    # extrapolation came from) that is not one value per solve.  And only
+    # the per-row columns every file carries: a repaired extrapolation adds
+    # its rung masks, a plain one does not, and the fit reads neither.
+    fields = None
+    for path, one in zip(paths, loaded):
+        rows = len(one["freq_hz"])
+        here = {field for field in one.files if one[field].shape[:1] == (rows,)}
+        fields = here if fields is None else fields & here
         if list(one["soil_names"]) != list(names):
             raise SystemExit(f"{path} orders its soils differently")
+    assert fields is not None
+    for field in ("freq_hz", "ratio", "soil", "step", "resistance", "reactance"):
+        if field not in fields:
+            raise SystemExit(f"every sweep must carry {field}")
     return {
         "soil_names": names,
         **{field: np.concatenate([one[field] for one in loaded]) for field in fields},
