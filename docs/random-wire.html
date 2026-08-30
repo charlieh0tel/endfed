@@ -584,7 +584,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.28.007';
+    const PAGE_VERSION = '2026.08.28.008';
 
     /**
      * One release, as the user sees it.
@@ -600,6 +600,14 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.28.008',
+        title: 'The model line stays visible under a NEC-2 check',
+        text: 'Once the amber overlay is drawn, the green model curve gets a '
+          + 'dark halo and a little more weight, so the two can be read '
+          + 'against each other instead of the green vanishing inside the '
+          + 'amber.',
+      },
       {
         version: '2026.08.28.007',
         title: 'The check follows the solver measured to be right',
@@ -4070,8 +4078,14 @@
                           textAnchor="end" fontFamily="monospace">NEC-2</text>
                   </g>
                 )}
+                {/* Over the amber the model line needs a dark halo and a
+                    little weight, or it vanishes inside the wider stroke. */}
+                {necPath !== '' && (
+                  <path d={curvePath} fill="none" stroke="#0a0a0a"
+                        strokeWidth="5" strokeOpacity="0.75" />
+                )}
                 <path d={curvePath} fill="none" stroke={COLORS.usableEdge}
-                      strokeWidth="1.5" />
+                      strokeWidth={necPath !== '' ? '2.25' : '1.5'} />
               </g>
             )}
             {/* Axis and ticks */}
