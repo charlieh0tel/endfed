@@ -45,8 +45,9 @@ design decisions in the model note and task state in the TODO.
 ## Documentation
 
 - Keep documentation (.md files) up to date with code changes.
-- When work completes a tracked item, mark it done in `docs/TODO.md` in
-  the same commit.
+- When work completes a tracked item, remove it from `docs/TODO.md` in
+  the same commit and put what it found in `docs/MODEL.md`.  The TODO
+  holds open work only; the model note is the record.
 
 ## Revision Control
 
