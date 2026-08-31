@@ -54,15 +54,6 @@ nec2c and nec2++ in the page.
 
 ## The page
 
-- [ ] Decide the default return length.  25 ft is what a typical user's
-      coax run is, and it gives the best agreement with the published
-      tables of any value tried, but the ARRL specifies a quarter wave
-      at the lowest band, about 66 ft on 80 m, and most published
-      lengths do score better with a longer return.  Consider saying so
-      in the page rather than moving the default: a long counterpoise
-      flattens the score curve, so length choice matters less, which is
-      more useful than any single length.
-
 - [ ] Exercise the page in a browser for the things a machine cannot
       judge.  The mechanical half is automated in
       `docs/tools/browser/random-wire.spec.mjs` and runs in CI;
@@ -104,10 +95,5 @@ nec2c and nec2++ in the page.
 
 ## Open questions
 
-- Counterpoise is an explicit axis rather than a calibration constant,
-  but the two real cases differ: a thrown-out wire is well defined,
-  while the coax shield carries common-mode current that makes "the
-  feedpoint impedance" not a single well-defined number at all.  How
-  much of that caveat reaches the user?
 - How should the soil control be labeled so it does not imply that
   "good" ground gives a better match?  Measured, it does not.

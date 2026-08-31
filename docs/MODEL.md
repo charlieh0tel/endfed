@@ -2148,6 +2148,38 @@ the falling-loss exponent leaves at zero.  Better data cannot reach it;
 the page quotes the new figures and the tables stand on 1,076,831
 solves.
 
+### The return's radius: thin coax is the modeled wire, fat coax is not quite
+
+Every fitting deck gives the drop and the counterpoise the antenna's own
+0.814 mm of #14, and a coax shield used as the return is 2.5 mm (RG-58)
+to 5 mm (RG-8).  `nec/return_radius_check.py` solves 1,920 of the
+fitting decks -- three heights, the 2 cm and 30 cm clearances, two
+soils, four bands, forty lengths -- with the return conductors fattened
+to each, converged by the (2x, 4x) Richardson pair, and scores the
+shift in SWR at the radio through both ununs:
+
+| | RG-58, 2.5 mm | RG-8, 5 mm |
+|---|---|---|
+| everything | x1.05 / x1.25 | x1.09 / x1.44 |
+| counterpoise at 2 cm | x1.07 / x1.27 | x1.13 / x1.50 |
+| 20 m | x1.09 / x1.33 | x1.15 / x1.60 |
+| under one half-wave | x1.09 / x1.29 | x1.15 / x1.54 |
+
+Against the model's own x1.17 / x1.51 per-length budget, RG-58 is
+noise and RG-8 is about half a budget in the tail, concentrated where
+the return path carries the resonance: short wires, low counterpoise,
+low heights, 20 m.  Not enough to earn a return-radius axis in the
+tables; enough that the page says so beside the control.
+
+The deeper assumption is the far end.  The model, and every deck behind
+it, ends the return in air; a real shield continues into the shack, so
+the modeled open is only true behind a common-mode choke at the
+feedpoint.  That is not a solvable geometry -- NEC has no shack -- so
+the page states it as scope rather than absorbing it silently, which
+also settles the long-standing open question about how much of the
+common-mode caveat reaches the user: one sentence, next to the control
+it qualifies.
+
 ## References
 
 Sources for the published length tables this page is measured against,

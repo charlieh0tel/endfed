@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.001';
+    const PAGE_VERSION = '2026.08.31.003';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,25 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.003',
+        title: 'A word for the longer counterpoise',
+        text: 'The counterpoise hint now says what the measurements have '
+          + 'long shown: a longer one flattens the whole score curve, so '
+          + 'length choice matters less. The ARRL\'s quarter wave on the '
+          + 'lowest band is the classic version of that advice; the 25 ft '
+          + 'default stays, as what most installations have.',
+      },
+      {
+        version: '2026.08.31.002',
+        title: 'What the counterpoise figures assume, said out loud',
+        text: 'The return is modeled as a wire that ends where the control '
+          + 'says; for coax a common-mode choke at the feedpoint is what '
+          + 'makes that true, and the page now says so. Measured in NEC-4.2, '
+          + 'a thin coax shield (RG-58) behaves like the modeled wire, and a '
+          + 'fat one (RG-8) can shift SWR up to 1.5x on short wires over a '
+          + 'low counterpoise.',
+      },
       {
         version: '2026.08.31.001',
         title: 'The counterpoise default describes a drape, not a standoff',
@@ -5359,8 +5378,19 @@
                       Coax shield or counterpoise, measured from the
                       feedpoint: the {fmtLen(dropM, units)} drop counts, and
                       all of it resonates. {fmtLen(counterpoiseM, units)} of
-                      it lies on the ground.
+                      it lies on the ground. A longer one makes every length
+                      less critical; the ARRL suggests a quarter wave on the
+                      lowest band.
                     </div>
+                    {mode === 'impedance' && (
+                      <div className="control-hint">
+                        Modeled as a wire ending here -- for coax, a
+                        common-mode choke at the feedpoint is what makes that
+                        true. RG-58 measures like the modeled wire; a fat
+                        shield (RG-8) can shift SWR up to 1.5x on short wires
+                        over a low counterpoise.
+                      </div>
+                    )}
                   </label>
                 )}
                 {mode === 'impedance' && (
