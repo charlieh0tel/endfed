@@ -666,7 +666,7 @@ test.describe('the NEC check refines', () => {
       await page.locator('.nec-check span', { hasText: 'same geometry' })
         .waitFor({ timeout: 300000 });
       const points = await page.evaluate(() => {
-        const path = document.querySelector('svg.map-svg .nec-curve path');
+        const path = document.querySelector('svg.map-svg .nec-curve path.nec-line');
         return path ? path.getAttribute('d').split('L').length : 0;
       });
       expect(points, 'refined midpoints survive to the drawn curve')
@@ -676,6 +676,8 @@ test.describe('the NEC check refines', () => {
       await expect(page.locator('th', { hasText: /nec2/ })).toHaveCount(2);
       // Both solvers ran: with the counterpoise on the ground they part past
       // two half-waves, and the overlay carries the band between them.
+      // The band survives only where nec2c credibly disagrees: on this
+      // low-counterpoise map that is the sub-two-half-wave stretch.
       await expect(page.locator('svg.map-svg .nec-band')).toHaveCount(1);
       await expect(page.locator('svg.map-svg .nec-edge')).not.toHaveCount(0);
       await expect(page.locator('.verdict-detail'))

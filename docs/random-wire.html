@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.004';
+    const PAGE_VERSION = '2026.08.31.005';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,16 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.005',
+        title: 'A known error is not doubt',
+        text: 'Where nec2c is in one of its two measured failure regimes -- '
+          + 'the feedpoint under 0.05 wavelengths, or past two half-waves '
+          + 'over a low counterpoise -- the map no longer draws its curve as '
+          + 'a band of uncertainty, the verdict does not quote it, and its '
+          + 'table column reads "--". The band remains where the two solvers '
+          + 'credibly disagree, which is where doubt is real.',
+      },
       {
         version: '2026.08.31.004',
         title: 'The check stops following nec2c where the feed sits low',
@@ -3093,6 +3103,27 @@
         && necPreferred(site, lenM, freqsHz[i]) === 'necpp' ? necpp[i] : z));
 
     /**
+     * Whether nec2c is a credible witness for one sample.  Its two
+     * catastrophic regimes are measured, not suspected: with the feedpoint
+     * under NEC2_FEED_MIN_LAMBDA its ground treatment fails at every
+     * length, and past two half-waves over a counterpoise within
+     * NEC_PREFER_NEC2C_MAX_Z_M it invents a resonance.  Disagreement with
+     * a solver known to be wrong is not doubt, so the map draws no band
+     * from it there.
+     * @param {Site} site
+     * @param {Meters} lenM
+     * @param {Hertz} freqHz
+     * @returns {boolean}
+     */
+    const nec2cCredible = (site, lenM, freqHz) => {
+      const wavelengthM = C_SPEED / freqHz;
+      if (feedHeightM(site) / wavelengthM < NEC2_FEED_MIN_LAMBDA) return false;
+      const halves = 2 * lenM / wavelengthM;
+      return !(site.counterpoiseZM <= NEC_PREFER_NEC2C_MAX_Z_M
+               && halves >= NEC_PREFER_NEC2C_MAX_HALVES);
+    };
+
+    /**
      * Whether a measured point's two solvers agree, or only one answered.
      * @param {{swr: number, alt: ?number}} point
      * @returns {boolean}
@@ -3101,13 +3132,21 @@
       || Math.max(point.swr / point.alt, point.alt / point.swr) <= NEC_AGREE_FACTOR;
 
     /**
-     * The measured curve cut into what the map draws: runs of agreement,
-     * drawn as the line, and runs of disagreement, drawn as a band with
-     * two thin edges and no line, so the check commits to neither solver
-     * there.  A split run keeps one agreeing neighbour at each end so its
-     * edges meet the line.
+     * Whether a point deserves a band: the solvers part, and nec2c is a
+     * credible witness there.  Points carry `cred` from the runner; an
+     * absent flag counts as credible, which keeps old shapes drawing.
+     * @param {{swr: number, alt: ?number, cred?: boolean}} point
+     * @returns {boolean}
+     */
+    const necShowsBand = (point) => !necAgrees(point) && point.cred !== false;
+
+    /**
+     * The measured curve cut into what the map draws: runs where the line
+     * stands alone, and runs of credible disagreement, drawn as a band
+     * with two thin edges.  A split run keeps one lone neighbour at each
+     * end so its edges meet the line.
      *
-     * @template {{swr: number, alt: ?number}} P
+     * @template {{swr: number, alt: ?number, cred?: boolean}} P
      * @param {P[]} points  sorted by length
      * @returns {{line: P[][], split: P[][]}}
      */
@@ -3120,7 +3159,7 @@
       let run = [];
       let agreeing = true;
       points.forEach((point, i) => {
-        const agrees = necAgrees(point);
+        const agrees = !necShowsBand(point);
         if (agrees !== agreeing) {
           if (agreeing) {
             line.push(run);
@@ -4044,7 +4083,7 @@
      * @param {{solution: ReturnType<typeof solve>,
      *          score: ?ReturnType<typeof solveImpedance>,
      *          necPoints: ?{lenM: Meters, swr: number, alt: ?number,
-     *                        best: number}[],
+     *                        best: number, cred: boolean}[],
      *          maxLenM: Meters, units: UnitKey,
      *          wireLenM: Meters, onPick: (lenM: Meters) => void}} props
      */
@@ -4117,7 +4156,8 @@
       // on top of it, two matching curves merged into one ambiguous one.
       /**
        * One SVG path through points, at a reading of each.
-       * @param {{lenM: Meters, swr: number, alt: ?number, best: number}[]} points
+       * @param {{lenM: Meters, swr: number, alt: ?number, best: number,
+       *           cred: boolean}[]} points
        * @param {(point: {swr: number, alt: ?number, best: number}) => number} swrOf
        */
       const pathThrough = (points, swrOf) => points
@@ -4277,8 +4317,9 @@
                             strokeDasharray={edge.dashed ? '5 4' : undefined} />
                     ))}
                     {necPath !== '' && (
-                      <path d={necPath} fill="none" stroke={COLORS.nec}
-                            strokeWidth="4" strokeOpacity="0.85" />
+                      <path className="nec-line" d={necPath} fill="none"
+                            stroke={COLORS.nec} strokeWidth="4"
+                            strokeOpacity="0.85" />
                     )}
                     <text x={MAP.width - MAP.right - 6} y={MAP.top + 12}
                           fill={COLORS.nec} fontSize={MAP.tickFontSize}
@@ -4332,8 +4373,8 @@
                   + `worst ${hoverScore.worst.swr.toFixed(1)}:1 on ${hoverScore.worst.band.label}`
                   + (hoverNecNear && hoverNec !== null
                     ? `, NEC-2 ${fmtSwr(hoverNec.best)}:1`
-                      + (necAgrees(hoverNec) ? ''
-                        : ` (${necSwrText(hoverNec.swr, hoverNec.alt)})`)
+                      + (necShowsBand(hoverNec)
+                        ? ` (${necSwrText(hoverNec.swr, hoverNec.alt)})` : '')
                     : '')
                 : `${fmtLen(hoverM, units)} - ${hoverHit ? `avoid: ${hoverHit.label}` : 'usable'}`}
           </div>
@@ -4686,7 +4727,7 @@
        * @property {string} key       necOverlayKey at launch
        * @property {'running'|'done'|'error'} status
        * @property {{lenM: Meters, swr: number, alt: ?number,
-       *             best: number}[]} points
+       *             best: number, cred: boolean}[]} points
        *           sorted by length; swr is nec2c's, alt nec2++'s when it
        *           solved, best the one the page follows frequency by
        *           frequency (necPreferred); the map draws best as the line
@@ -4700,6 +4741,7 @@
        *                    worst: {swr: number, band: Band, freqHz: Hertz}},
        *             best: {swr: number,
        *                    worst: {swr: number, band: Band, freqHz: Hertz}},
+       *             cred: boolean,
        *             samples: {m: number, freqHz: Hertz, swr: number}[],
        *             profiles: Object<number,
        *               {volts: number[], amps: number[]}>}[]}
@@ -4811,6 +4853,7 @@
             const followed = necFollowed(measured, other,
                                          grid.map(g => g.freqHz), site, lenM);
             const best = measuredScore(followed, grid, ununRatio) ?? scored;
+            const cred = grid.every(g => nec2cCredible(site, lenM, g.freqHz));
             const samples = followed.map((z, i) => ({
               m: grid[i].band.m, freqHz: grid[i].freqHz,
               swr: swrAtRadio(z, ununRatio),
@@ -4821,7 +4864,7 @@
                 && run.status === 'done'
               ? { ...run,
                   checks: [...run.checks, { lenM: data.lenM, ...scored, alt,
-                                            best, samples, profiles }] }
+                                            best, cred, samples, profiles }] }
               : run));
           };
           const decks = grid.map(({ freqHz }) =>
@@ -5011,13 +5054,16 @@
                                              site, data.lenM);
                 const best = measuredScore(followed, codaFreqs, ununRatio)
                   ?? scored;
+                const cred = codaFreqs.every(
+                  g => nec2cCredible(site, data.lenM, g.freqHz));
                 const samples = followed.map((z, i) => ({
                   m: codaFreqs[i].band.m, freqHz: codaFreqs[i].freqHz,
                   swr: swrAtRadio(z, ununRatio),
                 }));
                 const alt = other === null ? null
                   : measuredScore(other, codaFreqs, ununRatio);
-                checks.push({ lenM: data.lenM, ...scored, alt, best, samples,
+                checks.push({ lenM: data.lenM, ...scored, alt, best, cred,
+                              samples,
                               profiles: bandProfiles(data.outputs,
                                                      codaFreqs) });
               }
@@ -5029,7 +5075,9 @@
                 const best = geometricMeanSwr(
                   necFollowed(measured, other, freqs, site, data.lenM),
                   ununRatio) ?? swr;
-                results.push({ lenM: data.lenM, swr, alt, best });
+                const cred = freqs.every(
+                  f => nec2cCredible(site, data.lenM, f));
+                results.push({ lenM: data.lenM, swr, alt, best, cred });
                 solved++;
               }
             }
@@ -5604,7 +5652,7 @@
                           ? `  NEC-2 measures ${fmtSwr(necHere.best.swr)}:1, `
                             + `worst ${fmtSwr(necHere.best.worst.swr)}:1 on `
                             + `${necHere.best.worst.band.label}`
-                            + (necHere.alt !== null
+                            + (necHere.cred !== false && necHere.alt !== null
                                && Math.max(necHere.swr / necHere.alt.swr,
                                            necHere.alt.swr / necHere.swr)
                                   > NEC_AGREE_FACTOR
@@ -5719,8 +5767,11 @@
                       {necSuspect.length === 0
                         && ' The line follows nec2c on a short wire over a low'
                            + ' counterpoise and nec2++ elsewhere, which is how'
-                           + ' each was measured to hold; where they part the'
-                           + ' band shows the other reading.'}
+                           + ' each was measured to hold. Where they credibly'
+                           + ' part the band shows the other reading; where'
+                           + ' nec2c is in a failure regime the map leaves its'
+                           + ' curve out rather than drawing a known error as'
+                           + ' doubt.'}
                       {` Both solve at the segmentation the tables were fitted`
                         + ` at, which sits about x${NEC_CHECK_DENSITY_FACTOR}`
                         + ' from a converged answer on its own, so the overlay'
@@ -5784,7 +5835,8 @@
                                     ? 'nec-followed' : '')(necCheckAt(point.lenM))}>
                                   {(check =>
                                     check === null ? ''
-                                      : `${fmtSwr(check.swr)} / ${fmtSwr(check.worst.swr)}:1`
+                                      : check.cred === false ? '--'
+                                        : `${fmtSwr(check.swr)} / ${fmtSwr(check.worst.swr)}:1`
                                   )(necCheckAt(point.lenM))}</td>
                               )}
                               {necChecks.length > 0 && (

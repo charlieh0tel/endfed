@@ -1640,6 +1640,24 @@ test('a measured SWR reads as one figure when the solvers agree and a range when
   assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
 });
 
+test('nec2c is credible only outside its two measured failure regimes', () => {
+  const flat = m.withSiteInvariants({ geometry: 'flatTop', heightM: 9.144,
+    counterpoiseM: 7.62, counterpoiseZM: 0.01, balunM: 0.61,
+    soil: m.DEFAULT_SOIL, wire: 'bare' });
+  const lam40 = m.C_SPEED / 7.15e6;
+  assert.ok(m.nec2cCredible(flat, 0.75 * lam40, 7.15e6), 'short and fed high');
+  assert.ok(!m.nec2cCredible(flat, 1.25 * lam40, 7.15e6),
+    'past two half-waves over a low counterpoise: the invented resonance');
+  const raised = { ...flat, counterpoiseZM: 0.3 };
+  assert.ok(m.nec2cCredible(raised, 1.25 * lam40, 7.15e6),
+    'the same length is credible once the counterpoise is up');
+  const fedLow = m.withSiteInvariants({ geometry: 'sloper', heightM: 9.144,
+    counterpoiseM: 27.25, counterpoiseZM: 0.3, balunM: 0.61,
+    soil: m.DEFAULT_SOIL, wire: 'bare' });
+  assert.ok(!m.nec2cCredible(fedLow, 0.25 * lam40, 7.15e6),
+    'fed low: not credible at any length');
+});
+
 test('the check follows nec2c only on a short wire over a low counterpoise', () => {
   const low = m.withSiteInvariants({ geometry: 'flatTop', heightM: 9.144,
     counterpoiseM: 7.62, counterpoiseZM: 0.05, balunM: 0.61,
@@ -1672,6 +1690,10 @@ test('the measured curve splits into runs of agreement and runs of doubt', () =>
   const d = (swr) => ({ lenM: 0, swr, alt: swr * 2 });      // disagree
   const lone = { lenM: 0, swr: 2, alt: null };               // one solver
   assert.ok(m.necAgrees(a(2)) && !m.necAgrees(d(2)) && m.necAgrees(lone));
+  // A disagreeing point where nec2c is not credible draws no band.
+  assert.equal(m.necShowsBand({ swr: 2, alt: 4, cred: false }), false);
+  assert.equal(m.necShowsBand({ swr: 2, alt: 4, cred: true }), true);
+  assert.equal(m.necShowsBand({ swr: 2, alt: 4 }), true, 'absent flag is credible');
   const points = [a(1), a(2), d(3), d(4), a(5), a(6), d(7)];
   const runs = m.necRuns(points);
   assert.deepEqual(runs.line.map(r => r.map(p => p.swr)), [[1, 2], [5, 6]],
