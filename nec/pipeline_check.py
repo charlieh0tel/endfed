@@ -61,7 +61,11 @@ TOLERANCE = 1e-3
 #: supported node.  On a 24-group cut every node is thinly supported.  What
 #: the pipeline reproduces is the cost and the error, which is also what a
 #: changed formula moves; the table stays in the fixture for a reader to diff.
-COST_TOLERANCE = 1e-6
+#: The margin is what platforms disagree by, not what a change moves: a
+#: longer refinement path (the 0.6 alpha ceiling took soil 2 from 13 to 60
+#: evaluations) accumulates scipy/BLAS drift to 4e-6, where a real formula
+#: change moves cost by percent.
+COST_TOLERANCE = 1e-4
 
 
 def run():
