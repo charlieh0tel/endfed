@@ -1647,6 +1647,15 @@ test('the check follows nec2c only on a short wire over a low counterpoise', () 
   const high = { ...low, counterpoiseZM: 0.3 };
   const lam = m.C_SPEED / 7.15e6;
   assert.equal(m.necPreferred(low, 0.75 * lam, 7.15e6), 'nec2c', 'low and short');
+  // Fed near the ground, nec2c fails at every length: a sloper's balun at
+  // 0.61 m is 0.015 wavelengths on 40 m.
+  const fedLow = m.withSiteInvariants({ geometry: 'sloper', heightM: 9.144,
+    counterpoiseM: 27.25, counterpoiseZM: 0.01, balunM: 0.61,
+    soil: m.DEFAULT_SOIL, wire: 'bare' });
+  assert.equal(m.necPreferred(fedLow, 0.75 * lam, 7.15e6), 'necpp',
+    'fed low: nec2++ even on a short wire');
+  assert.equal(m.necPreferred(fedLow, 0.75 * lam, 28.85e6), 'necpp',
+    'and on 10 m the length rule decides (past two half-waves)');
   assert.equal(m.necPreferred(low, 1.25 * lam, 7.15e6), 'necpp', 'low but past two half-waves');
   assert.equal(m.necPreferred(high, 0.75 * lam, 7.15e6), 'necpp', 'a raised counterpoise');
   // Frequency by frequency: the same wire is short on 40 m and long on 10 m.

@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.003';
+    const PAGE_VERSION = '2026.08.31.004';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,16 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.004',
+        title: 'The check stops following nec2c where the feed sits low',
+        text: 'With the feedpoint under 0.05 wavelengths -- a sloper fed '
+          + 'near the ground -- nec2c\'s ground treatment fails at every '
+          + 'length, and the measured line was still following it on short '
+          + 'wires. It now follows nec2++ throughout that regime, which a '
+          + 'converged check of the failing case puts within a factor of '
+          + 'two where nec2c read 2000000:1.',
+      },
       {
         version: '2026.08.31.003',
         title: 'A word for the longer counterpoise',
@@ -3052,6 +3062,16 @@
      * @returns {'nec2c' | 'necpp'}
      */
     const necPreferred = (site, lenM, freqHz) => {
+      // With the feedpoint itself near the ground -- the regime the suspect
+      // warning names -- nec2c's ground treatment fails at every length
+      // (x192000 at the 90th past two half-waves on the ranking's sloper
+      // rows, and a measured 2000000:1 on a fed-low sloper deck whose
+      // converged answer is 2.6:1), while nec2++ stays within a factor of
+      // two.  Below two half-waves the two tie there, so preferring nec2++
+      // costs nothing and follows the warning's own constant.
+      if (feedHeightM(site) / (C_SPEED / freqHz) < NEC2_FEED_MIN_LAMBDA) {
+        return 'necpp';
+      }
       const halves = 2 * lenM * freqHz / C_SPEED;
       return site.counterpoiseZM <= NEC_PREFER_NEC2C_MAX_Z_M
           && halves < NEC_PREFER_NEC2C_MAX_HALVES
