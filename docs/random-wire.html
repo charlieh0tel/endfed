@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.30.003';
+    const PAGE_VERSION = '2026.08.31.001';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,17 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.001',
+        title: 'The counterpoise default describes a drape, not a standoff',
+        text: 'A counterpoise "on the ground" now defaults to 2 cm, the '
+          + 'average clearance of coax draped over grass, instead of 5 cm, '
+          + 'which described stakes. Flat on the dirt is not a computable '
+          + 'case, and the choice matters: between 1 and 5 cm the converged '
+          + 'measurements move the default verdict on up to a fifth of '
+          + 'lengths on the higher bands. Suggested lengths barely move; '
+          + 'their scores are a few tenths more honest.',
+      },
       {
         version: '2026.08.30.003',
         title: 'Slightly better on the lowest wires',
@@ -1031,7 +1042,16 @@
      * The preset button still offers a quarter wave.
      */
     const DEFAULT_COUNTERPOISE_M = 7.62;   // 25 ft of coax or counterpoise
-    const DEFAULT_COUNTERPOISE_Z_M = 0.05;  // lying on the ground
+    /**
+     * A counterpoise "on the ground": 2 cm, the average clearance of coax
+     * draped over grass, leaf litter and ruts.  Flat on the dirt is not a
+     * computable case -- the thin-wire kernel wants one medium around the
+     * conductor -- and the choice is not free: between 1 cm and 5 cm the
+     * converged data moves the 9:1-into-3:1 verdict on 3 to 22 percent of
+     * lengths by band.  5 cm, the old default, described standoffs rather
+     * than a drape; see docs/MODEL.md, "The 5 cm standoff, revisited".
+     */
+    const DEFAULT_COUNTERPOISE_Z_M = 0.02;
     const DEFAULT_BALUN_M = 0.61;           // a 2 ft stake
     const HEIGHT_RANGE_M = Object.freeze({ min: 1, max: 30 });
     const COUNTERPOISE_RANGE_M = Object.freeze({ min: 0, max: 50 });
@@ -5356,8 +5376,10 @@
                              counterpoiseZM: clamp(Number(e.target.value),
                                                    COUNTERPOISE_Z_RANGE_M) })} />
                     <div className="control-hint">
-                      On the ground or on stakes. It hangs from the
-                      feedpoint, so it cannot go above it.
+                      Coax on the dirt averages a centimeter or two of
+                      drape, which is the default; raise it for stakes or
+                      a fence line. It hangs from the feedpoint, so it
+                      cannot go above it.
                     </div>
                   </label>
                 )}

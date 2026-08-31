@@ -976,6 +976,17 @@ install rather than a modeling convenience.  Burial is the wrong model
 for something lying on top and the right one for radials under the turf,
 which is a different antenna the page also invites.
 
+The default now says so: 2 cm rather than the 5 cm the standoff era
+left behind.  The choice is not free -- on the converged sweeps, moving
+the counterpoise from about 1 cm to about 5 cm shifts SWR at the radio
+by x1.05 median at 160 m up to x1.37 at 20 m, and flips the 9:1-into-3:1
+verdict on 3 percent of lengths at 160 m rising to 22 at 20 m -- and
+5 cm describes stakes where 2 cm describes the drape most installations
+are.  The table is fitted down to 1 cm, so the new default sits inside
+the measured domain, the suggested lengths themselves barely move (a
+foot or two), and the fitted-vs-followed solver rule is unaffected: 2 cm
+is still the low-counterpoise regime where nec2c holds on short wires.
+
 ### Swept, and the model can absorb it
 
 53424 further solves over seven return heights from 0.01 to 3 m,

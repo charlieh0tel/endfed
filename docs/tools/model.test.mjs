@@ -966,8 +966,10 @@ test('the deck describes the geometry the model was fitted at', async () => {
   const fixture = JSON.parse(await readFile(url, 'utf8'));
 
   close(m.WIRE_RADIUS_M, fixture.wire_radius_m, 5e-7, 'wire radius');
-  close(m.DEFAULT_COUNTERPOISE_Z_M, fixture.return_height_m, 1e-12,
-    'the default counterpoise height is the one the fixture was solved at');
+  // The fixture was solved with the counterpoise at 5 cm, the default of
+  // its era; the page's default has since moved to the 2 cm drape, so the
+  // sites here pin the fixture's own height rather than the default.
+  const fixtureZM = fixture.return_height_m;
   assert.equal(m.DECK_SEGMENTS_PER_WAVELENGTH, fixture.segments_per_wavelength,
     'segmentation rule');
 
@@ -976,7 +978,7 @@ test('the deck describes the geometry the model was fitted at', async () => {
     const runM = m.fromDisplay(kase.return_ft, 'ft');
     const lenM = m.fromDisplay(kase.length_ft, 'ft');
     const site = { geometry: 'flatTop', heightM, balunM: m.DEFAULT_BALUN_M,
-                   counterpoiseM: runM, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M,
+                   counterpoiseM: runM, counterpoiseZM: fixtureZM,
                    soil: kase.soil };
     const deck = m.buildProbeDeck(lenM, 14.175e6, site, m.WIRE_RADIUS_M);
 
@@ -988,11 +990,11 @@ test('the deck describes the geometry the model was fitted at', async () => {
     close(at(antenna, 9), m.WIRE_RADIUS_M, 5e-7, `${kase.name}: radius`);
 
     close(at(drop, 5), heightM, 5e-4, `${kase.name}: drop starts at the feedpoint`);
-    close(at(drop, 8), m.DEFAULT_COUNTERPOISE_Z_M, 5e-4, `${kase.name}: drop ends low`);
+    close(at(drop, 8), fixtureZM, 5e-4, `${kase.name}: drop ends low`);
 
-    close(at(run, 5), m.DEFAULT_COUNTERPOISE_Z_M, 5e-4, `${kase.name}: run is low`);
+    close(at(run, 5), fixtureZM, 5e-4, `${kase.name}: run is low`);
     close(at(run, 6), runM, 5e-4, `${kase.name}: run length`);
-    close(at(run, 8), m.DEFAULT_COUNTERPOISE_Z_M, 5e-4, `${kase.name}: run is level`);
+    close(at(run, 8), fixtureZM, 5e-4, `${kase.name}: run is level`);
     // Same direction as the antenna, per the fixture's geometry note.
     assert.ok(at(run, 6) > 0, `${kase.name}: run heads along the wire`);
 
@@ -1501,7 +1503,9 @@ test('an insulated wire slows the model by the measured factor', () => {
   // The jacket factor was measured with NEC-4.2's IS card (MODEL.md,
   // "Insulation is a scalar"); the model applies it to both lines, so a
   // resonance peak moves to a shorter length by exactly that scale.
-  const bare = defaultSite();
+  // At the geometry the factor was measured at: the counterpoise at 5 cm,
+  // where the default sat when the IS-card comparison was run.
+  const bare = { ...defaultSite(), counterpoiseZM: 0.05 };
   const insulated = { ...bare, wire: 'insulated' };
   const freqHz = 7.15e6;
   const peakOf = (site) => {

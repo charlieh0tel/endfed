@@ -9,49 +9,15 @@ nec2c and nec2++ in the page.
 
 ## The model
 
-- [ ] **Model the counterpoise in contact with the ground.**  Most
-      people let the coax lie on the dirt.  The model holds it 5 cm up
-      because NEC-2 must: a wire bonded to the ground plane shorts the
-      source.  NEC-4 has no such limit, and `ground_contact.py` shows
-      the standoff is not free -- 5 cm above against 5 cm below moves
-      the feedpoint about 15 percent near half- and full-wave
-      multiples, and up to x5.02 at a quarter wave, which is where the
-      picker operates.
-
-      It also retires the argument that made the standoff look safe:
-      "0.01 m gives nearly the same answer" is true in PyNEC (x0.92)
-      and false in NEC-4.2 (x1.31).
-
-      Recipe, all three needed: split the drop at z = 0, since no
-      segment may span the interface; `GE 0`, because `GE 1` rejects
-      anything at or below it; and avoid z = 0 exactly, which puts the
-      wire *in* the interface and returns a value inconsistent with
-      both sides.  Buried is well behaved from 1 cm to 50 cm down.
-
-      What it does not do is let the return sit *on* the ground.  That
-      case is not expressible: the thin-wire kernel wants one medium
-      around the conductor and a wire on the surface has half its field
-      in each, so z = 0 returns a value consistent with neither side and
-      the above branch fails below about 1 cm.  Closing the bracket from
-      5 cm to 1 cm either side does not converge -- at a quarter wave it
-      widens, x2.19 median against x1.57.  Insulation does not change
-      this; soil at HF is a lossy dielectric, so contact is not shorting
-      and coax and bare wire are the same case.
-
-      So the decision is not a depth but a regime, and the honest
-      justification for staying above ground is mechanical: real ground
-      is not flat, and a centimeter or two of average clearance
-      describes coax draped over grass and ruts.  Two things follow,
-      both open:
-
-      - is 5 cm the right clearance for that story, or 1-2 cm?  NEC-4
-        puts 31 percent between them, and 5 cm was never chosen for a
-        physical reason.
-      - radials or a counterpoise under the turf are a genuinely
-        different install, and burial models them well -- nearly flat
-        from 1 to 50 cm down, so it needs no depth from the user.  That
-        is where a second model would earn its keep, rather than
-        between solvers.
+- [ ] **Radials or a counterpoise under the turf.**  What remains of
+      the ground-contact question.  The physics half is settled and in
+      MODEL.md ("The 5 cm standoff, revisited"): wire *on* the surface
+      is not expressible, the above branch is usable to about 1 cm, and
+      the default now describes a drape (2 cm) rather than a standoff.
+      The open half is burial: radials under the turf measure nearly
+      flat from 1 to 50 cm down, so a buried-return variant needs no
+      depth from the user -- but it is a different antenna, and wants
+      its own sweep and table before the page can offer it.
 
 - [ ] **The first half-wave peak.**  It reads nearly twice high in
       every form tried, and the falling loss did not touch it: at

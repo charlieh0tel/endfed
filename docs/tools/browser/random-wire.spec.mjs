@@ -223,8 +223,11 @@ test.describe('the installation panel', () => {
     const step = Number(await control.getAttribute('step'));
     // A range input steps from its own min, so only those values are legal,
     // and max need not land on that grid -- rounding up would overshoot it.
-    const snap = (value) =>
-      min + Math.floor((Math.min(value, max) - min) / step) * step;
+    // Rounded to the grid's own precision: min is the drop, an arbitrary
+    // float, and min + n * step can carry a 1e-15 tail fill() rejects.
+    const snap = (value) => Number(
+      (min + Math.floor((Math.min(value, max) - min) / step) * step)
+        .toFixed(3));
 
     const seen = new Set();
     for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
