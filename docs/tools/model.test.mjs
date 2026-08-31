@@ -1443,12 +1443,13 @@ test('the map always has room for every published length', () => {
 });
 
 test('refinement bisects rough spans and leaves smooth ones alone', () => {
-  const flat = [{ lenM: 10, swr: 2.0 }, { lenM: 12, swr: 2.2 },
-                { lenM: 14, swr: 2.0 }];
+  // Refinement follows the drawn reading, not nec2c's: a point's `best`.
+  const flat = [{ lenM: 10, best: 2.0 }, { lenM: 12, best: 2.2 },
+                { lenM: 14, best: 2.0 }];
   assert.deepEqual(m.refineGapsM(flat, 0.1), [], 'smooth stays as sampled');
 
-  const cliff = [{ lenM: 10, swr: 2.0 }, { lenM: 12, swr: 40.0 },
-                 { lenM: 14, swr: 2.0 }];
+  const cliff = [{ lenM: 10, best: 2.0 }, { lenM: 12, best: 40.0 },
+                 { lenM: 14, best: 2.0 }];
   assert.deepEqual(m.refineGapsM(cliff, 0.1), [11, 13],
     'both flanks of a peak get midpoints');
   assert.deepEqual(m.refineGapsM(cliff, 1.5), [],

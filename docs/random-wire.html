@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.005';
+    const PAGE_VERSION = '2026.08.31.006';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.006',
+        title: 'Refine the curve the map draws',
+        text: 'The check\'s refinement bisected rough spans of nec2c\'s '
+          + 'curve even where the page follows nec2++, spending its extra '
+          + 'solves sharpening a line nobody sees. It now refines the '
+          + 'followed reading, so runs are shorter where nec2c is noisy and '
+          + 'sharper where it counts.',
+      },
       {
         version: '2026.08.31.005',
         title: 'A known error is not doubt',
@@ -3469,7 +3478,7 @@
      * Applied repeatedly this halves rough spans until they are smooth or
      * at `minGapM`, and leaves smooth spans alone.
      *
-     * @param {{lenM: Meters, swr: number}[]} points  sorted by length
+     * @param {{lenM: Meters, best: number}[]} points  sorted by length
      * @param {Meters} minGapM  the finest grid worth solving
      * @returns {Meters[]}
      */
@@ -3480,8 +3489,11 @@
         const left = points[i - 1];
         const right = points[i];
         if (right.lenM - left.lenM < 2 * minGapM) continue;
-        const contrast = Math.max(left.swr, right.swr)
-          / Math.min(left.swr, right.swr);
+        // Refined on the reading the map draws: bisecting nec2c's curve
+        // where the page does not follow it spent the whole refinement
+        // budget sharpening a line nobody sees.
+        const contrast = Math.max(left.best, right.best)
+          / Math.min(left.best, right.best);
         if (contrast > NEC_REFINE_FACTOR) {
           midpoints.push((left.lenM + right.lenM) / 2);
         }
@@ -4735,6 +4747,7 @@
        * @property {number} solved    lengths with a point on the map
        * @property {number} scheduled lengths handed to a worker
        * @property {number} total     lengths the grid holds
+       * @property {number} firstPass the map pass alone, before refinement
        * @property {{lenM: Meters, swr: number,
        *             worst: {swr: number, band: Band, freqHz: Hertz},
        *             alt: ?{swr: number,
@@ -4960,10 +4973,11 @@
         /** @type {NecRun['checks']} */
         const checks = [];
 
+        const firstPass = lengths.length;
         const snapshot = (/** @type {NecRun['status']} */ status,
                           /** @type {?string} */ note) => ({
           key, status, points: [...results].sort((a, b) => a.lenM - b.lenM),
-          solved, scheduled: nextLength, total: lengths.length,
+          solved, scheduled: nextLength, total: lengths.length, firstPass,
           checks: [...checks], note,
         });
         const conclude = (/** @type {?string} */ error) => {
@@ -5749,6 +5763,9 @@
                       </button>
                       <span className="control-hint" role="status">
                         NEC-2: {necRun.solved} of {necRun.total} lengths
+                        {necRun.total > necRun.firstPass
+                          && necRun.solved < necRun.total
+                          && ', refining the rough spans'}
                         {necRun.solved === necRun.total
                           && ', measuring the offered lengths'}
                       </span>
