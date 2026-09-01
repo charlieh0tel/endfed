@@ -2430,6 +2430,46 @@ against 0.14 for the closed form, a tenth of the interpolation cost
 already around it.  The flat top's x26.6 worst is the measurement
 artifact above and stays.
 
+## The unun, scoped: as big as the model, and not honestly modelable
+
+The page divides the feedpoint impedance by the unun ratio and calls
+that the radio's load -- an ideal, lossless, frequency-flat transformer
+at the one place in the system least likely to be any of those.
+`nec/unun_check.py` bounds what that costs: the two standard builds
+(49:1 as 2:14 on one FT240-43 with 100 pF compensation, 9:1 as 3:9 on
+an FT140-43) as an ideal transformer plus the parasitics that matter --
+a magnetizing branch from Fair-Rite's #43 complex permeability, whose
+loss term rivals the inductive one across HF, published-scale leakage,
+winding capacitance -- driven by the shipped tables' own impedances
+over the default map.
+
+Through the 49:1, 9.7 percent of 3:1-tuner verdicts flip, and in the
+harmful direction: 11 percent of lengths called ok read over 3:1
+through the real transformer.  Core loss is about 1 dB mid-band, 1.5 at
+160 m median and 8 at its worst -- the 2-turn primary's magnetizing
+impedance is about 74 ohms at 3.5 MHz, the known single-core weakness.
+The 40 m EFHW anchor lands on published measurements (about 1 dB at
+3-4 kilohm loads), which is what the parameter set is credible by.
+
+Through the 9:1 more verdicts flip, 20 percent, but every one is
+flattering: the lossy core is an attenuator, so the radio sees a better
+match while a median 2.7 dB on 40 m -- up to 13 at 160 m -- goes into
+ferrite.  The ideal assumption overstates SWR and hides heat.
+
+Scaling the loss permeability and leakage 30 percent either way moves
+the flip rates by about two points and changes no conclusion.  So the
+unun's contribution is the same order as the table's own out-of-sample
+miscall (14.6 percent), confirming it cannot be told apart from model
+error in the current accounting -- and it stays unmodeled anyway,
+because build-to-build spread (vendor, core count, winding style)
+exceeds the effect: a "typical build" correction would dress a guess as
+a measurement.  What ships instead is one sentence on the ratio hint --
+ideal assumed, about 1 dB mid-band, more on 160 m -- and the same
+release retires the hint that warned the model draws resonances twice
+too sharp, which the tapered line made false.
+
+## What the model deliberately does not do
+
 - Predict a specific installation's feedpoint impedance.
 - Model common-mode current on the feedline shield.  With a poor return
   path, "the feedpoint impedance" is not a well-defined single number at

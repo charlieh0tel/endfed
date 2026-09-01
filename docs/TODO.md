@@ -19,14 +19,6 @@ nec2c and nec2++ in the page.
       depth from the user -- but it is a different antenna, and wants
       its own sweep and table before the page can offer it.
 
-- [ ] **The unun is not in the model.**  NEC measures the feedpoint and
-      the page divides by the ratio, so an ideal, lossless,
-      frequency-flat transformer is assumed at the one place in the
-      system least likely to be any of those: a 9:1 on a wire that
-      swings 130 to 3500 ohms is far from its design load over most of
-      that range.  Whatever it costs is charged to the model's error
-      budget, where it cannot be told apart from the table's own.
-
 - [ ] **`nec_model._wires` segments the flat top's drop by the wire
       height** rather than by the drop's own length, so a counterpoise
       well up gets a finer drop than intended -- 49 segments where 25

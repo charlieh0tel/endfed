@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.011';
+    const PAGE_VERSION = '2026.08.31.012';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.012',
+        title: 'An honest word about the unun',
+        text: 'The unun ratio hint now says what the model assumes: an '
+          + 'ideal transformer, where a real core burns about 1 dB '
+          + 'mid-band and more on 160 m. It also no longer warns that the '
+          + 'model draws resonances twice too sharp -- since the last '
+          + 'release, it does not.',
+      },
       {
         version: '2026.08.31.011',
         title: 'Half-wave peaks the right height',
@@ -5761,13 +5770,8 @@
                     ))}
                     <div className="control-hint">
                       1:1 is a direct feed; 9:1 suits a random wire, 49:1 and 64:1 an
-                      end-fed half wave.
-                      {ununRatio >= 49 && (
-                        <> At these ratios you are aiming at a resonance rather
-                        than avoiding one, and the model draws resonances about
-                        twice too sharp &mdash; expect it to rate a true half
-                        wave worse than it is.</>
-                      )}
+                      end-fed half wave. The unun is assumed ideal. A real core
+                      burns about 1 dB mid-band, more on 160 m.
                     </div>
                   </fieldset>
                 )}
