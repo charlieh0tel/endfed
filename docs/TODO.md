@@ -9,16 +9,6 @@ nec2c and nec2++ in the page.
 
 ## The model
 
-- [ ] **Radials or a counterpoise under the turf.**  What remains of
-      the ground-contact question.  The physics half is settled and in
-      MODEL.md ("The 5 cm standoff, revisited"): wire *on* the surface
-      is not expressible, the above branch is usable to about 1 cm, and
-      the default now describes a drape (2 cm) rather than a standoff.
-      The open half is burial: radials under the turf measure nearly
-      flat from 1 to 50 cm down, so a buried-return variant needs no
-      depth from the user -- but it is a different antenna, and wants
-      its own sweep and table before the page can offer it.
-
 - [ ] **`nec_model._wires` segments the flat top's drop by the wire
       height** rather than by the drop's own length, so a counterpoise
       well up gets a finer drop than intended -- 49 segments where 25
@@ -39,6 +29,15 @@ nec2c and nec2++ in the page.
       that no assertion covers.
 
 ## Considered and declined
+
+- A buried-radials variant.  The remainder of the ground-contact
+  question, declined for want of anyone who wants it: it entered as
+  modeling completeness (burial is the expressible neighbor of the
+  inexpressible wire-on-ground), not as demand, and this page's users
+  drape a counterpoise rather than bury a field.  The design is settled
+  if that changes: depth is not an axis (measured flat 1 to 50 cm), the
+  z axis drops so the table goes 1-D in h/lambda, radial count is the
+  one real axis, and the whole campaign is about a solver-day.
 
 - Deriving `marginPct` from a user-set `|Z|max` instead of a magic
   percentage, in the classical mode.  Buildable and honest, and declined
