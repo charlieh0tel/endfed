@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.009';
+    const PAGE_VERSION = '2026.08.31.010';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,13 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.010',
+        title: 'A steadier verdict panel',
+        text: 'Picking a new length said nothing for half a second, so the '
+          + 'verdict panel shrank and regrew around every click. The '
+          + 'measuring notice now appears the moment the length changes.',
+      },
       {
         version: '2026.08.31.009',
         title: 'No column of dashes',
@@ -4897,6 +4904,10 @@
         const key = necRun.key;
         const lenM = wireLenM;
         const grid = necCheckFreqs(score.bands, segment);
+        // Said immediately rather than after the debounce, so the verdict
+        // keeps a sentence in place of the measurement and the panel does
+        // not shrink and regrow around every picked length.
+        setNecMeasuringM(lenM);
         const timer = setTimeout(() => {
           if (necFollow.current !== null) {
             necFollow.current.worker.terminate();
@@ -4951,7 +4962,14 @@
             lenM, kind: 'coda', decks, models: decks.map(deckModel),
           });
         }, NEC_FOLLOW_DELAY_MS);
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(timer);
+          // Only the pending announcement: a worker in flight clears its
+          // own flag in finish().
+          if (necFollow.current === null || necFollow.current.lenM !== lenM) {
+            setNecMeasuringM(current => (current === lenM ? null : current));
+          }
+        };
       }, [necRun, necKey, score, wireLenM, site, segment, ununRatio]);
 
       /**
