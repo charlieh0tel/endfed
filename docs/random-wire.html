@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.006';
+    const PAGE_VERSION = '2026.08.31.007';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,14 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.007',
+        title: 'The legend admits what is drawn',
+        text: 'When the whole map sits in nec2c\'s failure regime the legend '
+          + 'names the line as nec2++ and drops the edge entries, and the '
+          + 'status says nec2c was solved but not drawn. Edge entries also '
+          + 'disappear on any map with no band to explain.',
+      },
       {
         version: '2026.08.31.006',
         title: 'Refine the curve the map draws',
@@ -4191,6 +4199,10 @@
       const low = (/** @type {{swr: number, alt: ?number}} */ point) =>
         Math.min(point.swr, point.alt ?? point.swr);
       const necSplits = runs === null ? [] : runs.split.filter(run => run.length >= 2);
+      // What the legend should admit to: whether nec2c has any credible
+      // stretch on this map, and whether a band is actually drawn.
+      const necAnyCred = necPoints !== null
+        && necPoints.some(point => point.cred !== false);
       const necBand = necSplits.map(run =>
         `${pathThrough(run, high)} ${[...run].reverse()
           .map(point => `L ${xOf(point.lenM).toFixed(2)} ${yOfSwr(low(point)).toFixed(2)}`)
@@ -4414,13 +4426,19 @@
               <>
                 <span><span className="swatch swatch-line swatch-bold"
                              style={{ borderColor: COLORS.nec }}></span>
-                  NEC-2, the solver the page follows here</span>
-                <span><span className="swatch swatch-line"
-                             style={{ borderColor: COLORS.nec }}></span>
-                  nec2c</span>
-                <span><span className="swatch swatch-line swatch-dashed"
-                             style={{ borderColor: COLORS.nec }}></span>
-                  nec2++, where they part</span>
+                  {necAnyCred
+                    ? 'NEC-2, the solver the page follows here'
+                    : 'NEC-2 (nec2++; nec2c fails in this regime)'}</span>
+                {necSplits.length > 0 && (
+                  <>
+                    <span><span className="swatch swatch-line"
+                                 style={{ borderColor: COLORS.nec }}></span>
+                      nec2c</span>
+                    <span><span className="swatch swatch-line swatch-dashed"
+                                 style={{ borderColor: COLORS.nec }}></span>
+                      nec2++, where they part</span>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -5781,14 +5799,19 @@
                       {necFactor !== null
                         && ` Across this map nec2c reads x${necFactor.toFixed(1)} `
                            + 'the model\'s SWR at the median length.'}
-                      {necSuspect.length === 0
-                        && ' The line follows nec2c on a short wire over a low'
-                           + ' counterpoise and nec2++ elsewhere, which is how'
-                           + ' each was measured to hold. Where they credibly'
-                           + ' part the band shows the other reading; where'
-                           + ' nec2c is in a failure regime the map leaves its'
-                           + ' curve out rather than drawing a known error as'
-                           + ' doubt.'}
+                      {necRun.points.length > 0
+                       && necRun.points.every(p => p.cred === false)
+                        ? ' This whole map sits in nec2c\'s failure regime,'
+                          + ' so the line is nec2++ throughout; nec2c was'
+                          + ' solved but is not drawn.'
+                        : necSuspect.length === 0
+                          && ' The line follows nec2c on a short wire over a'
+                             + ' low counterpoise and nec2++ elsewhere, which'
+                             + ' is how each was measured to hold. Where they'
+                             + ' credibly part the band shows the other'
+                             + ' reading; where nec2c is in a failure regime'
+                             + ' the map leaves its curve out rather than'
+                             + ' drawing a known error as doubt.'}
                       {` Both solve at the segmentation the tables were fitted`
                         + ` at, which sits about x${NEC_CHECK_DENSITY_FACTOR}`
                         + ' from a converged answer on its own, so the overlay'
