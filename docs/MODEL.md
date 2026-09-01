@@ -2368,11 +2368,10 @@ wavelengths: on the flat top at the defaults 10 m goes from 18.3 to
 15.0 percent wrong, 20 m 27.5 to 25.3, 40 m 29.4 to 27.6, and 160 m,
 whose wires never clear a tenth of a wavelength, 45.6 to 46.2.  Where
 the loose tuners offer more lengths the rate of good lengths called bad
-falls by more than the miscall rate rises.  What remains true is that
-the first half-wave peak reads nearly twice high in every form tried,
-so an end-fed half wave through a 49:1 is the case the model serves
-worst, and the random-wire case, which is what the page is for, is the
-one it serves best.
+falls by more than the miscall rate rises.  Through all of it the first
+half-wave peak still read nearly twice high, so an end-fed half wave
+through a 49:1 remained the case the model served worst.  What closed
+it was not another exponent but the line form itself; next section.
 
 One per-length figure in the json is not the model's: the flat top's
 worst, x26.6, is three points at exactly a half wave on a 2 m wire at
@@ -2381,7 +2380,55 @@ on different sides of it (19 and 96 kilohm) and the extrapolation
 doubles it to 180.  The neighbouring lengths are ordinary.  It is a
 measurement artifact at a peak, left in the data as measured.
 
-## What the model deliberately does not do
+### The length-resolved line closes the peak
+
+The structural idea turned out to be the whole answer.  `coth` with one
+averaged `Z0` was always standing in for
+Schelkunoff's actual picture: a nonuniform line whose local
+characteristic impedance, `60 (ln(2x/a) - 1)` at distance `x` from the
+feed, grows along the wire.  Implemented as a cascade of 64 exact
+uniform-segment solutions from the open end back to the feed
+(`tapered_zin` in `nec/fit.py`; the page's `taperedLineZ` mirrors it and
+a test pins the two together), it replaces the antenna line and nothing
+else -- same six parameters, the return line untouched.
+
+Per group at equal parameter count, so this is the form alone
+(`nec/peak_form_check.py`), the peak overshoot simply goes away: the
+tallest |Z| the model draws in a group lands at x1.04 of NEC's median
+on both geometries, from x1.96 (flat top) and x1.44 (sloper).  The
+physical reason the averaged form could never do this: near the feed
+the local `Z0` is low, so the first resonance's transformation is
+softer than one high average predicts -- a term that bites only near
+resonance, derived rather than invented.  The falling-loss ramp is not
+subsumed: freed on top of the taper the exponent still fits at a median
+0.55 (flat top), so both ship together.
+
+And this one survives the table.  Through the real pipeline and scored
+against the out-of-sample holdout (`nec/peak_table_check.py`):
+
+| per length | in sample, median / 90th / 99th | out of sample | oob miscall |
+|---|---|---|---|
+| flat top, averaged | x1.168 / x1.509 / x2.108 | x1.195 / x1.565 / x2.194 | 17.0% |
+| flat top, tapered | x1.120 / x1.394 / x1.937 | x1.122 / x1.392 / x1.980 | 14.6% |
+| sloper, averaged | x1.154 / x1.448 / x2.043 | x1.137 / x1.445 / x2.466 | 15.6% |
+| sloper, tapered | x1.129 / x1.354 / x1.785 | x1.095 / x1.287 / x1.624 | 9.7% |
+
+The sentence that opened this section closes on the right number: 69 ft
+on 40 m through a 49:1, which the averaged form scored 5.0:1 where NEC
+says 2.5:1, now scores 2.4:1 at its worst across the band.
+
+Phase improves alongside (flat top 90th 31.5 to 21.6 degrees), and for
+a reason worth recording: the taper puts the first resonance a few
+percent short of `lambda/2` at the fitted velocity factor, which is
+where NEC puts it, where the averaged form sat exactly at `beta l = pi`
+and leaned on phase error to cover the gap.  The peak-location test in
+`model.test.mjs` now pins that offset (0.96) rather than unity.  Two
+smaller consequences: the cascade saturates instead of overflowing, so
+an absurd length yields finite numbers where `coth` produced the NaN a
+test relied on; and the page pays about 1.4 microseconds per evaluation
+against 0.14 for the closed form, a tenth of the interpolation cost
+already around it.  The flat top's x26.6 worst is the measurement
+artifact above and stays.
 
 - Predict a specific installation's feedpoint impedance.
 - Model common-mode current on the feedline shield.  With a poor return

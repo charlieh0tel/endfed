@@ -67,7 +67,9 @@ design decisions in the model note and task state in the TODO.
 - Be DRY.
 - Keep functions short and focused; extract helpers when logic is
   reused.
-- Avoid magic constants.
+- Avoid magic constants.  Physics constants too: name them and derive
+  them in the comment (`ETA0_OVER_2PI_OHMS = 60`), even where textbooks
+  write them bare.
 - Use meaningful names, especially for RF and math quantities
   (`zLoad`, `gammaL`, `susceptance`; not `x`, `tmp`).
 - Don't abbreviate by dropping letters from the middle of a word.

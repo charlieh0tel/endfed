@@ -61,7 +61,7 @@ const EXPORTS = [
   // impedance model
   'wireZ0', 'interpCoeff',
   'interpCoeff2',
-  'MODEL_Z_NODES', 'MODEL_DOMAIN', 'outOfDomainBands', 'lineZ', 'endFedZin', 'swrAtRadio', 'scoreLength',
+  'MODEL_Z_NODES', 'MODEL_DOMAIN', 'outOfDomainBands', 'lineZ', 'taperedLineZ', 'endFedZin', 'swrAtRadio', 'scoreLength',
   'solveImpedance', 'worstSuggestedSwr',
   // NEC deck
   'deckWires', 'deckSegments',

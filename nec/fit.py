@@ -4,12 +4,16 @@ Structure comes from finding 7: the feedpoint is the antenna line and the
 return line in series,
 
     Zin = Za(l) + Zr(h + ret)
-    Za  = Z0a * coth((alpha_a + j*beta_a) * l)
+    Za  = the tapered line below, open at the far end
     Zr  = kr * Z0r * coth((alpha_r + j*beta_r) * (h + ret))
 
-with each Z0 from Schelkunoff.  The return gets its own scale `kr`
-because it runs close to ground, where the image lowers the
-characteristic impedance below the free-space thin-wire figure.
+with each Z0 from Schelkunoff.  The antenna line is nonuniform: its
+local Z0 grows logarithmically from the feed (tapered_zin), which is
+what softens the half-wave peaks the averaged-Z0 form drew nearly twice
+too high; see docs/MODEL.md.  The return keeps the averaged form and
+its own scale `kr` because it runs close to ground, where the image
+lowers the characteristic impedance below the free-space thin-wire
+figure.
 
 beta is fitted as a velocity factor rather than assumed, because measured
 half-wave reactance is nowhere near zero (finding 3).
@@ -55,9 +59,15 @@ INITIAL = (0.12, 0.98, 1.0, 0.5, 0.92, 0.7)
 BOUNDS = ((1e-3, 0.5, 0.2, 1e-6, 0.4, 0.05), (3.0, 1.0, 5.0, 3.0, 1.0, 3.0))
 
 
+#: eta0 / (2 pi): the impedance of free space, 376.73 ohms, over 2 pi,
+#: rounded to the 60 every antenna text writes.  The scale of every
+#: thin-wire characteristic-impedance formula here.
+ETA0_OVER_2PI_OHMS = 60.0
+
+
 def schelkunoff_z0(length_m, radius_m=WIRE_RADIUS_M):
     """Average characteristic impedance of a thin wire, ohms."""
-    return 60.0 * (np.log(2.0 * length_m / radius_m) - 1.0)
+    return ETA0_OVER_2PI_OHMS * (np.log(2.0 * length_m / radius_m) - 1.0)
 
 
 #: Segments in the tapered cascade.  Each segment is solved exactly, so
@@ -89,12 +99,15 @@ def tapered_zin(length_m, radius_m, ka, alpha_np_m, beta_rad_m):
     tanh_seg = np.tanh((alpha_np_m + 1j * beta_rad_m) * delta_m)
     # Open end: the far segment alone is Z0 * coth(gamma delta).
     x_mid = (CASCADE_SEGMENTS - 0.5) * delta_m
-    z0 = ka * np.maximum(60.0 * (np.log(2.0 * x_mid / radius_m) - 1.0), Z0_FLOOR_OHMS)
+    z0 = ka * np.maximum(
+        ETA0_OVER_2PI_OHMS * (np.log(2.0 * x_mid / radius_m) - 1.0), Z0_FLOOR_OHMS
+    )
     zin = z0 / tanh_seg
     for segment in range(CASCADE_SEGMENTS - 2, -1, -1):
         x_mid = (segment + 0.5) * delta_m
         z0 = ka * np.maximum(
-            60.0 * (np.log(2.0 * x_mid / radius_m) - 1.0), Z0_FLOOR_OHMS
+            ETA0_OVER_2PI_OHMS * (np.log(2.0 * x_mid / radius_m) - 1.0),
+            Z0_FLOOR_OHMS,
         )
         zin = z0 * (zin + z0 * tanh_seg) / (z0 + zin * tanh_seg)
     return zin
@@ -107,14 +120,14 @@ def model_zin(
     wavelength_m,
     radius_m=WIRE_RADIUS_M,
     power=0.0,
-    tapered=False,
+    tapered=True,
 ):
     """Zin for the two-line model at the given lengths.
 
     `power` lets the antenna line's loss fall with electrical length,
     `alpha_a_lam * (l / lambda) ** -power`; zero is the shipped model.
-    `tapered` swaps the antenna line's averaged Z0 for the local-Z0
-    cascade; False is the shipped model.
+    `tapered` is the shipped model; False is the averaged-Z0 form it
+    replaced, kept for comparison instruments.
     """
     alpha_a_lam, vf_a, ka, alpha_r_lam, vf_r, kr = params
     alpha_a = alpha_a_lam * (length_m / wavelength_m) ** -power / wavelength_m
@@ -141,7 +154,7 @@ def _residual(
     z_nec,
     radius_m=WIRE_RADIUS_M,
     power=0.0,
-    tapered=False,
+    tapered=True,
 ):
     """Complex log residual, flattened to the real vector least_squares wants.
 
@@ -167,7 +180,7 @@ def fit_group(
     z_nec,
     radius_m=WIRE_RADIUS_M,
     power=0.0,
-    tapered=False,
+    tapered=True,
 ):
     """Fit one (frequency, height, soil) group.
 

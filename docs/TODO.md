@@ -19,22 +19,6 @@ nec2c and nec2++ in the page.
       depth from the user -- but it is a different antenna, and wants
       its own sweep and table before the page can offer it.
 
-- [ ] **The first half-wave peak.**  It reads nearly twice high in
-      every form tried, and the falling loss did not touch it: at
-      `l/lambda` 0.5 the exponent barely acts.  It is the end-fed half
-      wave through a 49:1, the one case chosen to sit *on* a peak, and
-      it needs a structural idea rather than another exponent.  In
-      rough order of how much would have to change:
-
-      - a length-resolved line, integrating Schelkunoff's local `Z0`
-        along the wire rather than scaling one average;
-      - a term that bites only near resonance, which is what the peaks
-        actually want and what the current form cannot express;
-      - a modal representation instead of one line.
-
-      Research rather than a task.  See MODEL.md, "The peaks are too
-      sharp".
-
 - [ ] **The unun is not in the model.**  NEC measures the feedpoint and
       the page divides by the ratio, so an ideal, lossless,
       frequency-flat transformer is assumed at the one place in the

@@ -161,7 +161,7 @@ def slices(data, si, geometry, min_points=1):
     return rows
 
 
-def fit_groups(data, geometry, tapered=False):
+def fit_groups(data, geometry, tapered=True):
     """Per-group fits, in the shape build() wants."""
     out = []
     for si in range(len(data["soil_names"])):
@@ -241,7 +241,7 @@ def group_points(rows):
     )
 
 
-def refine(table, data, geometry, max_nfev=600, tapered=False):
+def refine(table, data, geometry, max_nfev=600, tapered=True):
     """Fit the tabulated surface itself, one soil at a time.
 
     Returns the table and what the optimizer did to reach it.  Raises when a
@@ -385,7 +385,7 @@ def fill_unsupported(table, counts):
     return filled, filled_cells
 
 
-def measure(data, table, geometry, tapered=False):
+def measure(data, table, geometry, tapered=True):
     """Tabulated error, per group and per length.
 
     Per group is an RMS over the ~240 lengths in one (soil, frequency,

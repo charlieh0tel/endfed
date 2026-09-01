@@ -122,10 +122,14 @@ test('coefficients interpolate between nodes and clamp outside them', () => {
 });
 
 test('feedpoint impedance peaks where the model puts its half wave', () => {
-  // The regression behind the displayVf bug: the impedance model runs its
-  // antenna line at MODEL_VF_A, so its peaks sit there and not at the
-  // classical 0.95.  Drawing half waves at the wrong one put the table 5
-  // percent away from the curve.
+  // The regression behind the displayVf bug: whatever the model's peaks
+  // do, the page must draw its zones from the model itself rather than
+  // from a half-wave rule at some other velocity factor.  The tapered
+  // antenna line puts its first resonance a few percent short of
+  // lambda/2 at MODEL_VF_A -- the low-Z0 segments near the feed advance
+  // the standing wave faster -- which is also where NEC puts it; the
+  // old averaged-Z0 form sat at lambda/2 exactly and leaned on phase
+  // error to cover the gap.
   const site = { geometry: 'flatTop', heightM: 9.144, balunM: m.DEFAULT_BALUN_M, counterpoiseM: 7.62, counterpoiseZM: m.DEFAULT_COUNTERPOISE_Z_M, soil: 'average' };
   const freqHz = 14.175e6;
   const expected = m.halfWaveM(freqHz, m.MODEL_VF_A);
@@ -136,10 +140,8 @@ test('feedpoint impedance peaks where the model puts its half wave', () => {
     const mag = Math.hypot(z.re, z.im);
     if (mag > bestMag) { bestMag = mag; bestLen = lenM; }
   }
-  close(bestLen / expected, 1, 0.03, 'peak sits within 3 percent of lambda/2');
-  const classical = m.halfWaveM(freqHz, m.DEFAULT_VELOCITY_FACTOR);
-  assert.ok(Math.abs(bestLen - classical) > Math.abs(bestLen - expected),
-    'peak is nearer the model half wave than the classical one');
+  close(bestLen / expected, 0.96, 0.03,
+    'peak sits a few percent short of lambda/2');
   assert.ok(bestMag > 1000, 'a half wave is a high-impedance point');
 });
 
@@ -334,6 +336,22 @@ test('Schelkunoff Z0 rises with length and falls with radius', () => {
   // 60 (ln(2l/a) - 1) at l = 20 m, a = 0.814 mm.
   close(m.wireZ0(20, 8.14e-4), 60 * (Math.log(2 * 20 / 8.14e-4) - 1), 1e-9,
     'matches the closed form');
+});
+
+test('the tapered line reproduces the Python fit it was ported from', () => {
+  // Each row is (lenM, wavelengthM, alphaPerLambda, vf, z0Scale) and the
+  // impedance nec/fit.py's tapered_zin computes for it at the fitted
+  // radius; regenerate by calling that function with these arguments.
+  const pinned = [
+    [10.36, 42.06, 0.12, 0.98, 0.9, 11.836997, -43.691351],
+    [20.6, 41.2, 0.1, 0.97, 0.8, 437.203979, -1717.447226],
+    [41.15, 20.44, 0.25, 1.0, 1.1, 839.651329, -337.903636],
+  ];
+  for (const [lenM, lam, alphaLam, vf, k, re, im] of pinned) {
+    const z = m.taperedLineZ(lenM, lam, 8.14e-4, alphaLam, vf, k);
+    close(z.re, re, 1e-5, `re at ${lenM} m`);
+    close(z.im, im, 1e-5, `im at ${lenM} m`);
+  }
 });
 
 test('feedpoint impedance is finite and positive-real everywhere sampled', () => {
@@ -1159,10 +1177,12 @@ test('a length the model cannot describe is declined, not scored as NaN', () => 
   assert.equal(m.scoreLength(21.336, bands, 'full', site, m.WIRE_RADIUS_M, 9),
     null, 'no return conductor, no score');
   const sane = { ...site, counterpoiseM: m.DEFAULT_COUNTERPOISE_M };
-  // The antenna line's loss falls with length, so its attenuation grows only
-  // as l^0.37 and overflow needs a wire a few light-hours long.
-  assert.equal(m.scoreLength(1e12, bands, 'full', sane, m.WIRE_RADIUS_M, 9), null,
-    'a wire long enough to overflow coth is declined too');
+  // The tapered antenna line saturates rather than overflowing: past a
+  // few nepers each segment's tanh is 1 and the line reads as its own
+  // Z0, so even an absurd length yields finite numbers and the NaN
+  // guard is exercised only by the no-conductor corner above.
+  assert.ok(m.scoreLength(1e12, bands, 'full', sane, m.WIRE_RADIUS_M, 9),
+    'an absurd length saturates to a finite score, not NaN');
   assert.ok(m.scoreLength(21.336, bands, 'full', sane, m.WIRE_RADIUS_M, 9),
     'and an ordinary antenna still scores');
 });
@@ -1177,13 +1197,17 @@ test('the quoted accuracy is the accuracy the shipped table measures', async () 
   const url = new URL('../../nec/coefficients2d.json', import.meta.url);
   const { flat_top: flatTop, sloper } = JSON.parse(await readFile(url, 'utf8'));
 
-  close(m.MODEL_TYPICAL_FACTOR, flatTop.error.per_length.median, 5e-3,
-    'typical is the median length');
-  close(m.MODEL_BOUND_FACTOR, flatTop.error.per_length.p90, 5e-3,
-    'the bound is the ninetieth length');
-  assert.ok(flatTop.error.per_length.median >= sloper.error.per_length.median
-    && flatTop.error.per_length.p90 >= sloper.error.per_length.p90,
-    'the flat top is the weaker of the two, which is why it is quoted');
+  // Each figure quotes whichever geometry is weaker on it; since the
+  // tapered refit they split, the sloper on the median and the flat top
+  // on the ninetieth.
+  const typical = Math.max(flatTop.error.per_length.median,
+    sloper.error.per_length.median);
+  const bound = Math.max(flatTop.error.per_length.p90,
+    sloper.error.per_length.p90);
+  close(m.MODEL_TYPICAL_FACTOR, typical, 5e-3,
+    'typical is the weaker median length');
+  close(m.MODEL_BOUND_FACTOR, bound, 5e-3,
+    'the bound is the weaker ninetieth length');
   assert.ok(flatTop.error.per_length.p90 > flatTop.error.p90,
     'the per-length ninetieth is worse than the per-group one, which is why '
     + 'the page quotes it');
