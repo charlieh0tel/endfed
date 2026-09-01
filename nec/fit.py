@@ -60,22 +60,73 @@ def schelkunoff_z0(length_m, radius_m=WIRE_RADIUS_M):
     return 60.0 * (np.log(2.0 * length_m / radius_m) - 1.0)
 
 
+#: Segments in the tapered cascade.  Each segment is solved exactly, so
+#: the only discretization is the Z0 staircase; against a 256-segment
+#: reference, 64 leaves the worst |Z| within x1.07 at the sweep's
+#: lengths, below the fit residual everywhere.
+CASCADE_SEGMENTS = 64
+
+#: Local Z0 floor, ohms.  The log profile dives toward -infinity at the
+#: feed; the first segment midpoint sits at l/(2N) where the profile is
+#: still a few hundred ohms, so this floor is a guard, not a knob.
+Z0_FLOOR_OHMS = 10.0
+
+
+def tapered_zin(length_m, radius_m, ka, alpha_np_m, beta_rad_m):
+    """Input impedance of an open-ended line with Schelkunoff's local Z0.
+
+    Schelkunoff's average Z0 stands in for a nonuniform line whose local
+    characteristic impedance grows logarithmically with distance from
+    the feed [Schelkunoff, "Theory of Antennas of Arbitrary Size and
+    Shape", Proc. IRE 1941].  This cascades CASCADE_SEGMENTS exact
+    uniform-segment solutions from the open far end back to the feed,
+    each with the local `Z0 = ka * 60 (ln(2 x / a) - 1)` at its
+    midpoint, `x` measured from the feed the equivalent cone grows from.
+    All arguments may be arrays over points; the loop is over segments.
+    """
+    length_m = np.asarray(length_m, dtype=float)
+    delta_m = length_m / CASCADE_SEGMENTS
+    tanh_seg = np.tanh((alpha_np_m + 1j * beta_rad_m) * delta_m)
+    # Open end: the far segment alone is Z0 * coth(gamma delta).
+    x_mid = (CASCADE_SEGMENTS - 0.5) * delta_m
+    z0 = ka * np.maximum(60.0 * (np.log(2.0 * x_mid / radius_m) - 1.0), Z0_FLOOR_OHMS)
+    zin = z0 / tanh_seg
+    for segment in range(CASCADE_SEGMENTS - 2, -1, -1):
+        x_mid = (segment + 0.5) * delta_m
+        z0 = ka * np.maximum(
+            60.0 * (np.log(2.0 * x_mid / radius_m) - 1.0), Z0_FLOOR_OHMS
+        )
+        zin = z0 * (zin + z0 * tanh_seg) / (z0 + zin * tanh_seg)
+    return zin
+
+
 def model_zin(
-    params, length_m, total_return_m, wavelength_m, radius_m=WIRE_RADIUS_M, power=0.0
+    params,
+    length_m,
+    total_return_m,
+    wavelength_m,
+    radius_m=WIRE_RADIUS_M,
+    power=0.0,
+    tapered=False,
 ):
     """Zin for the two-line model at the given lengths.
 
     `power` lets the antenna line's loss fall with electrical length,
     `alpha_a_lam * (l / lambda) ** -power`; zero is the shipped model.
+    `tapered` swaps the antenna line's averaged Z0 for the local-Z0
+    cascade; False is the shipped model.
     """
     alpha_a_lam, vf_a, ka, alpha_r_lam, vf_r, kr = params
     alpha_a = alpha_a_lam * (length_m / wavelength_m) ** -power / wavelength_m
     alpha_r = alpha_r_lam / wavelength_m
     beta_a = 2.0 * np.pi / (wavelength_m * vf_a)
     beta_r = 2.0 * np.pi / (wavelength_m * vf_r)
-    za = (ka * schelkunoff_z0(length_m, radius_m)) / np.tanh(
-        (alpha_a + 1j * beta_a) * length_m
-    )
+    if tapered:
+        za = tapered_zin(length_m, radius_m, ka, alpha_a, beta_a)
+    else:
+        za = (ka * schelkunoff_z0(length_m, radius_m)) / np.tanh(
+            (alpha_a + 1j * beta_a) * length_m
+        )
     zr = (kr * schelkunoff_z0(total_return_m, radius_m)) / np.tanh(
         (alpha_r + 1j * beta_r) * total_return_m
     )
@@ -90,6 +141,7 @@ def _residual(
     z_nec,
     radius_m=WIRE_RADIUS_M,
     power=0.0,
+    tapered=False,
 ):
     """Complex log residual, flattened to the real vector least_squares wants.
 
@@ -99,7 +151,9 @@ def _residual(
     every half wave.  Wrapping the difference rather than differencing the
     wrapped values makes the phase error the angle it actually is.
     """
-    z = model_zin(params, length_m, total_return_m, wavelength_m, radius_m, power)
+    z = model_zin(
+        params, length_m, total_return_m, wavelength_m, radius_m, power, tapered
+    )
     magnitude = np.log(np.abs(z)) - np.log(np.abs(z_nec))
     phase = np.angle(z) - np.angle(z_nec)
     phase = (phase + np.pi) % (2.0 * np.pi) - np.pi
@@ -107,7 +161,13 @@ def _residual(
 
 
 def fit_group(
-    length_m, total_return_m, wavelength_m, z_nec, radius_m=WIRE_RADIUS_M, power=0.0
+    length_m,
+    total_return_m,
+    wavelength_m,
+    z_nec,
+    radius_m=WIRE_RADIUS_M,
+    power=0.0,
+    tapered=False,
 ):
     """Fit one (frequency, height, soil) group.
 
@@ -123,7 +183,7 @@ def fit_group(
         _residual,
         INITIAL,
         bounds=BOUNDS,
-        args=(length_m, total_return_m, wavelength_m, z_nec, radius_m, power),
+        args=(length_m, total_return_m, wavelength_m, z_nec, radius_m, power, tapered),
         max_nfev=4000,
     )
     if out.status <= 0:

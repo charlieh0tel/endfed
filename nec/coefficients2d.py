@@ -161,7 +161,7 @@ def slices(data, si, geometry, min_points=1):
     return rows
 
 
-def fit_groups(data, geometry):
+def fit_groups(data, geometry, tapered=False):
     """Per-group fits, in the shape build() wants."""
     out = []
     for si in range(len(data["soil_names"])):
@@ -169,7 +169,12 @@ def fit_groups(data, geometry):
             data, si, geometry, min_points=20
         ):
             params, _, _ = fit_group(
-                length_m, total_return_m, wavelength_m, z_nec, power=length_power(h_lam)
+                length_m,
+                total_return_m,
+                wavelength_m,
+                z_nec,
+                power=length_power(h_lam),
+                tapered=tapered,
             )
             out.append({"soil": si, "h_lam": h_lam, "z_lam": z_lam, "params": params})
     return out
@@ -236,7 +241,7 @@ def group_points(rows):
     )
 
 
-def refine(table, data, geometry, max_nfev=600):
+def refine(table, data, geometry, max_nfev=600, tapered=False):
     """Fit the tabulated surface itself, one soil at a time.
 
     Returns the table and what the optimizer did to reach it.  Raises when a
@@ -287,6 +292,7 @@ def refine(table, data, geometry, max_nfev=600):
                 total_return_m,
                 wavelength_m,
                 power=power,
+                tapered=tapered,
             )
             magnitude = np.log(np.abs(model)) - log_abs_nec
             phase = np.angle(model) - angle_nec
@@ -379,7 +385,7 @@ def fill_unsupported(table, counts):
     return filled, filled_cells
 
 
-def measure(data, table, geometry):
+def measure(data, table, geometry, tapered=False):
     """Tabulated error, per group and per length.
 
     Per group is an RMS over the ~240 lengths in one (soil, frequency,
@@ -405,6 +411,7 @@ def measure(data, table, geometry):
                 total_return_m,
                 wavelength_m,
                 power=length_power(h_lam),
+                tapered=tapered,
             )
             err = np.log(np.abs(model)) - np.log(np.abs(z_nec))
             factors.append(np.exp(np.sqrt(np.mean(err**2))))
