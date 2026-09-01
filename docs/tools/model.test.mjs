@@ -1492,8 +1492,8 @@ test('a measured score matches the model statistic on the same grid', () => {
 test('the overlay states its median offset from the model', () => {
   const curve = [{ lenM: 10, swr: 2.0 }, { lenM: 20, swr: 2.0 },
                  { lenM: 30, swr: 4.0 }];
-  const nec = [{ lenM: 10, swr: 3.0 }, { lenM: 19.9, swr: 3.0 },
-               { lenM: 30, swr: 4.0 }];
+  const nec = [{ lenM: 10, best: 3.0 }, { lenM: 19.9, best: 3.0 },
+               { lenM: 30, best: 4.0 }];
   close(m.medianOverlayRatio(nec, curve), 1.5, 1e-9,
     'median of per-length ratios against the nearest scored length');
   assert.equal(m.medianOverlayRatio([], curve), null, 'no run, no claim');
@@ -1639,6 +1639,25 @@ test('a measured SWR reads as one figure when the solvers agree and a range when
   assert.equal(m.fmtSwr(98.96), '99.0');
   assert.equal(m.fmtSwr(99.5), '>99');
   assert.ok(m.NEC_AGREE_FACTOR > 1 && m.NEC_AGREE_FACTOR < 1.5, 'a sane tolerance');
+});
+
+test('every check surface reads the same regime summary', () => {
+  const fedLow = m.withSiteInvariants({ geometry: 'sloper', heightM: 9.144,
+    counterpoiseM: 27.25, counterpoiseZM: 0.01, balunM: 0.61,
+    soil: m.DEFAULT_SOIL, wire: 'bare' });
+  const bands = m.bandsIn('us').filter(b => [40, 20, 15, 10].includes(b.m));
+  const all = m.necDisposition(
+    [{ cred: false }, { cred: false }], bands, 'full', fedLow);
+  assert.equal(all.mode, 'necppOnly', 'nec2c suppressed everywhere');
+  assert.deepEqual(all.suspect.map(b => b.m), [40, 20, 15],
+    'the fed-low bands, named once for every surface');
+  assert.match(m.necLowFeedText(all.suspect),
+    /^The feedpoint sits under 0.05 wavelengths on 40m, 20m, 15m, where/);
+  const mixed = m.necDisposition(
+    [{ cred: false }, { cred: true }], bands, 'full', fedLow);
+  assert.equal(mixed.mode, 'dual', 'one credible point keeps both solvers');
+  assert.equal(m.necDisposition([], bands, 'full', fedLow).mode, 'dual',
+    'before a run the check still speaks of both');
 });
 
 test('nec2c is credible only outside its two measured failure regimes', () => {

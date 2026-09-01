@@ -32,6 +32,7 @@ const EXPORTS = [
   'MODEL_H_NODES', 'MODEL_COEFFS', 'MODEL_VF_A', 'MODEL_LENGTH_POWER',
   'lengthPower', 'WIRE_RADIUS_M', 'MODEL_NEC_RUNS', 'MODEL_HOLDOUT_RUNS', 'deckModel', 'NEC_AGREE_FACTOR', 'necSwrText', 'fmtSwr', 'necAgrees', 'necRuns',
   'necPreferred', 'necFollowed', 'nec2cCredible', 'necShowsBand',
+  'necDisposition', 'necLowFeedText',
   'NEC_PREFER_NEC2C_MAX_Z_M',
   'NEC_PREFER_NEC2C_MAX_HALVES',
   'DEFAULT_VELOCITY_FACTOR', 'DEFAULT_HEIGHT_M', 'DEFAULT_COUNTERPOISE_M',

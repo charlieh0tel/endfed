@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.007';
+    const PAGE_VERSION = '2026.08.31.008';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,17 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.008',
+        title: 'The check describes itself consistently',
+        text: 'Every sentence the check shows now comes from one summary of '
+          + 'the map\'s regime, so the status, legend, notice and table '
+          + 'agree: where nec2c fails everywhere the check calls itself '
+          + 'nec2++, drops the nec2c column, and quotes the measured line '
+          + 'rather than nec2c. "Run it anyway" is gone -- with nec2++ '
+          + 'holding where nec2c fails, a low-feedpoint run is a legitimate '
+          + 'measurement, not one taken against advice.',
+      },
       {
         version: '2026.08.31.007',
         title: 'The legend admits what is drawn',
@@ -3149,6 +3160,35 @@
       || Math.max(point.swr / point.alt, point.alt / point.swr) <= NEC_AGREE_FACTOR;
 
     /**
+     * Everything the check's copy needs to agree on, computed once: which
+     * mode the map is in and which bands are fed too low for nec2c.  Every
+     * surface -- status, legend, notice, table -- renders from this, so no
+     * two of them can describe different checks.
+     *
+     * @param {{cred?: boolean}[]} points  the run's map points, [] before one
+     * @param {Band[]} bands
+     * @param {SegmentKey} segment
+     * @param {Site} site
+     * @returns {{mode: 'dual' | 'necppOnly', suspect: Band[]}}
+     */
+    const necDisposition = (points, bands, segment, site) => ({
+      mode: points.length > 0 && points.every(p => p.cred === false)
+        ? 'necppOnly' : 'dual',
+      suspect: necSuspectBands(bands, segment, site),
+    });
+
+    /**
+     * The low-feed disclosure, one sentence used verbatim wherever the
+     * suspect bands are named.
+     * @param {Band[]} suspect
+     * @returns {string}
+     */
+    const necLowFeedText = (suspect) =>
+      `The feedpoint sits under ${NEC2_FEED_MIN_LAMBDA} wavelengths on `
+      + `${suspect.map(b => b.label).join(', ')}, where nec2c's ground `
+      + 'treatment fails, so the check reads nec2++ alone on those bands.';
+
+    /**
      * Whether a point deserves a band: the solvers part, and nec2c is a
      * credible witness there.  Points carry `cred` from the runner; an
      * absent flag counts as credible, which keeps old shapes drawing.
@@ -3395,11 +3435,11 @@
 
     /**
      * How far the measured curve sits from the modeled one: the median,
-     * over every measured length, of NEC's SWR against the model's at the
+     * over every measured length, of the followed line's SWR against the model's at the
      * nearest scored length.  One number for the statement the overlay
      * makes with its shape.
      *
-     * @param {{lenM: Meters, swr: number}[]} necPoints
+     * @param {{lenM: Meters, best: number}[]} necPoints
      * @param {ScorePoint[]} curve
      * @returns {?number}
      */
@@ -3409,7 +3449,7 @@
         const nearest = curve.reduce((best, sample) =>
           Math.abs(sample.lenM - point.lenM) < Math.abs(best.lenM - point.lenM)
             ? sample : best, curve[0]);
-        return point.swr / nearest.swr;
+        return point.best / nearest.swr;
       }).sort((a, b) => a - b);
       return ratios[Math.floor(ratios.length / 2)];
     };
@@ -4949,6 +4989,13 @@
           : []),
         [score, segment, site]);
 
+      /** The one regime summary every check surface renders from. */
+      const necDisp = useMemo(
+        () => necDisposition(
+          necRun !== null && necRun.key === necKey ? necRun.points : [],
+          score !== null ? score.bands : [], segment, site),
+        [necRun, necKey, score, segment, site]);
+
       // A stale overlay is never drawn (the render checks the key), and a
       // stale run is not worth finishing either.
       useEffect(() => {
@@ -5740,16 +5787,8 @@
               )}
 
               {!noBands && necKey !== null && necSuspect.length > 0 && (
-                <div className="control-hint deck-warning">
-                  The feedpoint sits under{' '}
-                  {NEC2_FEED_MIN_LAMBDA} wavelengths on{' '}
-                  {necSuspect.map(b => b.label).join(', ')}, where nec2c&apos;s
-                  ground treatment goes wrong and nec2++&apos;s holds: there
-                  the dashed edge is the measurement and the solid one is the
-                  solver failing.
-                  {score !== null && necSuspect.length < score.bands.length
-                    && ' Deselect those bands to check the rest.'}
-                  {' '}See the{' '}
+                <div className="control-hint">
+                  {necLowFeedText(necDisp.suspect)} See the{' '}
                   <a href={MODEL_NOTE_URL} target="_blank"
                      rel="noopener">modeling note</a>.
                 </div>
@@ -5760,9 +5799,7 @@
                   {necRun === null ? (
                     <>
                       <button className="btn preset-btn" onClick={startNecCheck}>
-                        {necSuspect.length > 0
-                          ? 'Run it anyway'
-                          : 'Check this map against NEC-2'}
+                        Check this map against NEC-2
                       </button>
                       <span className="control-hint">
                         Solves the installation at every band you picked;
@@ -5794,24 +5831,30 @@
                     </span>
                   ) : (
                     <span className="control-hint" role="status">
-                      NEC-2, twice (nec2c and nec2++): same geometry, ground
+                      {necDisp.mode === 'dual'
+                        ? 'NEC-2, twice (nec2c and nec2++): '
+                        : 'NEC-2 (nec2++): '}
+                      same geometry, ground
                       and {ununRatio}:1 arithmetic as the model curve.
                       {necFactor !== null
-                        && ` Across this map nec2c reads x${necFactor.toFixed(1)} `
+                        && ` The measured line reads x${necFactor.toFixed(1)} `
                            + 'the model\'s SWR at the median length.'}
-                      {necRun.points.length > 0
-                       && necRun.points.every(p => p.cred === false)
-                        ? ' This whole map sits in nec2c\'s failure regime,'
-                          + ' so the line is nec2++ throughout; nec2c was'
-                          + ' solved but is not drawn.'
-                        : necSuspect.length === 0
-                          && ' The line follows nec2c on a short wire over a'
-                             + ' low counterpoise and nec2++ elsewhere, which'
-                             + ' is how each was measured to hold. Where they'
-                             + ' credibly part the band shows the other'
-                             + ' reading; where nec2c is in a failure regime'
-                             + ' the map leaves its curve out rather than'
-                             + ' drawing a known error as doubt.'}
+                      {necDisp.mode === 'necppOnly'
+                        ? ' nec2c\'s ground treatment fails everywhere on'
+                          + ' this map, so the line is nec2++ throughout;'
+                          + ' nec2c was solved but is not drawn.'
+                        : necDisp.suspect.length > 0
+                          ? ` ${necLowFeedText(necDisp.suspect)}`
+                            + ' Elsewhere the line follows whichever solver'
+                            + ' was measured better, and where they credibly'
+                            + ' part the band shows the other reading.'
+                          : ' The line follows nec2c on a short wire over a'
+                            + ' low counterpoise and nec2++ elsewhere, which'
+                            + ' is how each was measured to hold. Where they'
+                            + ' credibly part the band shows the other'
+                            + ' reading; where nec2c is in a failure regime'
+                            + ' the map leaves its curve out rather than'
+                            + ' drawing a known error as doubt.'}
                       {` Both solve at the segmentation the tables were fitted`
                         + ` at, which sits about x${NEC_CHECK_DENSITY_FACTOR}`
                         + ' from a converged answer on its own, so the overlay'
@@ -5850,7 +5893,8 @@
                         <thead>
                           <tr>
                             <th>Length</th><th>Typical SWR</th><th>Worst</th><th>On</th>
-                            {necChecks.length > 0 && <th>nec2c typ / worst</th>}
+                            {necChecks.length > 0 && necDisp.mode === 'dual'
+                              && <th>nec2c typ / worst</th>}
                             {necChecks.length > 0 && <th>nec2++ typ / worst</th>}
                           </tr>
                         </thead>
@@ -5869,7 +5913,7 @@
                                 {point.worst.swr.toFixed(1)}:1
                               </td>
                               <td>{point.worst.band.label}</td>
-                              {necChecks.length > 0 && (
+                              {necChecks.length > 0 && necDisp.mode === 'dual' && (
                                 <td className={(check => check !== null
                                     && check.best.swr === check.swr
                                     ? 'nec-followed' : '')(necCheckAt(point.lenM))}>
