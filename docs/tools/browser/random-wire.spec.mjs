@@ -673,7 +673,11 @@ test.describe('the NEC check refines', () => {
         .toBeGreaterThan(97);
       // The coda measured the offered lengths: the table grew a NEC-2
       // column and the verdict speaks in measured terms.
-      await expect(page.locator('th', { hasText: /nec2/ })).toHaveCount(2);
+      // The nec2++ column always accompanies a finished check; nec2c's
+      // comes and goes with whether any offered length is credible for it,
+      // and on this low-counterpoise map none is.
+      await expect(page.locator('th', { hasText: /nec2\+\+/ })).toHaveCount(1);
+      await expect(page.locator('th', { hasText: /nec2c/ })).toHaveCount(0);
       // Both solvers ran: with the counterpoise on the ground they part past
       // two half-waves, and the overlay carries the band between them.
       // The band survives only where nec2c credibly disagrees: on this

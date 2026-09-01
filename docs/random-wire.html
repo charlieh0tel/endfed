@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.008';
+    const PAGE_VERSION = '2026.08.31.009';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,13 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.08.31.009',
+        title: 'No column of dashes',
+        text: 'The nec2c column appears only when at least one offered '
+          + 'length has a credible nec2c reading, instead of whenever the '
+          + 'map has one somewhere. A table of "--" said nothing.',
+      },
       {
         version: '2026.08.31.008',
         title: 'The check describes itself consistently',
@@ -5893,7 +5900,7 @@
                         <thead>
                           <tr>
                             <th>Length</th><th>Typical SWR</th><th>Worst</th><th>On</th>
-                            {necChecks.length > 0 && necDisp.mode === 'dual'
+                            {necChecks.some(c => c.cred !== false)
                               && <th>nec2c typ / worst</th>}
                             {necChecks.length > 0 && <th>nec2++ typ / worst</th>}
                           </tr>
@@ -5913,7 +5920,7 @@
                                 {point.worst.swr.toFixed(1)}:1
                               </td>
                               <td>{point.worst.band.label}</td>
-                              {necChecks.length > 0 && necDisp.mode === 'dual' && (
+                              {necChecks.some(c => c.cred !== false) && (
                                 <td className={(check => check !== null
                                     && check.best.swr === check.swr
                                     ? 'nec-followed' : '')(necCheckAt(point.lenM))}>
