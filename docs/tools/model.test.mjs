@@ -1187,6 +1187,31 @@ test('a length the model cannot describe is declined, not scored as NaN', () => 
     'and an ordinary antenna still scores');
 });
 
+test('the antenna coefficients are height-only, as the page assumes', async () => {
+  // The page ships alphaA and kA as one row per h node, read from the
+  // dense table's first counterpoise column.  fill_unsupported once
+  // broke that invariant by copying whole cells across h nodes, which
+  // froze the shipped antenna line above h/lambda 0.9 while every
+  // accuracy figure was measured on the uncorrupted columns.
+  const { readFile } = await import('node:fs/promises');
+  const url = new URL('../../nec/coefficients2d.json', import.meta.url);
+  const stored = JSON.parse(await readFile(url, 'utf8'));
+  const oneD = ['alpha_a_lam', 'ka'].map(name => stored.params.indexOf(name));
+  for (const geometry of ['flat_top', 'sloper']) {
+    for (const [si, soil] of stored.soils.entries()) {
+      const block = stored[geometry].table[si];
+      for (const pi of oneD) {
+        for (const [hi, row] of block.entries()) {
+          for (const cell of row) {
+            close(cell[pi], row[0][pi], 1e-12,
+              `${geometry} ${soil} ${stored.params[pi]} h-node ${hi}`);
+          }
+        }
+      }
+    }
+  }
+});
+
 test('the quoted accuracy is the accuracy the shipped table measures', async () => {
   // The caveat text is a claim about coefficients2d.json's own error block.
   // Nothing else compares them, so a refit could move the error and leave the

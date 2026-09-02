@@ -2468,6 +2468,45 @@ ideal assumed, about 1 dB mid-band, more on 160 m -- and the same
 release retires the hint that warned the model draws resonances twice
 too sharp, which the tapered line made false.
 
+## An adversarial review, and the corner it caught
+
+Five independent reviewers (four Claude agents with pointed briefs and
+one GPT pass) were set loose on the codebase on 2026-09-02.  The math
+core came back clean to numerical precision -- the two model
+implementations agree to 1e-14, the band tables, Richardson forms,
+phase wrapping and unit crossings all verified -- but three reviewers
+independently found the same real defect, and it had shipped.
+
+`fill_unsupported` copied whole (h, z) cells into unsupported grid
+nodes, including `alpha_a` and `ka`, which depend on height alone and
+which `render()` ships as one row read from the first counterpoise
+column.  At high h-nodes no swept group sits nearest the smallest z
+nodes, so those cells read as unsupported and took a *different
+h-node's* antenna coefficients -- and the shipped rows froze at their
+h/lambda = 0.5 values from 0.9 to 3.0, `ka` about 10 percent low at
+the ceiling.  Meanwhile every accuracy figure was measured through
+`look_up`, which interpolates the dense table and so read the correct
+refined values the page never saw: the quote described a model the
+page did not evaluate.  The out-of-sample holdout barely moved
+(x1.113 to x1.115) only because it tops out at h/lambda 1.2.
+
+The fix gives the two parameter kinds their own grain of support: the
+antenna pair is constrained by any group at its h-node and fills, if
+ever needed, along h only; the return coefficients keep the cell-wise
+fill.  The pipeline now asserts the ships-by invariant -- antenna
+coefficients equal along z -- and a test holds `coefficients2d.json`
+to it, which is the regression net whose absence let this out.  Refit
+from the same sweeps, the aggregate error is unchanged to three
+decimals and the tall-wire corner gets its fitted coefficients:
+`alpha_a` at h/lambda 2.5 goes 0.152 to 0.179, and the reviewer's
+example (a flat top 25 m up on 10 m, 21 m of wire) goes from a worst
+of 5.10:1 to the fitted 4.83:1.
+
+The review's other findings are recorded in the session, triaged and
+open: the check's nec2++-failure fallback mislabeling its curve, the
+unbounded length input, the browser decks' unmatched junction
+segmentation, and the CDN pins.
+
 ## What the model deliberately does not do
 
 - Predict a specific installation's feedpoint impedance.

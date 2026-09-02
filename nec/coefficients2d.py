@@ -352,6 +352,14 @@ def fill_unsupported(table, counts):
     counterpoise under two millimetres, and on a sloper it can mean one above
     the apex it hangs from -- so it is held at the nearest measured node, the
     same extrapolation the table makes outside its range.
+
+    Two grains of support.  The return coefficients (TWO_D) live per
+    (h, z) cell and fill cell-wise.  The antenna coefficients (ONE_D)
+    depend on height alone -- pack/unpack keep them equal along z -- so
+    any group at any z constrains them at that h-node, and a cell-wise
+    fill must not touch them: copying a neighbouring h-node's antenna
+    line into the one column render() ships froze alpha_a and ka above
+    h/lambda 0.9 in every table shipped before 2026-09-02.
     """
     filled = table.copy()
     filled_cells = []
@@ -364,6 +372,17 @@ def fill_unsupported(table, counts):
         ]
         if not measured:
             raise RuntimeError(f"soil {si} has no measured node at all")
+        measured_h = sorted({hi for hi, _ in measured})
+        for hi in range(len(NODES)):
+            if counts[si, hi].sum() > 0:
+                continue
+            near_h = min(
+                measured_h,
+                key=lambda h: abs(np.log10(NODES[h]) - np.log10(NODES[hi])),
+            )
+            for pi in ONE_D:
+                filled[si, hi, :, pi] = table[si, near_h, 0, pi]
+            filled_cells.append({"soil": si, "h_node": hi, "from": {"h_node": near_h}})
         for hi in range(len(NODES)):
             for zi in range(len(Z_NODES)):
                 if counts[si, hi, zi] > 0:
@@ -373,7 +392,8 @@ def fill_unsupported(table, counts):
                     key=lambda c: (np.log10(NODES[c[0]]) - np.log10(NODES[hi])) ** 2
                     + (np.log10(Z_NODES[c[1]]) - np.log10(Z_NODES[zi])) ** 2,
                 )
-                filled[si, hi, zi] = table[si, near[0], near[1]]
+                for pi in TWO_D:
+                    filled[si, hi, zi, pi] = table[si, near[0], near[1], pi]
                 filled_cells.append(
                     {
                         "soil": si,
@@ -382,6 +402,12 @@ def fill_unsupported(table, counts):
                         "from": {"h_node": near[0], "z_node": near[1]},
                     }
                 )
+    for pi in ONE_D:
+        if not np.allclose(filled[:, :, :, pi], filled[:, :, :1, pi]):
+            raise RuntimeError(
+                f"{TABLE_PARAMS[pi]} varies along the counterpoise axis after "
+                "filling, and render() ships only the first column"
+            )
     return filled, filled_cells
 
 
