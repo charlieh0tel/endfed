@@ -7,7 +7,23 @@ of what was tried and settled -- are in `MODEL.md`.
 Tooling: `nec/`, Python, `uv`-managed; NEC-4.2 and NEC-5 local,
 nec2c and nec2++ in the page.
 
-No open work.
+## The model
+
+- [ ] **nec2c reads fiction on an insulated wire over a long, moderately
+      high counterpoise, and the check still trusts it.**  Example:
+      flat top 3.75 m up, insulated, a 21 m counterpoise at 1.87 m,
+      9:1 into 40-10 m -- nec2c draws 37:1 to >99:1 across the map where
+      the model and nec2++ agree near 3.5:1, and `nec2cCredible` calls it
+      credible on every band.  The solver ranking says nec2c is reliable
+      at z/lambda > 0.05 (which this config is on all but 40 m), so the
+      cause is outside what the ranking measured: the insulated wire (the
+      ranking was bare) or the long counterpoise.  Fix needs either a
+      small nec2c run over insulated wire and long counterpoises to find
+      the real boundary, or an a-posteriori gate -- suppress nec2c where
+      it disagrees with nec2++ by orders of magnitude and nec2++ tracks
+      the model -- which needs no solver time.  The electrical-height
+      fix (2026.09.02.004) was a real correctness win but does not reach
+      this regime.
 
 ## Considered and declined
 
