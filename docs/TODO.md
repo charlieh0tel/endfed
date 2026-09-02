@@ -7,16 +7,7 @@ of what was tried and settled -- are in `MODEL.md`.
 Tooling: `nec/`, Python, `uv`-managed; NEC-4.2 and NEC-5 local,
 nec2c and nec2++ in the page.
 
-## The model
-
-- [ ] **`nec_model._wires` segments the flat top's drop by the wire
-      height** rather than by the drop's own length, so a counterpoise
-      well up gets a finer drop than intended -- 49 segments where 25
-      are asked for, at 28.85 MHz with a 25 m wire and the counterpoise
-      at 12 m.  `sloper_deck` segments its drop correctly.  Finer is
-      not wrong, and every shipped table was fitted with it, so
-      correcting it means a re-sweep before the tables can be
-      reproduced from source.
+No open work.
 
 ## Considered and declined
 
