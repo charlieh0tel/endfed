@@ -641,6 +641,20 @@ test.describe('the NEC check', () => {
         .first().click();
       await expect(overlay).toHaveCount(0);
     });
+
+  test('errors rather than running on one solver when nec2++ is missing',
+    async ({ page }) => {
+      test.setTimeout(240_000);
+      // The check requires both solvers: with nec2++ blocked it must fail
+      // loudly, not fall back to nec2c and draw its ground-failure fiction.
+      await page.route('**/necpp-wasm@**', (route) => route.abort());
+      await open(page);
+      await page.getByRole('button', { name: /check this map against nec-2/i })
+        .click();
+      await expect(page.locator('.nec-check', { hasText: /check failed/i }))
+        .toBeVisible({ timeout: 120000 });
+      await expect(page.locator('svg.map-svg .nec-curve')).toHaveCount(0);
+    });
 });
 
 test.describe('the NEC check refines', () => {

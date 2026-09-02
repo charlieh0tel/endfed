@@ -564,7 +564,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.005';
+    const PAGE_VERSION = '2026.09.02.006';
 
     /**
      * One release, as the user sees it.
@@ -580,6 +580,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.006',
+        title: 'The NEC-2 check needs both solvers',
+        text: 'The check runs two independent NEC-2 engines and follows '
+          + 'whichever is right in each regime. If either one fails to '
+          + 'load or fails to solve, the check now says so and stops, '
+          + 'rather than quietly running on one alone where it is known '
+          + 'to be wrong.',
+      },
       {
         version: '2026.09.02.005',
         title: 'Feedback that carries your setup',
@@ -3895,8 +3904,10 @@
 
     /**
      * The second solver, nec2++, driven through its API rather than a deck
-     * and answering with numbers.  Loaded lazily and guarded: if it cannot
-     * be had the check runs on nec2c alone and says so by drawing no band.
+     * and answering with numbers.  Required, not optional: the check refuses
+     * to run on one solver, because following nec2c alone would draw its
+     * known ground-failure fiction with nothing to overrule it.  If nec2++
+     * cannot be loaded the run errors and says so, rather than degrading.
      */
     const NECPP_WASM_URL = 'https://unpkg.com/necpp-wasm@0.2.2/src/runner.mjs';
     const NECPP_BINARY_URL =
@@ -3910,11 +3921,11 @@
      */
     const NEC_WORKER_SOURCE = [
       `import { runNec } from ${JSON.stringify(NEC_WASM_URL)};`,
-      `const necpp = import(${JSON.stringify(NECPP_WASM_URL)}).catch(() => null);`,
+      // No catch: nec2++ is required, so a load failure must reach the run
+      // as an error rather than a silent null that would follow nec2c alone.
+      `const necpp = import(${JSON.stringify(NECPP_WASM_URL)});`,
       `const locateFile = () => ${JSON.stringify(NECPP_BINARY_URL)};`,
-      'const alternate = async (model) => {',
-      '  const lib = await necpp;',
-      '  if (lib === null) return null;',
+      'const alternate = async (lib, model) => {',
       '  const nec = await lib.createContext({ locateFile });',
       '  try {',
       '    return nec.solveModel(model).feeds[0].impedance;',
@@ -3924,14 +3935,19 @@
       '};',
       'onmessage = async (event) => {',
       '  const { lenM, decks, models, kind } = event.data;',
+      '  let lib;',
+      '  try {',
+      '    lib = await necpp;',
+      '  } catch {',
+      "    postMessage({ lenM, kind, error: 'could not load the nec2++ solver' });",
+      '    return;',
+      '  }',
       '  try {',
       '    const outputs = [];',
       '    const alternates = [];',
       '    for (let i = 0; i < decks.length; i++) {',
       '      outputs.push(await runNec(decks[i]));',
-      '      let z = null;',
-      '      try { z = await alternate(models[i]); } catch { z = null; }',
-      '      alternates.push(z);',
+      '      alternates.push(await alternate(lib, models[i]));',
       '    }',
       '    postMessage({ lenM, kind, outputs, alternates });',
       '  } catch (error) {',
@@ -5305,7 +5321,13 @@
             return;
           }
           const zs = data.outputs.map(parseNecZ);
-          if (zs.every(z => z !== null)) {
+          if (!zs.every(z => z !== null)) {
+            // A solver that ran but returned something unreadable is a
+            // failure, not a length to quietly drop: block the run.
+            conclude('the solver returned an unreadable result');
+            return;
+          }
+          {
             const measured = /** @type {Complex[]} */ (zs);
             const other = alternatesOf(data.alternates, measured.length);
             if (data.kind === 'coda') {
