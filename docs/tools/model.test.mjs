@@ -1187,6 +1187,17 @@ test('a length the model cannot describe is declined, not scored as NaN', () => 
     'and an ordinary antenna still scores');
 });
 
+test('the feedback link prefills a reproducible report', () => {
+  const url = m.bugReportUrl(
+    'https://charlieh0tel.github.io/endfed/random-wire.html?mode=impedance&len_m=17.983',
+    '2026.09.02.005');
+  assert.ok(url.startsWith(m.BUG_REPORT_URL + '?'), 'points at the new-issue form');
+  const body = new URL(url).searchParams.get('body');
+  assert.ok(body.includes('2026.09.02.005'), 'carries the version');
+  assert.ok(body.includes('len_m=17.983'), 'carries the full config URL');
+  assert.ok(body.includes('What I saw'), 'and the template prompts');
+});
+
 test('the antenna coefficients are height-only, as the page assumes', async () => {
   // The page ships alphaA and kA as one row per h node, read from the
   // dense table's first counterpoise column.  fill_unsupported once

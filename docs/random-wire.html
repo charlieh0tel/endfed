@@ -564,7 +564,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.004';
+    const PAGE_VERSION = '2026.09.02.005';
 
     /**
      * One release, as the user sees it.
@@ -580,6 +580,14 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.005',
+        title: 'Feedback that carries your setup',
+        text: 'The footer\u2019s Bugs & Feedback link now opens a GitHub '
+          + 'report prefilled with the page version and the exact URL of '
+          + 'what you are looking at, so a problem can be reproduced without '
+          + 'describing every control by hand.',
+      },
       {
         version: '2026.09.02.004',
         title: 'nec2c judged by electrical height',
@@ -1543,6 +1551,30 @@
      */
     const MODEL_NOTE_URL =
       'https://github.com/charlieh0tel/endfed/blob/master/docs/MODEL.md';
+
+    /** GitHub's new-issue form; the unfilled fallback for a modified click. */
+    const BUG_REPORT_URL = 'https://github.com/charlieh0tel/endfed/issues/new';
+
+    /**
+     * A new-issue link prefilled with the reader's configuration, so a
+     * report carries the URL that reproduces it and the version it was seen
+     * on.  Pure by construction: the caller passes window.location.href and
+     * PAGE_VERSION at click time, so the link is always the live config
+     * rather than a stale render.  The body matches
+     * .github/ISSUE_TEMPLATE/page-feedback.md.
+     *
+     * @param {string} pageUrl  the page's current URL, config and all
+     * @param {string} version  PAGE_VERSION
+     * @returns {string}
+     */
+    const bugReportUrl = (pageUrl, version) => {
+      const body = `**Version:** ${version}\n`
+        + `**Configuration:** ${pageUrl}\n\n`
+        + '**What I expected:**\n\n'
+        + '**What I saw:**\n';
+      const params = new URLSearchParams({ title: 'Page feedback', body });
+      return `${BUG_REPORT_URL}?${params}`;
+    };
 
     /**
      * How far off |Z| is, quoted in the caveat text.  Per length, not per
@@ -6329,7 +6361,13 @@
             <a href="https://www.gnu.org/licenses/gpl-3.0.html">GPL-3.0-or-later</a>.{' '}
             <WhatsNew />.{' '}
             <a href="https://github.com/charlieh0tel/endfed">GitHub</a>.{' '}
-            <a href="https://github.com/charlieh0tel/endfed/issues">Bugs &amp; Feedback</a>
+            <a href={BUG_REPORT_URL} target="_blank" rel="noopener"
+               onClick={(e) => {
+                 // Rewritten at click so the report always carries the live
+                 // config; a modified click falls back to the blank form.
+                 e.currentTarget.href =
+                   bugReportUrl(window.location.href, PAGE_VERSION);
+               }}>Bugs &amp; Feedback</a>
           </div>
         </div>
       );
