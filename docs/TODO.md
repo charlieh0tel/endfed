@@ -18,16 +18,6 @@ nec2c and nec2++ in the page.
       correcting it means a re-sweep before the tables can be
       reproduced from source.
 
-## The page
-
-- [ ] Exercise the page in a browser for the things a machine cannot
-      judge.  The mechanical half is automated in
-      `docs/tools/browser/random-wire.spec.mjs` and runs in CI;
-      `BROWSER_CHECKS.md` is now only the judgment calls --
-      whether the caveat text reads well, whether the recommendations
-      look right for a real installation, whether anything has drifted
-      that no assertion covers.
-
 ## Considered and declined
 
 - A buried-radials variant.  The remainder of the ground-contact
