@@ -419,13 +419,6 @@ test.describe('URLs', () => {
 });
 
 test.describe('layout and legibility', () => {
-  test('the experimental ribbon scrolls away with the page', async ({ page }) => {
-    await open(page);
-    const ribbon = page.getByText('EXPERIMENTAL').first();
-    const position = await ribbon.evaluate((node) => getComputedStyle(node).position);
-    expect(['fixed', 'sticky']).not.toContain(position);
-  });
-
   test('nothing scrolls sideways at phone width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await open(page);

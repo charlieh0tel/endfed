@@ -45,12 +45,6 @@
       gap: 20px;
     }
 
-    /*
-     * Diagonal corner ribbon, top right.  The wrapper is a fixed square
-     * pinned to the corner with overflow hidden; the band inside is rotated
-     * 45 degrees and made wide enough that its ends are clipped away, which
-     * is what gives the mitred look without drawing the triangle.
-     */
     /* Preset buttons sitting under a slider, e.g. the return-path lengths. */
     .preset-row {
       display: flex;
@@ -59,39 +53,6 @@
       margin-top: 6px;
     }
 
-    .ribbon {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 104px;
-      height: 104px;
-      overflow: hidden;
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    .ribbon span {
-      position: absolute;
-      display: block;
-      width: 150px;
-      padding: 3px 0;
-      top: 26px;
-      right: -38px;
-      transform: rotate(45deg);
-      /*
-       * Translucent so the title reads through it.  The ribbon overlays the
-       * viewport corner and the title is nearly viewport-wide, so they
-       * collide at any size worth reading; letting it wash over is cheaper
-       * than reserving a band of empty page for it.
-       */
-      background: rgba(139, 26, 26, 0.55);
-      color: rgba(255, 232, 232, 0.85);
-      font-size: 9px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-align: center;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
-    }
 
     .title {
       font-size: 18px;
@@ -603,7 +564,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.01.001';
+    const PAGE_VERSION = '2026.09.02.001';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +580,13 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.001',
+        title: 'The EXPERIMENTAL ribbon retires',
+        text: 'The modeled method has been measured out of sample, '
+          + 'cross-checked against three independent NEC builds, and used '
+          + 'in anger. It no longer needs the warning label.',
+      },
       {
         version: '2026.09.01.001',
         title: 'The ground control shows its constants',
@@ -5447,9 +5415,6 @@
 
       return (
         <div className="app">
-          {mode === 'impedance' && (
-            <div className="ribbon"><span>EXPERIMENTAL</span></div>
-          )}
           <h1 className="title">End-Fed Wire Antenna Length Calculator</h1>
           <div className="footer">
             End-fed wire lengths that dodge half-wave resonances on the bands you pick

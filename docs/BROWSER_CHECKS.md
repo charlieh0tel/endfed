@@ -30,9 +30,6 @@ npm --prefix docs/tools run serve
       lengths offered match what you would actually put up.  The model's
       error bound is in `MODEL.md`; this is the sanity check
       that sits outside it.
-- [ ] **Is the EXPERIMENTAL ribbon saying the right thing?**  The suite
-      checks that it scrolls away rather than pinning.  Whether the page
-      still deserves the ribbon is a judgment about the model.
 - [ ] **Does the NEC overlay tell a fair story?**  The suite proves the
       check runs, draws and clears; it cannot judge whether the two
       curves part where the caveat says they will -- near the half-wave
