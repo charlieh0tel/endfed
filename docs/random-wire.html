@@ -603,7 +603,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.08.31.012';
+    const PAGE_VERSION = '2026.09.01.001';
 
     /**
      * One release, as the user sees it.
@@ -619,6 +619,13 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.01.001',
+        title: 'The ground control shows its constants',
+        text: 'The ground hint now states the permittivity and conductivity '
+          + 'behind each soil class, so a map figure or a measured value can '
+          + 'be matched to the nearest one.',
+      },
       {
         version: '2026.08.31.012',
         title: 'An honest word about the unun',
@@ -5708,7 +5715,9 @@
                       </button>
                     ))}
                     <div className="control-hint">
-                      Sandy or rocky, medium, damp or marshy. Not a quality
+                      Sandy or rocky (ε 5, 1 mS/m), medium (ε 13,
+                      5 mS/m), damp or marshy (ε 20, 30 mS/m) -- the
+                      constants the tables were fitted at. Not a quality
                       scale: damp ground sharpens the resonances, it does not
                       improve the match.
                     </div>

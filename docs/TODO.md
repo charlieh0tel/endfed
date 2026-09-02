@@ -67,8 +67,3 @@ nec2c and nec2++ in the page.
   *closer* to odd quarter waves than chance because those points are
   the midpoints between the half waves they avoid.  The impedance mode
   sees the low-Z case as cost, which is the useful form of it.
-
-## Open questions
-
-- How should the soil control be labeled so it does not imply that
-  "good" ground gives a better match?  Measured, it does not.
