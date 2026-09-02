@@ -564,7 +564,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.003';
+    const PAGE_VERSION = '2026.09.02.004';
 
     /**
      * One release, as the user sees it.
@@ -580,6 +580,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.004',
+        title: 'nec2c judged by electrical height',
+        text: 'The NEC-2 check decides whether to trust nec2c from the '
+          + 'counterpoise\u2019s height in wavelengths, not in meters. A '
+          + 'counterpoise a meter or two up is electrically low on the low '
+          + 'bands, where nec2c invents a resonance; the check now draws '
+          + 'nec2++ alone there instead of a misleading second curve.',
+      },
       {
         version: '2026.09.02.003',
         title: 'Tall wires get their fitted coefficients',
@@ -3197,7 +3206,19 @@
      * else.  The rule scores x1.21 median / x1.86 at the 90th against x1.24 /
      * x3.16 for nec2c alone and x1.23 / x1.90 for nec2++ alone.
      */
-    const NEC_PREFER_NEC2C_MAX_Z_M = 0.05;
+    /**
+     * The counterpoise ceiling for trusting nec2c, in wavelengths.  nec2c's
+     * ground-treatment failure past two half-waves is set by the
+     * counterpoise's *electrical* height, not its height in metres: on the
+     * ranking sweep nec2c's 90th-percentile SWR error stays near 9 up to
+     * z/lambda 0.05 and drops to nec2++'s ~2 above it, at every absolute
+     * height that crossed the line.  A 0.05 m metre-threshold caught only
+     * the near-grounded rows and drew nec2c full-strength at z=0.3 and 1 m
+     * (90th ~9); the electrical 0.05 catches 782 of 817 measured fictions
+     * against the metre rule's 399, and the nec2c error left on screen
+     * falls from a 90th of x2.6 to x1.9.  Same 0.05, read in wavelengths.
+     */
+    const NEC_PREFER_NEC2C_MAX_Z_LAM = 0.05;
     const NEC_PREFER_NEC2C_MAX_HALVES = 2;
 
     /**
@@ -3228,8 +3249,9 @@
       if (feedHeightM(site) / (C_SPEED / freqHz) < NEC2_FEED_MIN_LAMBDA) {
         return 'necpp';
       }
-      const halves = 2 * lenM * freqHz / C_SPEED;
-      return site.counterpoiseZM <= NEC_PREFER_NEC2C_MAX_Z_M
+      const wavelengthM = C_SPEED / freqHz;
+      const halves = 2 * lenM / wavelengthM;
+      return site.counterpoiseZM / wavelengthM <= NEC_PREFER_NEC2C_MAX_Z_LAM
           && halves < NEC_PREFER_NEC2C_MAX_HALVES
         ? 'nec2c' : 'necpp';
     };
@@ -3253,9 +3275,9 @@
      * catastrophic regimes are measured, not suspected: with the feedpoint
      * under NEC2_FEED_MIN_LAMBDA its ground treatment fails at every
      * length, and past two half-waves over a counterpoise within
-     * NEC_PREFER_NEC2C_MAX_Z_M it invents a resonance.  Disagreement with
-     * a solver known to be wrong is not doubt, so the map draws no band
-     * from it there.
+     * NEC_PREFER_NEC2C_MAX_Z_LAM (electrical height) it invents a
+     * resonance.  Disagreement with a solver known to be wrong is not
+     * doubt, so the map draws no band from it there.
      * @param {Site} site
      * @param {Meters} lenM
      * @param {Hertz} freqHz
@@ -3265,7 +3287,7 @@
       const wavelengthM = C_SPEED / freqHz;
       if (feedHeightM(site) / wavelengthM < NEC2_FEED_MIN_LAMBDA) return false;
       const halves = 2 * lenM / wavelengthM;
-      return !(site.counterpoiseZM <= NEC_PREFER_NEC2C_MAX_Z_M
+      return !(site.counterpoiseZM / wavelengthM <= NEC_PREFER_NEC2C_MAX_Z_LAM
                && halves >= NEC_PREFER_NEC2C_MAX_HALVES);
     };
 

@@ -1717,9 +1717,12 @@ test('nec2c is credible only outside its two measured failure regimes', () => {
   assert.ok(m.nec2cCredible(flat, 0.75 * lam40, 7.15e6), 'short and fed high');
   assert.ok(!m.nec2cCredible(flat, 1.25 * lam40, 7.15e6),
     'past two half-waves over a low counterpoise: the invented resonance');
-  const raised = { ...flat, counterpoiseZM: 0.3 };
+  // Raised past 0.05 wavelengths on 40 m (2.1 m); credibility is electrical.
+  const raised = { ...flat, counterpoiseZM: 2.5 };
   assert.ok(m.nec2cCredible(raised, 1.25 * lam40, 7.15e6),
-    'the same length is credible once the counterpoise is up');
+    'the same length is credible once the counterpoise is electrically up');
+  assert.ok(!m.nec2cCredible({ ...flat, counterpoiseZM: 1.0 }, 1.25 * lam40, 7.15e6),
+    'a 1 m counterpoise is still electrically low on 40 m');
   const fedLow = m.withSiteInvariants({ geometry: 'sloper', heightM: 9.144,
     counterpoiseM: 27.25, counterpoiseZM: 0.3, balunM: 0.61,
     soil: m.DEFAULT_SOIL, wire: 'bare' });
@@ -1731,7 +1734,9 @@ test('the check follows nec2c only on a short wire over a low counterpoise', () 
   const low = m.withSiteInvariants({ geometry: 'flatTop', heightM: 9.144,
     counterpoiseM: 7.62, counterpoiseZM: 0.05, balunM: 0.61,
     soil: m.DEFAULT_SOIL, wire: 'bare' });
-  const high = { ...low, counterpoiseZM: 0.3 };
+  // Raised past 0.05 wavelengths on 40 m (0.05 * 41.9 m = 2.1 m); the
+  // counterpoise height is judged electrically, not in metres.
+  const high = { ...low, counterpoiseZM: 2.5 };
   const lam = m.C_SPEED / 7.15e6;
   assert.equal(m.necPreferred(low, 0.75 * lam, 7.15e6), 'nec2c', 'low and short');
   // Fed near the ground, nec2c fails at every length: a sloper's balun at
@@ -1745,6 +1750,14 @@ test('the check follows nec2c only on a short wire over a low counterpoise', () 
     'and on 10 m the length rule decides (past two half-waves)');
   assert.equal(m.necPreferred(low, 1.25 * lam, 7.15e6), 'necpp', 'low but past two half-waves');
   assert.equal(m.necPreferred(high, 0.75 * lam, 7.15e6), 'necpp', 'a raised counterpoise');
+  // The counterpoise height is electrical: 1 m is 0.024 wavelengths on 40 m
+  // (short, follow nec2c) but 0.096 on 10 m (raised, follow nec2++) -- for a
+  // 7.8 m wire, short by half-waves on both bands, so only z/lambda decides.
+  const oneMeter = { ...low, counterpoiseZM: 1.0 };
+  assert.equal(m.necPreferred(oneMeter, 7.8, 7.15e6), 'nec2c',
+    '1 m counterpoise is electrically low on 40 m');
+  assert.equal(m.necPreferred(oneMeter, 7.8, 28.85e6), 'necpp',
+    'and electrically raised on 10 m');
   // Frequency by frequency: the same wire is short on 40 m and long on 10 m.
   const zs = [{ re: 100, im: 0 }, { re: 200, im: 0 }];
   const alt = [{ re: 1000, im: 0 }, { re: 2000, im: 0 }];
