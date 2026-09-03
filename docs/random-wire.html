@@ -578,7 +578,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.008';
+    const PAGE_VERSION = '2026.09.02.009';
 
     /**
      * One release, as the user sees it.
@@ -594,6 +594,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.009',
+        title: 'Truer clearances, stricter URLs',
+        text: 'A classic-mode suggestion now shows how far the rounded '
+          + 'length it recommends actually sits from the nearest resonance, '
+          + 'rather than half the usable span, which could read a touch '
+          + 'wide. And a length in the URL with a stray unit, like 70ft in '
+          + 'a meters field, is now ignored rather than misread.',
+      },
       {
         version: '2026.09.02.008',
         title: 'The NEC-2 check meshes like the fit',
@@ -2345,7 +2354,14 @@
       const merged = mergeIntervals(avoid);
       const usable = usableIntervals(merged, maxLenM);
       const suggestions = [...usable]
-        .map(u => ({ ...u, pick: pickInSpan(u, units), clearance: (u.hi - u.lo) / 2 }))
+        .map((u) => {
+          // Clearance is measured from the rounded length that is actually
+          // recommended, to whichever avoid edge is nearer -- not half the
+          // span.  pickInSpan rounds off-center, so half the span overstates
+          // how far the offered length sits from the nearest resonance.
+          const pick = pickInSpan(u, units);
+          return { ...u, pick, clearance: Math.min(pick - u.lo, u.hi - pick) };
+        })
         .sort((a, b) => b.clearance - a.clearance)
         .slice(0, MAX_SUGGESTIONS);
       return { bands, avoid, merged, usable, suggestions, shortLimit };
@@ -3895,7 +3911,11 @@
 
     /** @param {?string} raw @param {number} fallback @returns {number} */
     const parseNum = (raw, fallback) => {
-      const value = parseFloat(raw ?? '');
+      // Number, not parseFloat: parseFloat reads the number off the front and
+      // ignores the rest, so "70ft" becomes 70 rather than being rejected.
+      // A URL parameter with a trailing unit is a mistake, not a length.
+      const text = (raw ?? '').trim();
+      const value = text === '' ? NaN : Number(text);
       return Number.isFinite(value) ? value : fallback;
     };
 

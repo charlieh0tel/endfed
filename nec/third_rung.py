@@ -11,6 +11,16 @@ octave deeper into the asymptotic regime.
 Rewrites EXTRAPOLATED in place, with a `third_rung` mask recording which
 rows came from the deeper pair.  The geometry is inferred from the file's
 height column, as extrapolate_sweep.py wrote it.
+
+The committed sweeps also carry a `fourth_rung` mask (41 rows): the few
+that were still negative after the third rung, re-extrapolated one octave
+deeper still from the (8x, 16x) pair by this same method at THIRD_DENSITY
+= 16.  That run is not reproducible from the committed files alone -- it
+needs the 8x solves, which the third rung computes but does not save -- so
+it is recorded here rather than as a rerunnable step; nothing reads either
+mask, both are provenance.  A fully reproducible deeper rung would have
+this script solve both densities of the pair itself; it is not worth a
+NEC campaign to rebuild 41 rows that are already correct.
 """
 
 import argparse

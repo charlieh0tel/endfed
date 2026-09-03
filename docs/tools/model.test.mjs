@@ -858,6 +858,26 @@ test('pickInSpan prefers the roundest number that fits', () => {
   close(pick, Math.round(pick), 1e-9, 'a wide span picks a whole foot');
 });
 
+test('a suggestion clears its stated distance from both avoid edges', () => {
+  // The clearance shown is measured from the rounded recommendation to the
+  // nearer edge, not half the span: pickInSpan rounds off-center, so half
+  // the span would overstate how far the offered length sits from a
+  // resonance.  Every suggestion must sit at least its clearance from both
+  // edges of its usable span.
+  const bands = m.bandsIn('us').filter(b => [40, 20, 15, 10].includes(b.m))
+    .map(b => b.m);
+  const solved = m.solve('us', bands, 'full', 0.95, m.DEFAULT_MARGIN_PCT,
+    m.fromDisplay(180, 'ft'), 'ft');
+  assert.ok(solved.suggestions.length > 0, 'there are suggestions to check');
+  for (const s of solved.suggestions) {
+    assert.ok(s.pick > s.lo && s.pick < s.hi, 'the pick is inside its span');
+    assert.ok(s.clearance <= (s.hi - s.lo) / 2 + 1e-9,
+      'clearance never exceeds half the span');
+    close(s.clearance, Math.min(s.pick - s.lo, s.hi - s.pick), 1e-9,
+      'clearance is the distance to the nearer edge');
+  }
+});
+
 test('bestFeasibleMargin finds a margin that leaves something', () => {
   // Called only when the asked-for margin empties the axis, so what matters
   // is that what it returns actually works.
@@ -915,6 +935,9 @@ test('clamp and parseNum hold their ranges', () => {
   close(m.parseNum('2.5', 9), 2.5, 1e-9, 'parses');
   close(m.parseNum(null, 9), 9, 1e-9, 'null falls back');
   close(m.parseNum('nonsense', 9), 9, 1e-9, 'garbage falls back');
+  close(m.parseNum('70ft', 9), 9, 1e-9, 'a trailing unit is rejected, not read as 70');
+  close(m.parseNum('  12 ', 9), 12, 1e-9, 'surrounding space is fine');
+  close(m.parseNum('Infinity', 9), 9, 1e-9, 'infinity is not a length');
 });
 
 test('isKeyOf keeps a bad URL parameter out of a lookup table', () => {
