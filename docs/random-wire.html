@@ -25,9 +25,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>End-Fed Wire Antenna Length Calculator</title>
   <meta name="description" content="Pick end-fed random wire lengths that avoid half-wave resonances on the US ham bands you care about.">
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!--
+    Pinned to exact versions with Subresource Integrity: a bare @18 or an
+    unversioned Babel floats to whatever the CDN serves that day, so the page
+    could run different code on any future load, unverified.  The hashes are
+    of the exact files at these versions; bump a version and its hash moves
+    with it (openssl dgst -sha384 -binary FILE | openssl base64 -A).  npm
+    does not republish an exact version, so these bytes are stable.
+  -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+          integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
+          crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+          integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
+          crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@8.0.4/babel.min.js"
+          integrity="sha384-bdF7m0Y1IFKt9Q6xC8X9qkXn0OBriQWKyWwZKYsN05zF6P/g9OakjjL0G2Sd4pB4"
+          crossorigin="anonymous"></script>
   <style>
     body { margin: 0; }
 
