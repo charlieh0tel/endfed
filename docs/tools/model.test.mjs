@@ -1059,10 +1059,14 @@ test('segments are odd, bounded, and short against the shortest wave', () => {
                                 m.WIRE_RADIUS_M);
   const wavelengthM = m.C_SPEED / topHz;
   for (const wire of cardsOf(deck, 'GW')) {
+    const tag = Number(wire[1]);
     const segments = Number(wire[2]);
     const lengthM = Math.hypot(Number(wire[6]) - Number(wire[3]),
                                Number(wire[8]) - Number(wire[5]));
-    assert.equal(segments % 2, 1, 'odd segment count');
+    // The antenna carries the source and is made odd for a center segment;
+    // the drop and return are matched to its segment length (nec_model's
+    // _matched_segments) and need not be odd.
+    if (tag === 1) assert.equal(segments % 2, 1, 'the source wire is odd');
     assert.ok(segments <= m.DECK_MAX_SEGMENTS, 'inside the cap');
     if (segments < m.DECK_MAX_SEGMENTS) {
       assert.ok(segments >= m.DECK_SEGMENTS_PER_WAVELENGTH * lengthM / wavelengthM - 1,
@@ -1084,6 +1088,29 @@ test('the deck feeds the end of the antenna wire and ends properly', () => {
   // and stopped.
   assert.ok(deck.includes('\nXQ\n'), 'something tells NEC to run');
   assert.ok(deck.endsWith('EN\n'), 'and the deck ends');
+});
+
+test('the deck matches the fitting geometry\'s junction segmentation', () => {
+  // The drop and return are segmented to the antenna's segment length at
+  // the shared feedpoint, not counted on their own, so the check solves the
+  // deck the tables were fitted at.  Counts are pinned to nec_model's
+  // _wires / sloper_deck for these geometries; regenerate from those.
+  const C = m.C_SPEED;
+  const segs = (lenM, site, fHz) =>
+    m.deckWires(lenM, site, m.WIRE_RADIUS_M, C / fHz).map(w => w.segments);
+  const flat = (h, cpz, cp) => ({ geometry: 'flatTop', heightM: h,
+    balunM: m.DEFAULT_BALUN_M, counterpoiseM: cp, counterpoiseZM: cpz,
+    soil: 'average' });
+  assert.deepEqual(segs(20.6, flat(9.144, 0.05, 7.62), 7.15e6), [11, 5, 4],
+    'flat top, short counterpoise on 40 m');
+  assert.deepEqual(segs(10.0, flat(9.144, 0.05, 20.0), 28.85e6), [21, 19, 42],
+    'flat top, long run on 10 m');
+  assert.deepEqual(segs(5.0, flat(3.0, 0.05, 7.62), 1.9e6), [9, 5, 14],
+    'a short wire on 160 m keeps the floor');
+  const sloper = { geometry: 'sloper', heightM: 20.0, balunM: 2.0,
+    counterpoiseM: 50.0, counterpoiseZM: 0.05, soil: 'average' };
+  assert.deepEqual(segs(21.6, sloper, 1.9e6), [9, 1, 21],
+    'a short drop under a long antenna matches to one segment, not nine');
 });
 
 test('the counterpoise ceiling follows the geometry it hangs from', () => {

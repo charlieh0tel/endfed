@@ -564,7 +564,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.007';
+    const PAGE_VERSION = '2026.09.02.008';
 
     /**
      * One release, as the user sees it.
@@ -580,6 +580,16 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.008',
+        title: 'The NEC-2 check meshes like the fit',
+        text: 'The check built its decks segmenting each wire on its own, '
+          + 'which graded the feedpoint junction badly and could make the '
+          + 'measured overlay disagree with the model for a meshing reason '
+          + 'rather than a real one. It now matches the drop and return to '
+          + 'the antenna the way the fitting runs did, so it solves the '
+          + 'same geometry it is checking.',
+      },
       {
         version: '2026.09.02.007',
         title: 'A steadier length field',
@@ -2935,7 +2945,35 @@
     const deckSegments = (lenM, wavelengthM) => {
       const n = Math.ceil(DECK_SEGMENTS_PER_WAVELENGTH * lenM / wavelengthM);
       const bounded = Math.min(Math.max(n, DECK_MIN_SEGMENTS), DECK_MAX_SEGMENTS);
-      return bounded % 2 === 0 ? bounded - 1 : bounded;
+      // Even counts round up to the next odd, as nec_model._segments does, so
+      // the antenna wire the source sits on is segmented identically to the
+      // fitting deck rather than one pair of segments coarser.
+      return bounded % 2 === 0 ? bounded + 1 : bounded;
+    };
+
+    /**
+     * Segments for the drop and return, matched to the antenna's segment
+     * length at the shared feedpoint junction rather than counted on their
+     * own.  NEC grades a junction that carries the source by the ratio of
+     * the segment lengths meeting there; segmenting each wire independently
+     * against the nine-segment floor gave a short drop nine tiny segments
+     * under a long antenna's coarse ones -- a grading of up to 1472:1 on a
+     * sloper -- which is why nec/nec_model.py's _matched_segments exists and
+     * why the check must mirror it to solve the deck the tables were fitted
+     * at.  Matching may only ever refine, so a very long return under a
+     * coarse antenna keeps the twenty-per-wavelength floor; it is capped for
+     * the browser solvers' matrix and, unlike the source wire, not made odd.
+     *
+     * @param {Meters} lenM
+     * @param {Meters} wavelengthM
+     * @param {Meters} targetM  the antenna's segment length
+     * @returns {number}
+     */
+    const matchedSegments = (lenM, wavelengthM, targetM) => {
+      const matched = Math.round(lenM / targetM);
+      const perWavelength =
+        Math.ceil(DECK_SEGMENTS_PER_WAVELENGTH * lenM / wavelengthM);
+      return Math.min(Math.max(1, matched, perWavelength), DECK_MAX_SEGMENTS);
     };
 
 
@@ -2982,22 +3020,26 @@
       // expression with no rise at all.
       const riseM = Math.max(site.heightM - feedM, 0);
       const reachM = Math.sqrt(Math.max(lenM * lenM - riseM * riseM, 0));
+      // The antenna carries the source and sets the segment length the drop
+      // and return are matched to, so their junction with it grades 1:1.
+      const antennaSegments = deckSegments(lenM, wavelengthM);
+      const targetM = lenM / antennaSegments;
       /** @type {DeckWire[]} */
       const wires = [{
-        tag: 1, segments: deckSegments(lenM, wavelengthM),
+        tag: 1, segments: antennaSegments,
         x1: 0, y1: 0, z1: feedM,
         x2: reachM, y2: 0, z2: site.heightM, radius: radiusM,
       }];
       if (dropM > 0) {
         wires.push({
-          tag: 2, segments: deckSegments(dropM, wavelengthM),
+          tag: 2, segments: matchedSegments(dropM, wavelengthM, targetM),
           x1: 0, y1: 0, z1: feedM,
           x2: 0, y2: 0, z2: runZM, radius: radiusM,
         });
       }
       if (runM > 0) {
         wires.push({
-          tag: 3, segments: deckSegments(runM, wavelengthM),
+          tag: 3, segments: matchedSegments(runM, wavelengthM, targetM),
           x1: 0, y1: 0, z1: runZM,
           x2: RETURN_DIRECTION[site.geometry] * runM, y2: 0, z2: runZM,
           radius: radiusM,

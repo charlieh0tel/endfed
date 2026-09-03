@@ -1812,9 +1812,16 @@ band between them, the verdict and the table read as a range, and the
 status line says the check is unsure rather than that the model is
 wrong.  nec2++ solves a deck in the time nec2c does, about 40 ms, so a
 run costs twice what it did.  The standing-wave profiles stay nec2c's,
-which is the one that prints them.  Should nec2++ fail to load, the
-check runs on nec2c alone and draws no band, which is its way of saying
-so.  necpp-wasm 0.2.1 trapped on memory above about 140 segments --
+which is the one that prints them.  nec2++ is required, not optional:
+following nec2c alone would draw its measured ground-failure fiction
+with nothing to overrule it, so should either solver fail to load or to
+solve, the check stops with a message rather than degrading to one.
+Its probe decks also match the drop and return to the antenna's segment
+length at the feedpoint junction, exactly as `nec_model._matched_segments`
+does for the fit -- segmenting each wire on its own graded that junction
+by up to 1472:1 on a sloper and made the overlay disagree with the model
+for a meshing reason rather than a real one.  necpp-wasm 0.2.1 trapped
+on memory above about 140 segments --
 Eigen putting its matrices on a WebAssembly stack -- which would have
 sent every long wire on a high band to nec2c alone; 0.2.2 fixed that
 and solves the page's largest decks, 233 segments, in about 120 ms.
