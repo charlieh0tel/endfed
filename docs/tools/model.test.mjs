@@ -881,6 +881,14 @@ test('a length written as meters reads back unchanged', () => {
   close(m.readWireLenM(params), 21.336, 1e-9, 'len_m is meters');
 });
 
+test('wire length is bounded so an absurd URL cannot wedge the page', () => {
+  assert.equal(m.clamp(1e6, m.WIRE_LEN_RANGE_M), m.WIRE_LEN_RANGE_M.max,
+    'a million metres clamps to the ceiling');
+  assert.equal(m.clamp(-5, m.WIRE_LEN_RANGE_M), 0, 'and negative to zero');
+  assert.ok(m.WIRE_LEN_RANGE_M.max > 160 && m.WIRE_LEN_RANGE_M.max < 1000,
+    'the ceiling clears one wavelength on 160 m without being silly');
+});
+
 test('the legacy ?len= is still read as feet', () => {
   // docs/AGENTS.md promises links shared before the SI conversion resolve to
   // the same wire.  Nothing checked it until now.

@@ -53,7 +53,7 @@ const EXPORTS = [
   'PUBLISHED_FT', 'TUNERS', 'DEFAULT_TUNER', 'isGoodScore',
   'HEIGHT_RANGE_M', 'COUNTERPOISE_RANGE_M',
   'COUNTERPOISE_Z_RANGE_M',
-  'BALUN_RANGE_M', 'MODEL_FIT_RANGE_HZ',
+  'BALUN_RANGE_M', 'WIRE_LEN_RANGE_M', 'MODEL_FIT_RANGE_HZ',
   'MODEL_TYPICAL_FACTOR', 'MODEL_BOUND_FACTOR',
   // length math
   'halfWaveM', 'bandsIn', 'bandEdgesHz', 'resonanceInterval', 'avoidIntervals',

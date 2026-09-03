@@ -564,7 +564,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.006';
+    const PAGE_VERSION = '2026.09.02.007';
 
     /**
      * One release, as the user sees it.
@@ -580,6 +580,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.02.007',
+        title: 'A steadier length field',
+        text: 'Wire length is now bounded like every other input, so an '
+          + 'absurd value pasted into the URL no longer freezes the page. '
+          + 'And returning to a length whose NEC-2 measurement is still '
+          + 'running keeps the measuring notice up instead of blanking the '
+          + 'panel until it lands.',
+      },
       {
         version: '2026.09.02.006',
         title: 'The NEC-2 check needs both solvers',
@@ -1175,6 +1184,14 @@
     const DEFAULT_BALUN_M = 0.61;           // a 2 ft stake
     const HEIGHT_RANGE_M = Object.freeze({ min: 1, max: 30 });
     const COUNTERPOISE_RANGE_M = Object.freeze({ min: 0, max: 50 });
+    /**
+     * Wire length bounds.  Every other numeric input is clamped; length was
+     * not, so a hand-typed or hand-edited ?len_m= of a million metres built
+     * millions of SVG nodes and wedged the tab.  200 m is past one
+     * wavelength on the lowest band (160 m) and far past any real end-fed,
+     * so it never frustrates a genuine length while bounding the render.
+     */
+    const WIRE_LEN_RANGE_M = Object.freeze({ min: 0, max: 200 });
     /**
      * Shortest return conductor the model will answer for.  An end-fed wire
      * fed against nothing at all is not an antenna the two-line model
@@ -4069,7 +4086,7 @@
         marginPct: clamp(parseNum(params.get(URL_KEYS.marginPct), DEFAULTS.marginPct),
                          MARGIN_PCT_RANGE),
         units: isKeyOf(UNITS, units) ? units : DEFAULTS.units,
-        wireLenM: Math.max(0, readWireLenM(params)),
+        wireLenM: clamp(readWireLenM(params), WIRE_LEN_RANGE_M),
         heightM,
         geometry: isKeyOf(GEOMETRIES, geometry) ? geometry : DEFAULTS.geometry,
         balunM: clamp(parseNum(params.get(URL_KEYS.balunM), DEFAULTS.balunM),
@@ -5073,6 +5090,11 @@
           return undefined;
         }
         if (necFollow.current !== null && necFollow.current.lenM === wireLenM) {
+          // A solve for this exact length is already in flight -- the reader
+          // returned to it after a detour.  Keep the notice up rather than
+          // leaving the panel blank until the worker lands; a prior effect's
+          // cleanup may have cleared it on the way out.
+          setNecMeasuringM(wireLenM);
           return undefined;
         }
         const key = necRun.key;
@@ -5493,8 +5515,9 @@
       /** @param {Meters} lenM */
       const setWireLen = (lenM) => {
         if (!Number.isFinite(lenM)) return;
-        set({ wireLenM: Math.max(0,
-          fromDisplay(Number(toDisplay(lenM, units).toFixed(2)), units)) });
+        set({ wireLenM: clamp(
+          fromDisplay(Number(toDisplay(lenM, units).toFixed(2)), units),
+          WIRE_LEN_RANGE_M) });
       };
 
       /**
@@ -5898,7 +5921,9 @@
                 : verdict ? (verdict.ok ? 'good' : 'bad') : ''}`}>
                 <div className="verdict-headline">
                   Wire length{' '}
-                  <input className="num-input len-input" type="number" min="0" step="0.5"
+                  <input className="num-input len-input" type="number" min="0"
+                         max={Math.round(toDisplay(WIRE_LEN_RANGE_M.max, units))}
+                         step="0.5"
                          value={lenShown}
                          onChange={(e) => {
                            setLenDraft(e.target.value);

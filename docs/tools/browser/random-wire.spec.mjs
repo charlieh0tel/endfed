@@ -407,6 +407,15 @@ test.describe('URLs', () => {
     expect(await publishedLengths(page)).toEqual(before);
   });
 
+  test('an absurd length in the URL is clamped, not rendered', async ({ page }) => {
+    // A million metres once built millions of SVG nodes and froze the tab.
+    await open(page, '?mode=impedance&len_m=1000000');
+    // The page is interactive and the length field shows a bounded value.
+    const shown = await page.locator('input.len-input').inputValue();
+    expect(Number(shown)).toBeLessThan(1000);
+    expect(Number(shown)).toBeGreaterThan(0);
+  });
+
   test('the legacy ?len= is still read as feet', async ({ page }) => {
     await open(page, '?mode=impedance&len=70');
     const legacy = await lengthField(page).inputValue();
