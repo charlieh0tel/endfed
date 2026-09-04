@@ -48,6 +48,7 @@ from table_spec import (
     length_power,
 )
 from fit import fit_group, model_zin
+from sweep_grid import RATIO_MAX
 from nec_model import BALUN_HEIGHT_M, C
 from table2d import RETURN_ONLY, build, look_up
 
@@ -504,6 +505,7 @@ def render(tables, soils):
         f"      minCounterpoiseZM: {MIN_COUNTERPOISE_Z_M},",
         f"      maxCounterpoiseZM: {MAX_COUNTERPOISE_Z_M},",
         f"      counterpoiseCeilingFraction: {COUNTERPOISE_CEILING_FRACTION},",
+        f"      maxLengthOverLambda: {RATIO_MAX},",
         "    });",
         "    /**",
         "     * The antenna line's loss falls with electrical length above a",
@@ -690,6 +692,7 @@ if __name__ == "__main__":
                     "min_counterpoise_z_m": MIN_COUNTERPOISE_Z_M,
                     "max_counterpoise_z_m": MAX_COUNTERPOISE_Z_M,
                     "counterpoise_ceiling_fraction": COUNTERPOISE_CEILING_FRACTION,
+                    "max_length_over_lambda": RATIO_MAX,
                 },
                 name: {
                     "table": table.tolist(),

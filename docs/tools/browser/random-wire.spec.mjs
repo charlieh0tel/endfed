@@ -325,6 +325,14 @@ test.describe('the fit\'s domain', () => {
     await open(page, '?mode=classical&bands=160&h_m=3&len_m=21.336');
     await expect(page.locator('.verdict-domain')).toHaveCount(0);
   });
+
+  test('a length past the fit on a high band says it is extrapolating',
+    async ({ page }) => {
+      // 60 m is over four wavelengths on 10 m, past the fitted l/lambda.
+      await open(page, '?mode=impedance&bands=160,10&h_m=9.144&len_m=60');
+      await expect(page.locator('.verdict-domain', { hasText: /wavelengths long/ }))
+        .toBeVisible();
+    });
 });
 
 test.describe('keyboard, in the control groups', () => {

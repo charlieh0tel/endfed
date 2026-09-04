@@ -1342,6 +1342,8 @@ test('the model carries the domain the fit was measured over', async () => {
     'the control offers what the model defines');
   close(m.COUNTERPOISE_Z_RANGE_M.max, domain.max_counterpoise_z_m, 1e-12,
     'at both ends');
+  close(m.MODEL_DOMAIN.maxLengthOverLambda, domain.max_length_over_lambda, 1e-12,
+    'the length ceiling is the fitted l/lambda max');
 });
 
 test('no setting the controls allow falls outside the fit', () => {

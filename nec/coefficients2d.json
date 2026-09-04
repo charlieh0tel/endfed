@@ -7326,7 +7326,8 @@
   "min_h_over_lambda": 0.006,
   "min_counterpoise_z_m": 0.01,
   "max_counterpoise_z_m": 15.0,
-  "counterpoise_ceiling_fraction": 0.5
+  "counterpoise_ceiling_fraction": 0.5,
+  "max_length_over_lambda": 4.0
  },
  "length_power": {
   "plateau": 0.63,

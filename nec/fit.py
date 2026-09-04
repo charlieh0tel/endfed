@@ -71,9 +71,12 @@ def schelkunoff_z0(length_m, radius_m=WIRE_RADIUS_M):
 
 
 #: Segments in the tapered cascade.  Each segment is solved exactly, so
-#: the only discretization is the Z0 staircase; against a 256-segment
-#: reference, 64 leaves the worst |Z| within x1.07 at the sweep's
-#: lengths, below the fit residual everywhere.
+#: the only discretization is the Z0 staircase.  64 is the density the
+#: coefficients are fitted at and the page reproduces exactly, not a
+#: convergence limit: against 256 segments the worst |Z| moves under
+#: x1.07 at the sweep's lengths, but 256 is not itself converged (1024
+#: still shifts |Z| slightly and the phase more).  What the fit needs is
+#: that fit and page agree at 64, which a test pins, not that 64 is truth.
 CASCADE_SEGMENTS = 64
 
 #: Local Z0 floor, ohms.  The log profile dives toward -infinity at the

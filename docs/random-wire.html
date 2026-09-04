@@ -578,7 +578,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.02.009';
+    const PAGE_VERSION = '2026.09.03.001';
 
     /**
      * One release, as the user sees it.
@@ -594,6 +594,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.03.001',
+        title: 'Honest about long wires and stopped checks',
+        text: 'A wire longer than the fit covers on the highest band you '
+          + 'picked now says the model is extrapolating there, the way an '
+          + 'out-of-range height already did. And if the NEC-2 check stops '
+          + 'partway -- including during the final measured lengths -- it '
+          + 'now says so rather than reading as a finished run.',
+      },
       {
         version: '2026.09.02.009',
         title: 'Truer clearances, stricter URLs',
@@ -1285,6 +1294,7 @@
       minCounterpoiseZM: 0.01,
       maxCounterpoiseZM: 15.0,
       counterpoiseCeilingFraction: 0.5,
+      maxLengthOverLambda: 4.0,
     });
     /**
      * The antenna line's loss falls with electrical length above a
@@ -5046,6 +5056,23 @@
         [mode, wireLenM, solution, segment, site, ununRatio]);
 
       /**
+       * The current length in wavelengths on the highest selected band.
+       * The domain guard covers height in wavelengths but not length; a
+       * long wire on a high band -- a 160 m map length scored on 10 m
+       * reaches many wavelengths -- is an extrapolation of the loss term
+       * the page should own rather than hide.
+       */
+      const lengthOverLambda = useMemo(() => {
+        if (mode !== 'impedance' || score === null || wireLenM <= 0
+            || score.bands.length === 0) {
+          return 0;
+        }
+        const topHz = Math.max(
+          ...score.bands.map(b => bandEdgesHz(b, segment)[1]));
+        return wireLenM * topHz / C_SPEED;
+      }, [mode, score, wireLenM, segment]);
+
+      /**
        * The measured standing-wave envelopes of one solved length, per
        * band: each output's current and charge tables lifted, then
        * enveloped over the band's samples.  Shared by the coda and the
@@ -5348,9 +5375,13 @@
           workers.forEach(worker => worker.terminate());
           URL.revokeObjectURL(blobUrl);
           necControl.current = null;
+          // An error with nothing measured is a failed run; an error after
+          // some lengths solved keeps what it has but carries the note, so a
+          // run that stopped -- including in the coda, where the scheduled
+          // count no longer shows it -- never reads as cleanly complete.
           setNecRun(error !== null && results.length === 0
             ? snapshot('error', error)
-            : snapshot('done', null));
+            : snapshot('done', error));
         };
         // The finest grid refinement reaches: the model curve's own, which
         // is also the natural cap on how many lengths a run may grow to.
@@ -6063,6 +6094,14 @@
                       what was fitted, and those figures are extrapolation.
                     </div>
                   )}
+                  {lengthOverLambda > MODEL_DOMAIN.maxLengthOverLambda && (
+                    <div className="verdict-domain">
+                      Over {MODEL_DOMAIN.maxLengthOverLambda} wavelengths long
+                      on the highest band selected
+                      ({lengthOverLambda.toFixed(1)}), past the lengths the
+                      table was fitted at; the model is extrapolating here.
+                    </div>
+                  )}
                   {mode === 'classical' && verdict && !verdict.ok && clearLength !== null && (
                     <>
                       {' '}
@@ -6162,6 +6201,8 @@
                       {necRun.scheduled < necRun.total
                         && ` Stopped at ${necRun.solved} of `
                            + `${necRun.total} lengths.`}
+                      {necRun.note !== null
+                        && ` The check stopped early: ${necRun.note}.`}
                     </span>
                   )}
                 </div>
