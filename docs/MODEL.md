@@ -1902,12 +1902,16 @@ need its own campaign to bound.  A campaign is not the fix: the ranking
 already shows the structural asymmetry that settles it -- nec2c's
 fiction is orders of magnitude while every genuine disagreement is
 under a factor of two and nec2++ is never fiction.  So the page adds one
-a-posteriori term, `NEC2C_FICTION_FACTOR`: at any point where the two
-part by more than five, nec2c is not a credible witness whatever the
-geometry, and the map draws nec2++ alone.  Five sits well above real
+a-posteriori term, `NEC2C_FICTION_FACTOR`: on any band where the two
+part by more than five, nec2c is inventing, and a length with even one
+such band drops nec2c entirely -- a witness caught lying on one band is
+not trusted at that length at all.  The test is per band, not on the
+length's geometric mean, which dilutes a lone fiction band below the
+threshold and would leave a stray hundred-to-one in the worst-sample
+column and a phantom doubt band on the map.  Five sits well above real
 disagreement (~2x) and far below the fiction (100x and up), so it
-suppresses the invented resonance and this regime and any other without
-a new axis to measure, flowing through the same credibility flag every
+suppresses the invented resonance in this regime and any other without a
+new axis to measure, flowing through the same credibility flag every
 surface already reads.
 
 ## NEC-5 arrives: the ground stands, the density does not

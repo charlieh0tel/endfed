@@ -1848,6 +1848,16 @@ test('nec2c reading orders of magnitude off nec2++ is called fiction', () => {
   assert.equal(m.nec2cFiction(7.4, 4.5), false, 'a real disagreement is kept');
   assert.equal(m.nec2cFiction(3.3, 3.3), false, 'agreement is kept');
   assert.equal(m.nec2cFiction(5, null), false, 'one solver alone is not fiction');
+  // Judged per band: one fiction band condemns the whole length, and the
+  // geometric mean that would dilute it is not consulted.
+  const agree = { re: 450, im: 0 };   // 50 ohm through 9:1 -> 1:1
+  const wild = { re: 5000, im: 0 };   // 555 ohm -> ~11:1, orders off
+  assert.equal(m.necHasFiction([agree, wild], [agree, agree], 9), true,
+    'one fiction band is enough');
+  assert.equal(m.necHasFiction([agree, agree], [agree, agree], 9), false,
+    'all bands agreeing is credible');
+  assert.equal(m.necHasFiction([agree, wild], null, 9), false,
+    'no second solver, nothing to contradict');
 });
 
 test('the measured curve splits into runs of agreement and runs of doubt', () => {
