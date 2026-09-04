@@ -661,7 +661,8 @@ test.describe('the NEC check', () => {
 
   test('a suppressed fiction leaves no spike in the drawn band',
     async ({ page }) => {
-      test.setTimeout(240_000);
+      // A full two-solver run; give the two-core CI runner real time.
+      test.setTimeout(480_000);
       // A long counterpoise near ground makes nec2c invent a resonance on
       // some bands; those lengths are dropped, but the band beside them once
       // reached to the rejected value at the seam.  No band or edge vertex
@@ -671,7 +672,7 @@ test.describe('the NEC check', () => {
       await page.getByRole('button', { name: /check this map against nec-2/i })
         .click();
       await page.locator('.nec-check span', { hasText: 'same geometry' })
-        .waitFor({ timeout: 200000 });
+        .waitFor({ timeout: 300000 });
       const topY = await page.evaluate(() => {
         const svg = document.querySelector('svg.map-svg');
         const ds = [...svg.querySelectorAll('.nec-band, .nec-edge')]
