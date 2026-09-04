@@ -1891,6 +1891,25 @@ answer for any solver, so the overlay is read as a measurement at one
 density.  A converged check -- 2x and 4x, extrapolated -- would cost
 7-14x the solve time and is not offered.
 
+The a-priori rule has one blind spot, found later: a long counterpoise
+run near the ground.  A 21 m counterpoise at 1.87 m -- over a
+wavelength on 17 m -- makes nec2c invent a resonance there, reading two
+million to one where the model and nec2++ agree near two, on both bare
+and insulated wire (so it is the return's electrical length near
+ground, not the jacket).  The feed-height and counterpoise-height
+constants do not see it, and the return-length axis it lives on would
+need its own campaign to bound.  A campaign is not the fix: the ranking
+already shows the structural asymmetry that settles it -- nec2c's
+fiction is orders of magnitude while every genuine disagreement is
+under a factor of two and nec2++ is never fiction.  So the page adds one
+a-posteriori term, `NEC2C_FICTION_FACTOR`: at any point where the two
+part by more than five, nec2c is not a credible witness whatever the
+geometry, and the map draws nec2++ alone.  Five sits well above real
+disagreement (~2x) and far below the fiction (100x and up), so it
+suppresses the invented resonance and this regime and any other without
+a new axis to measure, flowing through the same credibility flag every
+surface already reads.
+
 ## NEC-5 arrives: the ground stands, the density does not
 
 NEC-5 (`nec5cl`) passed the conductivity limit on arrival, matching

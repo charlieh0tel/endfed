@@ -1838,6 +1838,18 @@ test('the check follows nec2c only on a short wire over a low counterpoise', () 
     'nec2c throughout when nec2++ did not solve');
 });
 
+test('nec2c reading orders of magnitude off nec2++ is called fiction', () => {
+  // A genuine solver disagreement is under a factor of two; nec2c's ground
+  // failures are hundreds to millions to one, and nec2++ is never fiction.
+  assert.ok(m.NEC2C_FICTION_FACTOR > 2 && m.NEC2C_FICTION_FACTOR < 100,
+    'the threshold sits between real disagreement and fiction');
+  assert.equal(m.nec2cFiction(2000000, 1.8), true, 'an invented resonance');
+  assert.equal(m.nec2cFiction(620, 1.9), true, 'and a smaller one');
+  assert.equal(m.nec2cFiction(7.4, 4.5), false, 'a real disagreement is kept');
+  assert.equal(m.nec2cFiction(3.3, 3.3), false, 'agreement is kept');
+  assert.equal(m.nec2cFiction(5, null), false, 'one solver alone is not fiction');
+});
+
 test('the measured curve splits into runs of agreement and runs of doubt', () => {
   const a = (swr) => ({ lenM: 0, swr, alt: swr * 1.05 });   // agree
   const d = (swr) => ({ lenM: 0, swr, alt: swr * 2 });      // disagree

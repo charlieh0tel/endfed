@@ -30,7 +30,7 @@ const EXPORTS = [
   'C_SPEED', 'FT_PER_M', 'PAGE_VERSION', 'CHANGELOG',
   'UNITS', 'SOILS', 'REGIONS', 'SEGMENTS', 'MODES',
   'MODEL_H_NODES', 'MODEL_COEFFS', 'MODEL_VF_A', 'MODEL_LENGTH_POWER',
-  'lengthPower', 'bugReportUrl', 'BUG_REPORT_URL', 'WIRE_RADIUS_M', 'MODEL_NEC_RUNS', 'MODEL_HOLDOUT_RUNS', 'deckModel', 'NEC_AGREE_FACTOR', 'necSwrText', 'fmtSwr', 'necAgrees', 'necRuns',
+  'lengthPower', 'bugReportUrl', 'BUG_REPORT_URL', 'WIRE_RADIUS_M', 'MODEL_NEC_RUNS', 'MODEL_HOLDOUT_RUNS', 'deckModel', 'NEC_AGREE_FACTOR', 'necSwrText', 'fmtSwr', 'necAgrees', 'nec2cFiction', 'NEC2C_FICTION_FACTOR', 'necRuns',
   'necPreferred', 'necFollowed', 'nec2cCredible', 'necShowsBand',
   'necDisposition', 'necLowFeedText',
   'NEC_PREFER_NEC2C_MAX_Z_LAM',

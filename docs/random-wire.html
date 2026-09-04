@@ -578,7 +578,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.03.001';
+    const PAGE_VERSION = '2026.09.03.002';
 
     /**
      * One release, as the user sees it.
@@ -594,6 +594,16 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.03.002',
+        title: 'The check stops trusting nec2c where it invents',
+        text: 'One of the two NEC-2 engines, nec2c, invents a wild '
+          + 'resonance over a long counterpoise near the ground on some '
+          + 'bands -- reading hundreds or millions to one where the model '
+          + 'and the other engine agree near two. The check now recognizes '
+          + 'that as fiction and leaves it out, rather than drawing it as '
+          + 'doubt.',
+      },
       {
         version: '2026.09.03.001',
         title: 'Honest about long wires and stopped checks',
@@ -3440,6 +3450,28 @@
       || Math.max(point.swr / point.alt, point.alt / point.swr) <= NEC_AGREE_FACTOR;
 
     /**
+     * The factor beyond which nec2c is not a credible witness, whatever the
+     * geometry.  Its ground-treatment failures are orders of magnitude --
+     * a resonance invented at hundreds to millions to one -- while a genuine
+     * solver disagreement here is under a factor of two and nec2++ is never
+     * fiction (its own worst error, a counterpoise within a centimeter of
+     * soil, is a bounded ~2x).  So a point where the two part by more than
+     * this is nec2c inventing a resonance, which a long counterpoise near
+     * ground does on some bands past what the measured a-priori regimes
+     * (feed height, counterpoise height, half-waves) model.  Five sits well
+     * above the ~2x of real disagreement and far below the fiction.
+     */
+    const NEC2C_FICTION_FACTOR = 5;
+    /**
+     * @param {number} swr  nec2c's SWR at a point
+     * @param {?number} altSwr  nec2++'s at the same point, or null
+     * @returns {boolean}
+     */
+    const nec2cFiction = (swr, altSwr) =>
+      altSwr !== null
+      && Math.max(swr / altSwr, altSwr / swr) >= NEC2C_FICTION_FACTOR;
+
+    /**
      * Everything the check's copy needs to agree on, computed once: which
      * mode the map is in and which bands are fed too low for nec2c.  Every
      * surface -- status, legend, notice, table -- renders from this, so no
@@ -5241,7 +5273,8 @@
             const followed = necFollowed(measured, other,
                                          grid.map(g => g.freqHz), site, lenM);
             const best = measuredScore(followed, grid, ununRatio) ?? scored;
-            const cred = grid.every(g => nec2cCredible(site, lenM, g.freqHz));
+            const cred = grid.every(g => nec2cCredible(site, lenM, g.freqHz))
+              && !nec2cFiction(scored.swr, alt === null ? null : alt.swr);
             const samples = followed.map((z, i) => ({
               m: grid[i].band.m, freqHz: grid[i].freqHz,
               swr: swrAtRadio(z, ununRatio),
@@ -5467,14 +5500,15 @@
                                              site, data.lenM);
                 const best = measuredScore(followed, codaFreqs, ununRatio)
                   ?? scored;
+                const alt = other === null ? null
+                  : measuredScore(other, codaFreqs, ununRatio);
                 const cred = codaFreqs.every(
-                  g => nec2cCredible(site, data.lenM, g.freqHz));
+                  g => nec2cCredible(site, data.lenM, g.freqHz))
+                  && !nec2cFiction(scored.swr, alt === null ? null : alt.swr);
                 const samples = followed.map((z, i) => ({
                   m: codaFreqs[i].band.m, freqHz: codaFreqs[i].freqHz,
                   swr: swrAtRadio(z, ununRatio),
                 }));
-                const alt = other === null ? null
-                  : measuredScore(other, codaFreqs, ununRatio);
                 checks.push({ lenM: data.lenM, ...scored, alt, best, cred,
                               samples,
                               profiles: bandProfiles(data.outputs,
@@ -5489,7 +5523,8 @@
                   necFollowed(measured, other, freqs, site, data.lenM),
                   ununRatio) ?? swr;
                 const cred = freqs.every(
-                  f => nec2cCredible(site, data.lenM, f));
+                  f => nec2cCredible(site, data.lenM, f))
+                  && !nec2cFiction(swr, alt);
                 results.push({ lenM: data.lenM, swr, alt, best, cred });
                 solved++;
               }
