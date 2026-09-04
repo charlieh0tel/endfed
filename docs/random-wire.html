@@ -578,7 +578,7 @@
      * master deploys and may do so several times a day.  Any change a user
      * would notice bumps it and adds the first CHANGELOG entry.
      */
-    const PAGE_VERSION = '2026.09.03.003';
+    const PAGE_VERSION = '2026.09.03.004';
 
     /**
      * One release, as the user sees it.
@@ -594,6 +594,15 @@
      * @type {ReadonlyArray<ChangelogEntry>}
      */
     const CHANGELOG = Object.freeze([
+      {
+        version: '2026.09.03.004',
+        title: 'No phantom spike at a suppressed length',
+        text: 'A length where nec2c invents a resonance is dropped, but the '
+          + 'doubt band drawn just beside it still reached across to that '
+          + 'rejected value at the seam, painting a tall spike. The band '
+          + 'now pinches to the followed line there, so a suppressed '
+          + 'fiction leaves no mark.',
+      },
       {
         version: '2026.09.03.003',
         title: 'Drop nec2c wherever it invents, band by band',
@@ -4581,11 +4590,20 @@
         : pathThrough(necPoints, point => point.best);
       // Where they part, a band between them with two thin edges and no
       // line: the check's own uncertainty, drawn rather than asserted.
-      // Out along the higher reading and back along the lower.
-      const high = (/** @type {{swr: number, alt: ?number}} */ point) =>
-        Math.max(point.swr, point.alt ?? point.swr);
-      const low = (/** @type {{swr: number, alt: ?number}} */ point) =>
-        Math.min(point.swr, point.alt ?? point.swr);
+      // Out along the higher reading and back along the lower.  A split run
+      // carries a bordering point that is not itself a band point -- the
+      // last agreeing point, or one whose nec2c is a suppressed fiction --
+      // to meet the line; such a point contributes its followed value, not
+      // its raw nec2c, so the band pinches to the line there rather than
+      // shooting to a fiction the credibility flag already rejected.
+      const necEdge2c = (/** @type {{swr: number, best: number, cred?: boolean, alt: ?number}} */ point) =>
+        necShowsBand(point) ? point.swr : point.best;
+      const necEdgePp = (/** @type {{swr: number, best: number, cred?: boolean, alt: ?number}} */ point) =>
+        necShowsBand(point) ? (point.alt ?? point.swr) : point.best;
+      const high = (/** @type {{swr: number, best: number, cred?: boolean, alt: ?number}} */ point) =>
+        Math.max(necEdge2c(point), necEdgePp(point));
+      const low = (/** @type {{swr: number, best: number, cred?: boolean, alt: ?number}} */ point) =>
+        Math.min(necEdge2c(point), necEdgePp(point));
       const necSplits = runs === null ? [] : runs.split.filter(run => run.length >= 2);
       // What the legend should admit to: whether nec2c has any credible
       // stretch on this map, and whether a band is actually drawn.
@@ -4597,8 +4615,8 @@
           .join(' ')} Z`).join(' ');
       // Each solver's own edge of the band: nec2c solid, nec2++ dashed.
       const necEdges = necSplits.flatMap(run => [
-        { d: pathThrough(run, point => point.swr), dashed: false },
-        { d: pathThrough(run, point => point.alt ?? point.swr), dashed: true },
+        { d: pathThrough(run, necEdge2c), dashed: false },
+        { d: pathThrough(run, necEdgePp), dashed: true },
       ]);
 
       /**

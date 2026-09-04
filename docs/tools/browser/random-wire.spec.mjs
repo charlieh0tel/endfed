@@ -659,6 +659,36 @@ test.describe('the NEC check', () => {
       await expect(overlay).toHaveCount(0);
     });
 
+  test('a suppressed fiction leaves no spike in the drawn band',
+    async ({ page }) => {
+      test.setTimeout(240_000);
+      // A long counterpoise near ground makes nec2c invent a resonance on
+      // some bands; those lengths are dropped, but the band beside them once
+      // reached to the rejected value at the seam.  No band or edge vertex
+      // should shoot to the top of the plot.
+      await open(page, '?mode=impedance&bands=40,20,15,10&unun=9&h_m=3.75'
+        + '&geom=flatTop&cp_m=21.25&cpz_m=1.87&soil=average&wire=bare&len_m=18.593');
+      await page.getByRole('button', { name: /check this map against nec-2/i })
+        .click();
+      await page.locator('.nec-check span', { hasText: 'same geometry' })
+        .waitFor({ timeout: 200000 });
+      const topY = await page.evaluate(() => {
+        const svg = document.querySelector('svg.map-svg');
+        const ds = [...svg.querySelectorAll('.nec-band, .nec-edge')]
+          .map(e => e.getAttribute('d'));
+        let min = Infinity;
+        for (const d of ds) {
+          for (const mm of d.matchAll(/[\d.]+ ([\d.]+)/g)) {
+            min = Math.min(min, Number(mm[1]));
+          }
+        }
+        return min;
+      });
+      // The plot is ~294 tall; a fiction spike hit y=14.  Genuine doubt
+      // bands here sit well down the plot.
+      expect(topY).toBeGreaterThan(60);
+    });
+
   test('errors rather than running on one solver when nec2++ is missing',
     async ({ page }) => {
       test.setTimeout(240_000);
