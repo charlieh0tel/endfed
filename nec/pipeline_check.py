@@ -46,10 +46,12 @@ EXPECTED = Path(__file__).resolve().parent / "fixtures" / "pipeline_expected.jso
 
 #: Relative, and tight enough to catch a changed formula.  The error
 #: statistics are order statistics over thousands of points: a median hops
-#: between neighbouring samples when rounding reorders them, so it moves
-#: further between machines than a mean would.  Measured against CI, the
-#: worst was 2.3e-4 relative, on the ninetieth percentile of the phase.
-TOLERANCE = 1e-3
+#: between neighboring samples when rounding reorders them, so it moves
+#: further between machines than a mean would.  Measured between CI runners
+#: on identical code and lock, the worst was 1.3e-3 relative, on the median
+#: of the phase; a changed formula moves the cost first, and COST_TOLERANCE
+#: is the tight one.
+TOLERANCE = 5e-3
 
 #: The coefficients themselves are not compared, and the reason is not
 #: sloppiness.  The refinement has flat directions wherever a node is thinly
